@@ -1,0 +1,17 @@
+{
+	"name": "kratos",
+	"copyright": "Copyright © 2014, René Zwanenburg",
+	"authors": [
+		"René Zwanenburg"
+	],
+
+	"sourcePath": "kratos",
+	"importPath": ".",
+
+	"targetType": "library",
+	"targetPath": "build",
+
+	"dependencies": {
+		"gl3n": { "version": "~master", "path": "../gl3n" }
+	}
+}
