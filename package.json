@@ -5,13 +5,14 @@
 		"René Zwanenburg"
 	],
 
-	"sourcePath": "kratos",
-	"importPath": ".",
+	"sourcePaths": ["kratos"],
+	"importPaths": ["."],
 
 	"targetType": "library",
 	"targetPath": "build",
 
 	"dependencies": {
-		"gl3n": { "version": "~master", "path": "../gl3n" }
+		"gl3n": { "version": "~master", "path": "../gl3n" },
+		"dcollections": { "version": "~master", "path": "../dcollections" }
 	}
 }

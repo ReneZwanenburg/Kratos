@@ -1,0 +1,2 @@
+module kratos.resource.cache;
+
