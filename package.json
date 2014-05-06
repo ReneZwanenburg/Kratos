@@ -13,6 +13,5 @@
 
 	"dependencies": {
 		"gl3n": { "version": "~master", "path": "../gl3n" },
-		"dcollections": { "version": "~master", "path": "../dcollections" }
 	}
 }
