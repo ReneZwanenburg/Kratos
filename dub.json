@@ -1,17 +1,28 @@
 {
 	"name": "kratos",
 	"copyright": "Copyright © 2014, René Zwanenburg",
-	"authors": [
+	"authors":
+	[
 		"René Zwanenburg"
 	],
 
-	"sourcePaths": ["kratos"],
-	"importPaths": ["."],
-
-	"targetType": "library",
+	"targetType": "executable",
 	"targetPath": "build",
 
-	"dependencies": {
+	"buildTypes":
+	{
+		"performance-debug":
+		{
+			"buildOptions": ["releaseMode", "optimize", "inline", "debugInfo"]
+		}
+	},
+
+	"copyFiles-windows-x86": ["bin/glfw3.dll"],
+
+	"dependencies":
+	{
 		"gl3n": { "version": "~master", "path": "../gl3n" },
+		"derelict-gl3": "~master",
+		"derelict-glfw3": "~master"
 	}
 }
