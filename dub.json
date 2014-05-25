@@ -17,7 +17,14 @@
 		}
 	},
 
-	"copyFiles-windows-x86": ["bin/glfw3.dll"],
+	"copyFiles-windows-x86":
+	[
+		"lib/windows/x86/glfw3.dll"
+	],
+	"copyFiles-windows-x86_64":
+	[
+		"lib/windows/x86_64/glfw3.dll"
+	],
 
 	"dependencies":
 	{
