@@ -5,6 +5,8 @@ import derelict.opengl3.gl3 : DerelictGL3;
 
 import std.exception : enforce, assumeWontThrow;
 
+import kratos.graphics.gl;
+
 shared static this()
 {
 	DerelictGL3.load();
@@ -34,8 +36,14 @@ void main(string[] args)
 	enforce(window, "Window creation failed");
 	scope(exit) glfwDestroyWindow(window);
 
+	glfwSetKeyCallback(window, &glfwKeyCallback);
+
 	glfwMakeContextCurrent(window);
 	DerelictGL3.reload();
+
+	import derelict.opengl3.gl3;
+
+	glfwSetFramebufferSizeCallback(window, (_, width, height) => assumeWontThrow(gl.Viewport(0, 0, width, height)));
 
 	while(!glfwWindowShouldClose(window))
 	{
@@ -45,11 +53,19 @@ void main(string[] args)
 	}
 }
 
-private extern(C) void glfwErrorCallback(int errorCode, const(char)* description) nothrow
+private extern(C) nothrow
 {
-	import std.stdio : writefln;
-	import std.conv : text;
+	void glfwErrorCallback(int errorCode, const(char)* description)
+	{
+		import std.stdio : writefln;
+		import std.conv : text;
 
-	assumeWontThrow(writefln("GLFW Error %s: %s", errorCode, description.text));
-	assert(false);
+		assumeWontThrow(writefln("GLFW Error %s: %s", errorCode, description.text));
+		assert(false);
+	}
+
+	void glfwKeyCallback(GLFWwindow* window, int key, int scanCode, int action, int modifiers)
+	{
+
+	}
 }
