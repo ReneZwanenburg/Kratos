@@ -6,6 +6,7 @@ import derelict.opengl3.gl3 : DerelictGL3;
 import std.exception : enforce, assumeWontThrow;
 
 import kratos.graphics.gl;
+import kratos.time;
 
 shared static this()
 {
@@ -41,15 +42,15 @@ void main(string[] args)
 	glfwMakeContextCurrent(window);
 	DerelictGL3.reload();
 
-	import derelict.opengl3.gl3;
-
 	glfwSetFramebufferSizeCallback(window, (_, width, height) => assumeWontThrow(gl.Viewport(0, 0, width, height)));
 
+	Time.reset();
 	while(!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
 
 		glfwSwapBuffers(window);
+		Time.update();
 	}
 }
 
