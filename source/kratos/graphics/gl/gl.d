@@ -1,4 +1,4 @@
-﻿module kratos.graphics.gl;
+﻿module kratos.graphics.gl.gl;
 
 public
 {
