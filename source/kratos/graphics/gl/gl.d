@@ -62,13 +62,14 @@ final abstract class gl
 				string[] stringifiedArgs;
 				foreach(i, T; ParameterTypeTuple!func)
 				{
+					stringifiedArgs ~= args[i].text;
+
 					static if(is(T == GLenum))
 					{
-						stringifiedArgs ~= glEnumString[args[i]];
-					}
-					else
-					{
-						stringifiedArgs ~= args[i].text;
+						if(auto enumNames = args[i] in glEnumString)
+						{
+							stringifiedArgs ~= "(" ~ glEnumString[args[i]] ~ ")";
+						}
 					}
 				}
 				writefln("While calling %s(%s);", fullFunctionName, stringifiedArgs.joiner(", "));
