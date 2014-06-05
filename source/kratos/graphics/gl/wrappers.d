@@ -14,9 +14,12 @@ private alias Handle(T) = RefCounted!(T, RefCountedAutoInitialize.no);
 
 alias VAO = Handle!VAO_Impl;
 
-void bind(VAO vao)
+VAO vao()
 {
-	gl.BindVertexArray(vao.handle);
+	auto vao = initialized!VAO;
+	gl.GenVertexArrays(1, &vao.handle);
+	debug writeln("Created Vertex Array Object ", vao.handle);
+	return vao;
 }
 
 private struct VAO_Impl
@@ -24,39 +27,40 @@ private struct VAO_Impl
 	private GLuint handle;
 
 	@disable this(this);
-	
-	static opCall()
-	{
-		VAO_Impl vao;
-		gl.GenVertexArrays(1, &vao.handle);
-		debug writeln("Created Vertex Array Object ", vao.handle);
-		return vao;
-	}
 
 	~this()
 	{
 		gl.DeleteVertexArrays(1, &handle);
 		debug writeln("Deleted Vertex Array Object ", handle);
 	}
+
+	void bind()
+	{
+		gl.BindVertexArray(handle);
+	}
 }
 
-private alias BO(GLenum Target) = Handle!(BO_Impl!Target);
 alias VBO = BO!GL_ARRAY_BUFFER;
+alias vbo = bo!GL_ARRAY_BUFFER;
+
 alias IBO = BO!GL_ELEMENT_ARRAY_BUFFER;
+alias ibo = bo!GL_ELEMENT_ARRAY_BUFFER;
+
+private alias BO(GLenum Target) = Handle!(BO_Impl!Target);
+
+private BO!Target bo(GLenum Target)()
+{
+	auto bo = initialized!(BO!Target);
+	gl.GenBuffers(1, &bo.handle);
+	debug writeln("Created Buffer Object ", bo.handle);
+	return bo;
+}
 
 private struct BO_Impl(GLenum Target)
 {
 	private GLuint handle;
 
 	@disable this(this);
-
-	static opCall()
-	{
-		BO_Impl!Target bo;
-		gl.GenBuffers(1, &bo.handle);
-		debug writeln("Created Buffer Object ", bo.handle);
-		return bo;
-	}
 
 	~this()
 	{
