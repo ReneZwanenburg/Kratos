@@ -7,6 +7,7 @@ import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting
 import std.typecons : RefCounted, RefCountedAutoInitialize;
 import std.range : isInputRange, ElementType;
 import std.container : Array;
+import std.algorithm : copy;
 
 
 private alias Handle(T) = RefCounted!(T, RefCountedAutoInitialize.no);
@@ -75,7 +76,7 @@ void bind(GLenum Target)(BO!Target bo)
 }
 
 
-struct VertexAttribute
+struct ShaderVariable
 {
 	GLint				size;
 	GLenum				type;
@@ -91,7 +92,7 @@ if(isInputRange!Range && is(ElementType!Range == Shader))
 	auto program = initialized!Program;
 	program.handle = gl.CreateProgram();
 	debug writeln("Created Shader Program ", program.handle);
-	foreach(shader; shaders) program.shaders.insertBack(shader);
+	shaders.copy(program.shaders.backInserter);
 	
 	foreach(shader; shaders)
 	{
@@ -114,35 +115,59 @@ if(isInputRange!Range && is(ElementType!Range == Shader))
 		
 		assert(false);
 	}
-	
-	GLint numVertexAttribs;
-	gl.GetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTES, &numVertexAttribs);
 
-	if(numVertexAttribs > 0)
+	static ShaderVariable[] getShaderVariables
+		(
+			GLenum VariableCountGetter, 
+			GLenum VariableNameLengthGetter,
+			alias VariableGetter
+		)
+		(
+			ref Program program
+		)
 	{
-		GLint maxAttribLength;
-		gl.GetProgramiv(program.handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxAttribLength);
-		assert(maxAttribLength > 0, "Vertex Attributes declared without name. Please verify the universe is in a consistent state.");
-
-		program.attributes = new VertexAttribute[](numVertexAttribs);
-		auto attribName = new GLchar[](maxAttribLength);
+		GLint numVariables;
+		gl.GetProgramiv(program.handle, VariableCountGetter, &numVariables);
 		
-		foreach(attribIndex; 0..numVertexAttribs)
+		if(numVariables > 0)
 		{
-			GLsizei nameLength;
-			gl.GetActiveAttrib(
-				program.handle,
-				attribIndex,
-				attribName.length,
-				&nameLength,
-				&program.attributes[attribIndex].size,
-				&program.attributes[attribIndex].type,
-				attribName.ptr
-			);
+			GLint maxNameLength;
+			gl.GetProgramiv(program.handle, VariableNameLengthGetter, &maxNameLength);
+			assert(maxNameLength > 0, "Shader Variable declared without name. Please verify the universe is in a consistent state.");
 			
-			program.attributes[attribIndex].name = attribName[0..nameLength].idup;
+			auto variables = new ShaderVariable[](numVariables);
+			auto variableName = new GLchar[](maxNameLength);
+
+			foreach(variableIndex; 0..numVariables)
+			{
+				GLsizei nameLength;
+				VariableGetter(
+					program.handle,
+					variableIndex,
+					variableName.length,
+					&nameLength,
+					&variables[variableIndex].size,
+					&variables[variableIndex].type,
+					variableName.ptr
+				);
+				
+				variables[variableIndex].name = variableName[0..nameLength].idup;
+			}
+
+			return variables;
+		}
+		else
+		{
+			return null;
 		}
 	}
+
+	// Workaround for forward reference error
+	static void GetActiveAttrib_Impl(T...)(T args) { gl.GetActiveAttrib(args); }
+	static void GetActiveUniform_Impl(T...)(T args) { gl.GetActiveUniform(args); }
+
+	program.attributes = getShaderVariables!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)(program);
+	program.uniforms = getShaderVariables!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)(program);
 	
 	return program;
 }
@@ -151,7 +176,8 @@ private struct Program_Impl
 {
 	private GLuint handle;
 	private Array!Shader shaders;
-	VertexAttribute[] attributes;
+	ShaderVariable[] attributes;
+	ShaderVariable[] uniforms;
 
 	@disable this(this);
 
@@ -220,10 +246,103 @@ private struct Shader_Impl
 	}
 }
 
-//TODO move to a more appropriate place
+//TODO move everything below to a more appropriate place
+import gl3n.linalg;
+
+template GLType(T)
+{
+	static if(is(T == float))
+	{
+		enum GLType = GL_FLOAT;
+	}
+	else static if(is(T == vec2))
+	{
+		enum GLType = GL_FLOAT_VEC2;
+	}
+	else static if(is(T == vec3))
+	{
+		enum GLType = GL_FLOAT_VEC3;
+	}
+	else static if(is(T == vec4))
+	{
+		enum GLType = GL_FLOAT_VEC4;
+	}
+	else static if(is(T == int))
+	{
+		enum GLType = GL_INT;
+	}
+	else static if(is(T == vec2i))
+	{
+		enum GLType = GL_INT_VEC2;
+	}
+	else static if(is(T == vec3i))
+	{
+		enum GLType = GL_INT_VEC3;
+	}
+	else static if(is(T == vec4i))
+	{
+		enum GLType = GL_INT_VEC4;
+	}
+	else static if(is(T == bool))
+	{
+		enum GLType = GL_BOOL;
+	}
+	else static if(is(T == mat2))
+	{
+		enum GLType = GL_FLOAT_MAT2;
+	}
+	else static if(is(T == mat3))
+	{
+		enum GLType = GL_FLOAT_MAT3;
+	}
+	else static if(is(T == mat4))
+	{
+		enum GLType = GL_FLOAT_MAT4;
+	}
+
+	else static assert(false, "Not a valid OpenGL Type or Type not implemented");
+}
+
+immutable int[GLenum] GLTypeSize;
+shared static this()
+{
+	GLTypeSize = [
+		GL_FLOAT		: float.sizeof,
+		GL_FLOAT_VEC2	: vec2.sizeof,
+		GL_FLOAT_VEC3	: vec3.sizeof,
+		GL_FLOAT_VEC4	: vec4.sizeof,
+
+		GL_INT			: int.sizeof,
+		GL_INT_VEC2		: vec2i.sizeof,
+		GL_INT_VEC3		: vec3i.sizeof,
+		GL_INT_VEC4		: vec4i.sizeof,
+
+		GL_BOOL			: bool.sizeof,
+
+		GL_FLOAT_MAT2	: mat2.sizeof,
+		GL_FLOAT_MAT3	: mat3.sizeof,
+		GL_FLOAT_MAT4	: mat4.sizeof
+	];
+}
+
 private auto initialized(T)() if(is(T == RefCounted!S, S...))
 {
 	T refCounted;
 	refCounted.refCountedStore.ensureInitialized();
 	return refCounted;
+}
+
+private auto backInserter(T)(ref Array!T array)
+{
+	static struct Inserter
+	{
+		private Array!T* array;
+
+		void put()(auto ref T elem)
+		{
+			array.insertBack(elem);
+		}
+	}
+
+	return Inserter(&array);
 }
