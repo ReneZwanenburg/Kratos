@@ -19,17 +19,20 @@
 
 	"copyFiles-windows-x86":
 	[
-		"lib/windows/x86/glfw3.dll"
+		"lib/windows/x86/glfw3.dll",
+		"lib/windows/x86/Assimp32.dll"
 	],
 	"copyFiles-windows-x86_64":
 	[
-		"lib/windows/x86_64/glfw3.dll"
+		"lib/windows/x86_64/glfw3.dll",
+		"lib/windows/x86_64/Assimp64.dll"
 	],
 
 	"dependencies":
 	{
 		"gl3n": { "version": "~master", "path": "../gl3n" },
 		"derelict-gl3": "~master",
-		"derelict-glfw3": "~master"
+		"derelict-glfw3": "~master",
+		"derelict-assimp3": "~master"
 	}
 }
