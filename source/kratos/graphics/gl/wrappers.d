@@ -1,5 +1,6 @@
 ﻿module kratos.graphics.gl.wrappers;
 
+import kratos.resource.resource : Handle;
 import kratos.graphics.gl.gl;
 
 import std.conv : to;
@@ -8,9 +9,6 @@ import std.typecons : RefCounted, RefCountedAutoInitialize;
 import std.range : isInputRange, ElementType;
 import std.container : Array;
 import std.algorithm : copy;
-
-
-private alias Handle(T) = RefCounted!(T, RefCountedAutoInitialize.no);
 
 
 alias VAO = Handle!VAO_Impl;
