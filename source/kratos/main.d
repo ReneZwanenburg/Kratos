@@ -5,7 +5,7 @@ import derelict.opengl3.gl3 : DerelictGL3;
 
 import std.exception : enforce, assumeWontThrow;
 
-import kratos.graphics.gl.gl;
+import kratos.graphics.gl;
 import kratos.time;
 
 shared static this()
