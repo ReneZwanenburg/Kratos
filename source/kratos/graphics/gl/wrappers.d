@@ -1,9 +1,9 @@
 ﻿module kratos.graphics.gl.wrappers;
 
-import kratos.resource.resource : Handle;
+import kratos.resource.resource : Handle, initialized;
 import kratos.graphics.gl.gl;
 
-import std.conv : to;
+import std.conv : to, text;
 import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting for std.log
 import std.typecons : RefCounted, RefCountedAutoInitialize;
 import std.range : isInputRange, ElementType;
@@ -13,11 +13,38 @@ import std.algorithm : copy;
 
 alias VAO = Handle!VAO_Impl;
 
-VAO vao()
+// VBO should probably own it's variables. Then just pass IBO, VBO, Program.
+VAO vao(IBO ibo, VBO vbo, ShaderVariable[] vboVariables, ShaderVariable[] programVariables)
 {
 	auto vao = initialized!VAO;
 	gl.GenVertexArrays(1, &vao.handle);
 	debug writeln("Created Vertex Array Object ", vao.handle);
+
+	vao.bind();
+	ibo.bind();
+	vbo.bind();
+
+	const stride = vboVariables.totalByteSize;
+
+	foreach(programIndex, programVariable; programVariables)
+	{
+		import std.algorithm : countUntil;
+
+		const vboIndex = vboVariables.countUntil!q{a.name == b.name}(programVariable);
+		assert(vboIndex >= 0, "VBO does not contain variable '" ~ programVariable.name ~ "': " ~ vboVariables.text);
+		const vboVariable = vboVariables[vboIndex];
+
+		gl.EnableVertexAttribArray(programIndex);
+		gl.VertexAttribPointer(
+			programIndex,
+			vboVariable.size,
+			vboVariable.type,
+			false,
+			stride,
+			cast(GLvoid*)vboVariables[0..vboIndex].totalByteSize
+		);
+	}
+
 	return vao;
 }
 
@@ -66,19 +93,30 @@ private struct BO_Impl(GLenum Target)
 		gl.DeleteBuffers(1, &handle);
 		debug writeln("Deleted Buffer Object ", handle);
 	}
-}
 
-void bind(GLenum Target)(BO!Target bo)
-{
-	gl.BindBuffer(Target, bo.handle);
+	void bind()
+	{
+		gl.BindBuffer(Target, handle);
+	}
 }
 
 
 struct ShaderVariable
 {
-	GLint				size;
+	GLint				size; // Size in 'type' units, not byte size
 	GLenum				type;
 	immutable(GLchar)[]	name; // D-like string. No null terminator.
+
+	@property GLsizei byteSize() const pure nothrow
+	{
+		return size * GLTypeSize[type];
+	}
+}
+
+private GLsizei totalByteSize(const ShaderVariable[] variables)
+{
+	import std.algorithm : reduce;
+	return reduce!q{a + b.byteSize}(0, variables);
 }
 
 
@@ -245,90 +283,7 @@ private struct Shader_Impl
 }
 
 //TODO move everything below to a more appropriate place
-import gl3n.linalg;
 
-template GLType(T)
-{
-	static if(is(T == float))
-	{
-		enum GLType = GL_FLOAT;
-	}
-	else static if(is(T == vec2))
-	{
-		enum GLType = GL_FLOAT_VEC2;
-	}
-	else static if(is(T == vec3))
-	{
-		enum GLType = GL_FLOAT_VEC3;
-	}
-	else static if(is(T == vec4))
-	{
-		enum GLType = GL_FLOAT_VEC4;
-	}
-	else static if(is(T == int))
-	{
-		enum GLType = GL_INT;
-	}
-	else static if(is(T == vec2i))
-	{
-		enum GLType = GL_INT_VEC2;
-	}
-	else static if(is(T == vec3i))
-	{
-		enum GLType = GL_INT_VEC3;
-	}
-	else static if(is(T == vec4i))
-	{
-		enum GLType = GL_INT_VEC4;
-	}
-	else static if(is(T == bool))
-	{
-		enum GLType = GL_BOOL;
-	}
-	else static if(is(T == mat2))
-	{
-		enum GLType = GL_FLOAT_MAT2;
-	}
-	else static if(is(T == mat3))
-	{
-		enum GLType = GL_FLOAT_MAT3;
-	}
-	else static if(is(T == mat4))
-	{
-		enum GLType = GL_FLOAT_MAT4;
-	}
-
-	else static assert(false, "Not a valid OpenGL Type or Type not implemented");
-}
-
-immutable int[GLenum] GLTypeSize;
-shared static this()
-{
-	GLTypeSize = [
-		GL_FLOAT		: float.sizeof,
-		GL_FLOAT_VEC2	: vec2.sizeof,
-		GL_FLOAT_VEC3	: vec3.sizeof,
-		GL_FLOAT_VEC4	: vec4.sizeof,
-
-		GL_INT			: int.sizeof,
-		GL_INT_VEC2		: vec2i.sizeof,
-		GL_INT_VEC3		: vec3i.sizeof,
-		GL_INT_VEC4		: vec4i.sizeof,
-
-		GL_BOOL			: bool.sizeof,
-
-		GL_FLOAT_MAT2	: mat2.sizeof,
-		GL_FLOAT_MAT3	: mat3.sizeof,
-		GL_FLOAT_MAT4	: mat4.sizeof
-	];
-}
-
-private auto initialized(T)() if(is(T == RefCounted!S, S...))
-{
-	T refCounted;
-	refCounted.refCountedStore.ensureInitialized();
-	return refCounted;
-}
 
 private auto backInserter(T)(ref Array!T array)
 {
