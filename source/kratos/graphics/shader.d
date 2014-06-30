@@ -12,7 +12,7 @@ import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting
 alias Program = Handle!Program_Impl;
 
 Program program(Range)(Range shaders)
-	if(isInputRange!Range && is(ElementType!Range == Shader))
+	if(isInputRange!Range && is(ElementType!Range == ShaderModule))
 {
 	auto program = initialized!Program;
 	program.handle = gl.CreateProgram();
@@ -100,9 +100,9 @@ Program program(Range)(Range shaders)
 private struct Program_Impl
 {
 	private GLuint handle;
-	private Array!Shader shaders;
-	ShaderVariable[] attributes;
-	ShaderVariable[] uniforms;
+	private Array!ShaderModule shaders;
+	GLVariable[] attributes;
+	GLVariable[] uniforms;
 	
 	@disable this(this);
 	
@@ -114,11 +114,11 @@ private struct Program_Impl
 }
 
 
-alias Shader = Handle!Shader_Impl;
+alias ShaderModule = Handle!ShaderModule_Impl;
 
-Shader shader(Shader.Type type, const(GLchar)[] shaderSource)
+ShaderModule shader(ShaderModule.Type type, const(GLchar)[] shaderSource)
 {
-	auto shader = initialized!Shader;
+	auto shader = initialized!ShaderModule;
 	shader.type = type;
 	shader.handle = gl.CreateShader(type);
 	
@@ -150,7 +150,7 @@ Shader shader(Shader.Type type, const(GLchar)[] shaderSource)
 	return shader;
 }
 
-private struct Shader_Impl
+private struct ShaderModule_Impl
 {
 	enum Type : GLenum
 	{
