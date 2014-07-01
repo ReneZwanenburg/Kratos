@@ -11,7 +11,6 @@ import gl3n.linalg;
 
 import std.algorithm : joiner;
 import std.conv : text;
-import std.typetuple : TypeTuple;
 
 /// Thin OpenGL wrapper. Performs glGetError() error checking in debug mode.
 final abstract class gl
@@ -65,25 +64,6 @@ final abstract class gl
 		}
 	}
 }
-
-/// TypeTuple of all types which can be used as shader uniforms and attributes
-alias GLTypes = TypeTuple!(
-	float,
-	vec2,
-	vec3,
-	vec4,
-
-	int,
-	vec2i,
-	vec3i,
-	vec4i,
-
-	bool,
-
-	mat2,
-	mat3,
-	mat4
-);
 
 template GLType(T)
 {

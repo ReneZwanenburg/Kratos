@@ -5,12 +5,15 @@ import kratos.graphics.gl;
 import std.variant;
 import gl3n.linalg;
 
+import std.conv : text;
+import std.typetuple : TypeTuple;
 
-struct GLVariable
+
+struct ShaderParameter
 {
-	GLint				size; // Size in 'type' units, not byte size
-	GLenum				type;
-	immutable(GLchar)[]	name; // D-like string. No null terminator.
+	GLint	size; // Size in 'type' units, not byte size
+	GLenum	type;
+	string	name; // D-like string. No null terminator.
 	
 	@property GLsizei byteSize() const pure nothrow
 	{
@@ -18,70 +21,130 @@ struct GLVariable
 	}
 }
 
-GLsizei totalByteSize(const GLVariable[] variables)
+GLsizei totalByteSize(const ShaderParameter[] parameters)
 {
 	import std.algorithm : reduce;
-	return reduce!q{a + b.byteSize}(0, variables);
+	return reduce!q{a + b.byteSize}(0, parameters);
 }
 
+package alias UniformValue = Algebraic!ShaderParameterTypes;
 
 struct Uniform
 {
-	GLVariable type;
-	Algebraic!GLTypes value;
-	UniformSetter setter;
+	ShaderParameter	parameter;
+	UniformValue	value;
 
 	@disable this();
 
-	this(GLVariable type)
+	this(ShaderParameter parameter)
 	{
-		this.type = type;
-		setter = uniformSetters[type.type];
+		this.parameter = parameter;
 	}
 
 	ref auto opAssign(T)(auto ref T value)
 	{
-		assert(GLType!T == type.type, "Uniform type mismatch: " ~ T.stringof);
+		assert(GLType!T == parameter.type, "Uniform type mismatch: " ~ T.stringof);
 		this.value = value;
+		return this;
+	}
+
+	ref auto opAssign(T)(auto ref T[] values)
+	{
+		static assert(false, "Uniform arrays not implemented yet");
+
+		assert(GLType!T == parameter.type, "Uniform type mismatch: " ~ T.stringof);
+		assert(values.length <= parameter.size, 
+		       "Uniform array length = " ~ parameter.size.text ~ 
+		       ", provided array length = " ~ values.length.text);
+		// TODO store values
+		return this;
 	}
 }
 
-alias UniformSetter = void function(GLint location, ref Uniform uniform);
-private immutable UniformSetter[GLenum] uniformSetters;
+/// TypeTuple of all types which can be used as shader uniforms and attributes
+alias ShaderParameterTypes = TypeTuple!(
+	float,
+	vec2,
+	vec3,
+	vec4,
+	
+	int,
+	vec2i,
+	vec3i,
+	vec4i,
+	
+	bool,
+	
+	mat2,
+	mat3,
+	mat4
+);
+
+package alias UniformSetter = void function(GLint location, ref Uniform uniform);
+package immutable UniformSetter[GLenum] uniformSetter;
 static this()
 {
-	foreach(T; GLTypes)
+	foreach(T; ShaderParameterTypes)
 	{
 		enum type = GLType!T;
 
 		static if(is(T == float))
-			uniformSetters[type] = (location, ref uniform) => gl.Uniform1fv(location, uniform.type.size, uniform.value.peek!float);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1fv(location, uniform.parameter.size, uniform.value.peek!float);
 		else static if(is(T == vec2))
-			uniformSetters[type] = (location, ref uniform) => gl.Uniform2fv(location, uniform.type.size, uniform.value.peek!float);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform2fv(location, uniform.parameter.size, uniform.value.peek!float);
 		else static if(is(T == vec3))
-			uniformSetters[type] = (location, ref uniform) => gl.Uniform3fv(location, uniform.type.size, uniform.value.peek!float);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform3fv(location, uniform.parameter.size, uniform.value.peek!float);
 		else static if(is(T == vec4))
-			uniformSetters[type] = (location, ref uniform) => gl.Uniform4fv(location, uniform.type.size, uniform.value.peek!float);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform4fv(location, uniform.parameter.size, uniform.value.peek!float);
 
 		else static if(is(T == int))
-			uniformSetters[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.type.size, uniform.value.peek!int);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, uniform.value.peek!int);
 		else static if(is(T == vec2i))
-			uniformSetters[type] = (location, ref uniform) => gl.Uniform2iv(location, uniform.type.size, uniform.value.peek!int);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform2iv(location, uniform.parameter.size, uniform.value.peek!int);
 		else static if(is(T == vec3i))
-			uniformSetters[type] = (location, ref uniform) => gl.Uniform3iv(location, uniform.type.size, uniform.value.peek!int);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform3iv(location, uniform.parameter.size, uniform.value.peek!int);
 		else static if(is(T == vec4i))
-			uniformSetters[type] = (location, ref uniform) => gl.Uniform4iv(location, uniform.type.size, uniform.value.peek!int);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform4iv(location, uniform.parameter.size, uniform.value.peek!int);
 
 		else static if(is(T == bool))
-			uniformSetters[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.type.size, uniform.value.peek!int);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, uniform.value.peek!int);
 
 		else static if(is(T == mat2))
-			uniformSetters[type] = (location, ref uniform) => gl.UniformMatrix2fv(location, uniform.type.size, false, uniform.value.peek!float);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix2fv(location, uniform.parameter.size, false, uniform.value.peek!float);
 		else static if(is(T == mat3))
-			uniformSetters[type] = (location, ref uniform) => gl.UniformMatrix3fv(location, uniform.type.size, false, uniform.value.peek!float);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix3fv(location, uniform.parameter.size, false, uniform.value.peek!float);
 		else static if(is(T == mat4))
-			uniformSetters[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.type.size, false, uniform.value.peek!float);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.parameter.size, false, uniform.value.peek!float);
 
 		else static assert(false, "No uniform setter implemented for " ~ T.stringof);
+	}
+}
+
+
+package UniformValue[GLenum] defaultUniformValue;
+static this()
+{
+	foreach(T; ShaderParameterTypes)
+	{
+		enum type = GLType!T;
+
+		static if(is(T == float))
+		{
+			defaultUniformValue[type] = UniformValue(0f);
+		}
+		else static if(is(T == Vector!(float, P), P...))
+		{
+			T vector;
+			vector.clear(0);
+			//defaultUniformValue[type] = UniformValue(vector); // TODO figure out how to put a friggin vector in a Variant
+		}
+		else static if(is(T == Matrix!(float, P), P...))
+		{
+			defaultUniformValue[type] = T.identity;
+		}
+		else
+		{
+			defaultUniformValue[type] = UniformValue(T.init);
+		}
 	}
 }

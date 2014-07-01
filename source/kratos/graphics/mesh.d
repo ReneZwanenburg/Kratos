@@ -12,5 +12,5 @@ private struct Mesh_Impl
 
 	IBO ibo;
 	VBO vbo;
-	GLVariable[] vertexAttributes;
+	ShaderParameter[] vertexAttributes;
 }

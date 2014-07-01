@@ -4,15 +4,17 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
 
+import std.algorithm : copy;
 import std.container : Array;
 import std.conv : to;
 import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting for std.log
+import std.range : isInputRange;
 
 
 alias Program = Handle!Program_Impl;
 
 Program program(Range)(Range shaders)
-	if(isInputRange!Range && is(ElementType!Range == ShaderModule))
+	//if(isInputRange!Range && is(ElementType!Range == ShaderModule)) // TODO re-enable contraint. DMD bug, fixed in 2.066
 {
 	auto program = initialized!Program;
 	program.handle = gl.CreateProgram();
@@ -40,46 +42,46 @@ Program program(Range)(Range shaders)
 		
 		assert(false);
 	}
-	
-	static ShaderVariable[] getShaderVariables
+
+	static ShaderParameter[] getShaderParameters
 		(
-			GLenum VariableCountGetter, 
-			GLenum VariableNameLengthGetter,
-			alias VariableGetter
+			GLenum ParameterCountGetter, 
+			GLenum ParameterNameLengthGetter,
+			alias ParameterGetter
 		)
 		(
 			ref Program program
 		)
 	{
-		GLint numVariables;
-		gl.GetProgramiv(program.handle, VariableCountGetter, &numVariables);
+		GLint numParameters;
+		gl.GetProgramiv(program.handle, ParameterCountGetter, &numParameters);
 		
-		if(numVariables > 0)
+		if(numParameters > 0)
 		{
 			GLint maxNameLength;
-			gl.GetProgramiv(program.handle, VariableNameLengthGetter, &maxNameLength);
-			assert(maxNameLength > 0, "Shader Variable declared without name. Please verify the universe is in a consistent state.");
+			gl.GetProgramiv(program.handle, ParameterNameLengthGetter, &maxNameLength);
+			assert(maxNameLength > 0, "Shader Parameter declared without name. Please verify the universe is in a consistent state.");
 			
-			auto variables = new ShaderVariable[](numVariables);
-			auto variableName = new GLchar[](maxNameLength);
+			auto parameters = new ShaderParameter[](numParameters);
+			auto parameterName = new GLchar[](maxNameLength);
 			
-			foreach(variableIndex; 0..numVariables)
+			foreach(parameterIndex; 0..numParameters)
 			{
 				GLsizei nameLength;
-				VariableGetter(
+				ParameterGetter(
 					program.handle,
-					variableIndex,
-					variableName.length,
+					parameterIndex,
+					parameterName.length,
 					&nameLength,
-					&variables[variableIndex].size,
-					&variables[variableIndex].type,
-					variableName.ptr
+					&parameters[parameterIndex].size,
+					&parameters[parameterIndex].type,
+					parameterName.ptr
 				);
-				
-				variables[variableIndex].name = variableName[0..nameLength].idup;
+
+				parameters[parameterIndex].name = parameterName[0..nameLength].idup;
 			}
-			
-			return variables;
+
+			return parameters;
 		}
 		else
 		{
@@ -91,18 +93,30 @@ Program program(Range)(Range shaders)
 	static void GetActiveAttrib_Impl(T...)(T args) { gl.GetActiveAttrib(args); }
 	static void GetActiveUniform_Impl(T...)(T args) { gl.GetActiveUniform(args); }
 	
-	program.attributes = getShaderVariables!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)(program);
-	program.uniforms = getShaderVariables!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)(program);
+	program.attributes = getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)(program);
+	program.uniforms = getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)(program);
+	program.uniformSetters	= new UniformSetter[]	(program.uniforms.length);
+	program.uniformValues	= program.createUniforms;
+
+	import std.range : zip;
+	foreach(const parameter, ref setter, ref value;
+	        zip(program.uniforms, program.uniformSetters, program.uniformValues))
+	{
+		setter = uniformSetter[parameter.type];
+		value.value = defaultUniformValue[parameter.type];
+	}
 	
 	return program;
 }
 
 private struct Program_Impl
 {
-	private GLuint handle;
-	private Array!ShaderModule shaders;
-	GLVariable[] attributes;
-	GLVariable[] uniforms;
+	private GLuint				handle;
+	private Array!ShaderModule	shaders;
+	ShaderParameter[]			attributes;
+	ShaderParameter[]			uniforms;
+	UniformSetter[]				uniformSetters;
+	Uniform[]					uniformValues;
 	
 	@disable this(this);
 	
@@ -110,6 +124,14 @@ private struct Program_Impl
 	{
 		gl.DeleteProgram(handle);
 		debug writeln("Deleted Shader Program ", handle);
+	}
+
+	/// Create an array of Uniforms for use with this Program
+	Uniform[] createUniforms()
+	{
+		import std.algorithm : map;
+		import std.array : array;
+		return uniforms.map!Uniform.array;
 	}
 }
 
