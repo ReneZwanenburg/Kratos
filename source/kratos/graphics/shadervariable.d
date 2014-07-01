@@ -13,7 +13,7 @@ struct ShaderParameter
 {
 	GLint	size; // Size in 'type' units, not byte size
 	GLenum	type;
-	string	name; // D-like string. No null terminator.
+	string	name;
 	
 	@property GLsizei byteSize() const pure nothrow
 	{
