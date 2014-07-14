@@ -145,29 +145,9 @@ ShaderModule shader(ShaderModule.Type type, const(GLchar)[] shaderSource)
 	shader.handle = gl.CreateShader(type);
 	
 	debug writeln("Created ", type, " Shader ", shader.handle);
-	
-	const srcPtr = shaderSource.ptr;
-	const srcLength = shaderSource.length.to!int;
-	gl.ShaderSource(shader.handle, 1, &srcPtr, &srcLength);
-	
-	gl.CompileShader(shader.handle);
-	
-	GLint compileStatus;
-	gl.GetShaderiv(shader.handle, GL_COMPILE_STATUS, &compileStatus);
-	if(!compileStatus)
-	{
-		GLint logLength;
-		gl.GetShaderiv(shader.handle, GL_INFO_LOG_LENGTH, &logLength);
-		assert(logLength > 0);
-		
-		auto log = new GLchar[](logLength);
-		gl.GetShaderInfoLog(shader.handle, log.length, null, log.ptr);
-		
-		writeln("Error compiling ", type, " Shader ", shader.handle, ":");
-		writeln(log);
-		
-		assert(false);
-	}
+
+	shader.source = shaderSource;
+	shader.compile();
 	
 	return shader;
 }
@@ -183,6 +163,7 @@ private struct ShaderModule_Impl
 	
 	private GLuint	handle;
 	private Type	type;
+	private bool	compiled;
 	
 	@disable this(this);
 	
@@ -190,6 +171,41 @@ private struct ShaderModule_Impl
 	{
 		gl.DeleteShader(handle);
 		debug writeln("Deleted ", type, " Shader ", handle);
+	}
+
+	@property void source(const(GLchar)[] source)
+	{
+		const srcPtr = source.ptr;
+		const srcLength = source.length.to!GLint;
+		gl.ShaderSource(handle, 1, &srcPtr, &srcLength);
+		compiled = false;
+	}
+
+	void compile()
+	{
+		if(compiled) return;
+
+		GLint compileStatus;
+		gl.GetShaderiv(handle, GL_COMPILE_STATUS, &compileStatus);
+
+		if(!compileStatus)
+		{
+			GLint logLength;
+			gl.GetShaderiv(handle, GL_INFO_LOG_LENGTH, &logLength);
+			assert(logLength > 0);
+			
+			auto log = new GLchar[](logLength);
+			gl.GetShaderInfoLog(handle, log.length, null, log.ptr);
+			
+			writeln("Error compiling ", type, " Shader ", handle, ":");
+			writeln(log);
+			
+			assert(false);
+		}
+		else
+		{
+			compiled = true;
+		}
 	}
 }
 
