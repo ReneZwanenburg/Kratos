@@ -26,85 +26,7 @@ Program program(Range)(Range shaders)
 		gl.AttachShader(program.handle, shader.handle);
 	}
 	
-	gl.LinkProgram(program.handle);
-	GLint linkResult;
-	gl.GetProgramiv(program.handle, GL_LINK_STATUS, &linkResult);
-	
-	if(!linkResult)
-	{
-		GLint logLength;
-		gl.GetProgramiv(program.handle, GL_INFO_LOG_LENGTH, &logLength);
-		assert(logLength > 0);
-		
-		auto log = new GLchar[](logLength);
-		gl.GetProgramInfoLog(program.handle, log.length, null, log.ptr);
-		writeln(log);
-		
-		assert(false);
-	}
-
-	static ShaderParameter[] getShaderParameters
-		(
-			GLenum ParameterCountGetter, 
-			GLenum ParameterNameLengthGetter,
-			alias ParameterGetter
-		)
-		(
-			ref Program program
-		)
-	{
-		GLint numParameters;
-		gl.GetProgramiv(program.handle, ParameterCountGetter, &numParameters);
-		
-		if(numParameters > 0)
-		{
-			GLint maxNameLength;
-			gl.GetProgramiv(program.handle, ParameterNameLengthGetter, &maxNameLength);
-			assert(maxNameLength > 0, "Shader Parameter declared without name. Please verify the universe is in a consistent state.");
-			
-			auto parameters = new ShaderParameter[](numParameters);
-			auto parameterName = new GLchar[](maxNameLength);
-			
-			foreach(parameterIndex; 0..numParameters)
-			{
-				GLsizei nameLength;
-				ParameterGetter(
-					program.handle,
-					parameterIndex,
-					parameterName.length,
-					&nameLength,
-					&parameters[parameterIndex].size,
-					&parameters[parameterIndex].type,
-					parameterName.ptr
-				);
-
-				parameters[parameterIndex].name = parameterName[0..nameLength].idup;
-			}
-
-			return parameters;
-		}
-		else
-		{
-			return null;
-		}
-	}
-	
-	// Workaround for forward reference error
-	static void GetActiveAttrib_Impl(T...)(T args) { gl.GetActiveAttrib(args); }
-	static void GetActiveUniform_Impl(T...)(T args) { gl.GetActiveUniform(args); }
-	
-	program.attributes = getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)(program);
-	program.uniforms = getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)(program);
-	program.uniformSetters	= new UniformSetter[]	(program.uniforms.length);
-	program.uniformValues	= program.createUniforms;
-
-	import std.range : zip;
-	foreach(const parameter, ref setter, ref value;
-	        zip(program.uniforms, program.uniformSetters, program.uniformValues))
-	{
-		setter = uniformSetter[parameter.type];
-		value.value = defaultUniformValue[parameter.type];
-	}
+	program.link();
 	
 	return program;
 }
@@ -117,6 +39,7 @@ private struct Program_Impl
 	ShaderParameter[]			uniforms;
 	UniformSetter[]				uniformSetters;
 	Uniform[]					uniformValues;
+	bool						linked;
 	
 	@disable this(this);
 	
@@ -132,6 +55,93 @@ private struct Program_Impl
 		import std.algorithm : map;
 		import std.array : array;
 		return uniforms.map!Uniform.array;
+	}
+
+	void link()
+	{
+		if(linked) return;
+
+		gl.LinkProgram(handle);
+		GLint linkResult;
+		gl.GetProgramiv(handle, GL_LINK_STATUS, &linkResult);
+		
+		if(!linkResult)
+		{
+			GLint logLength;
+			gl.GetProgramiv(handle, GL_INFO_LOG_LENGTH, &logLength);
+			assert(logLength > 0);
+			
+			auto log = new GLchar[](logLength);
+			gl.GetProgramInfoLog(handle, log.length, null, log.ptr);
+			writeln(log);
+			
+			assert(false);
+		}
+		else
+		{
+			linked = true;
+		}
+
+
+		// Workaround for forward reference error
+		static void GetActiveAttrib_Impl(T...)(T args) { gl.GetActiveAttrib(args); }
+		static void GetActiveUniform_Impl(T...)(T args) { gl.GetActiveUniform(args); }
+
+		attributes		= getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)();
+		uniforms		= getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)();
+		uniformSetters	= new UniformSetter[]	(uniforms.length);
+		uniformValues	= createUniforms();
+		
+		import std.range : zip;
+		foreach(const parameter, ref setter, ref value;
+		        zip(uniforms, uniformSetters, uniformValues))
+		{
+			setter = uniformSetter[parameter.type];
+			value.value = defaultUniformValue[parameter.type];
+		}
+	}
+
+	private ShaderParameter[] getShaderParameters
+		(
+			GLenum ParameterCountGetter, 
+			GLenum ParameterNameLengthGetter,
+			alias ParameterGetter
+		)()
+	{
+		GLint numParameters;
+		gl.GetProgramiv(handle, ParameterCountGetter, &numParameters);
+		
+		if(numParameters > 0)
+		{
+			GLint maxNameLength;
+			gl.GetProgramiv(handle, ParameterNameLengthGetter, &maxNameLength);
+			assert(maxNameLength > 0, "Shader Parameter declared without name. Please verify the universe is in a consistent state.");
+			
+			auto parameters = new ShaderParameter[](numParameters);
+			auto parameterName = new GLchar[](maxNameLength);
+			
+			foreach(parameterIndex; 0..numParameters)
+			{
+				GLsizei nameLength;
+				ParameterGetter(
+					handle,
+					parameterIndex,
+					parameterName.length,
+					&nameLength,
+					&parameters[parameterIndex].size,
+					&parameters[parameterIndex].type,
+					parameterName.ptr
+				);
+				
+				parameters[parameterIndex].name = parameterName[0..nameLength].idup;
+			}
+			
+			return parameters;
+		}
+		else
+		{
+			return null;
+		}
 	}
 }
 
@@ -184,6 +194,8 @@ private struct ShaderModule_Impl
 	void compile()
 	{
 		if(compiled) return;
+
+		gl.CompileShader(handle);
 
 		GLint compileStatus;
 		gl.GetShaderiv(handle, GL_COMPILE_STATUS, &compileStatus);
