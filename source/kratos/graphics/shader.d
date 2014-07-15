@@ -148,7 +148,7 @@ private struct Program_Impl
 
 alias ShaderModule = Handle!ShaderModule_Impl;
 
-ShaderModule shader(ShaderModule.Type type, const(GLchar)[] shaderSource)
+ShaderModule shaderModule(ShaderModule.Type type, const(GLchar)[] shaderSource)
 {
 	auto shader = initialized!ShaderModule;
 	shader.type = type;
