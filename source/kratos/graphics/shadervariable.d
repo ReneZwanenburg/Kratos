@@ -134,9 +134,7 @@ static this()
 		}
 		else static if(is(T == Vector!(float, P), P...))
 		{
-			T vector;
-			vector.clear(0);
-			//defaultUniformValue[type] = UniformValue(vector); // TODO figure out how to put a friggin vector in a Variant
+			defaultUniformValue[type] = UniformValue(T(0));
 		}
 		else static if(is(T == Matrix!(float, P), P...))
 		{
