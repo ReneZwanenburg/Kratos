@@ -4,11 +4,11 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
 
-import std.algorithm : copy;
+import std.algorithm : copy, find;
 import std.container : Array;
 import std.conv : to;
 import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting for std.log
-import std.range : isInputRange;
+import std.range : isInputRange, take;
 
 
 alias Program = Handle!Program_Impl;
@@ -20,10 +20,11 @@ Program program(Range)(Range shaders)
 	program.handle = gl.CreateProgram();
 	debug writeln("Created Shader Program ", program.handle);
 	shaders.copy(program.shaders.backInserter);
-	
+
 	foreach(shader; shaders)
 	{
 		gl.AttachShader(program.handle, shader.handle);
+		shader.compileCallbacks.insertBack(&program.invalidate);
 	}
 	
 	program.link();
@@ -45,6 +46,11 @@ private struct Program_Impl
 	
 	~this()
 	{
+		foreach(shader; shaders)
+		{
+			shader.compileCallbacks.linearRemove(shader.compileCallbacks[].find(&invalidate).take(1));
+		}
+
 		gl.DeleteProgram(handle);
 		debug writeln("Deleted Shader Program ", handle);
 	}
@@ -99,6 +105,11 @@ private struct Program_Impl
 			setter = uniformSetter[parameter.type];
 			value.value = defaultUniformValue[parameter.type];
 		}
+	}
+
+	private void invalidate()
+	{
+		linked = false;
 	}
 
 	private ShaderParameter[] getShaderParameters
@@ -171,9 +182,11 @@ private struct ShaderModule_Impl
 		Fragment	= GL_FRAGMENT_SHADER
 	}
 	
-	private GLuint	handle;
-	private Type	type;
-	private bool	compiled;
+	private GLuint			handle;
+	private Type			type;
+	// Used to mark programs as dirty. Use delegates because of lack of weak references to RefCounted
+	Array!(void delegate())	compileCallbacks;
+	private bool			compiled;
 	
 	@disable this(this);
 	
@@ -217,6 +230,7 @@ private struct ShaderModule_Impl
 		else
 		{
 			compiled = true;
+			foreach(callback; compileCallbacks) callback();
 		}
 	}
 }
