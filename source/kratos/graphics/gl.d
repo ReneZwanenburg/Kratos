@@ -162,3 +162,14 @@ debug
 		}
 	}
 }
+
+
+shared static this()
+{
+	DerelictGL3.load();
+}
+
+shared static ~this()
+{
+	DerelictGL3.unload();
+}
