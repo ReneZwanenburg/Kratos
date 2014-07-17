@@ -1,20 +1,19 @@
 module kratos.resource.cache;
 
 import std.container : Array;
-import std.typecons : RefCounted, RefCountedAutoInitialize;
+import kratos.resource.resource;
 
 template Cache(T, I)
+//if(is(T == Handle!R, R)) //TODO re-enable contraint. DMD bug, fixed in 2.066
 {
-	alias ResourceType = T;
 	alias Identifier = I;
-	alias Handle = RefCounted!(ResourceType, RefCountedAutoInitialize.no);
 
 	private struct Element
 	{
 		// Identifier strings will most likely have long equal prefixes. Use hash as fast initial test.
 		size_t hash;
 		Identifier id;
-		Handle resource;
+		T resource;
 	}
 
 	// TODO use hash map. Builtins are buggy, dcollections HashMap doesn't provide deterministic destruction.
@@ -43,7 +42,7 @@ template Cache(T, I)
 
 	alias opIndex = get;
 
-	Handle get(Identifier id)
+	T get(Identifier id)
 	{
 		const idx = id.index;
 		if(idx == -1) assert(0);
@@ -51,7 +50,7 @@ template Cache(T, I)
 		return resources[idx].resource;
 	}
 
-	Handle put(Identifier id, Handle resource)
+	T put(Identifier id, T resource)
 	{
 		assert(id.index == -1);
 
@@ -78,20 +77,21 @@ template Cache(T, I)
 
 unittest
 {
-	static struct S
+	static struct _S
 	{
 		static size_t counter;
+
+		@disable this(this);
 
 		~this()
 		{
 			--counter;
 		}
-
-		static opCall()
-		{
-			++counter;
-			return S.init;
-		}
+	}
+	alias S = Handle!_S;
+	static S s() {
+		++S.counter;
+		return initialized!S();
 	}
 
 	alias SCache = Cache!(S, int);
@@ -99,9 +99,9 @@ unittest
 	assert(S.counter == 0);
 
 	{
-		auto s = SCache.put(0, SCache.Handle());
+		auto s1 = SCache.put(0, s());
 		assert(S.counter == 1);
-		SCache.put(1, SCache.Handle());
+		SCache.put(1, s());
 		assert(S.counter == 2);
 		SCache.purge();
 		assert(S.counter == 1);

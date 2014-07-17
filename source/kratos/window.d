@@ -3,6 +3,8 @@
 import derelict.glfw3.glfw3;
 import std.exception : enforce, assumeWontThrow;
 
+enum WindowProperties unittestWindowProperties = { visible: false, debugContext: true };
+
 struct WindowProperties
 {
 	int		width			= 800;

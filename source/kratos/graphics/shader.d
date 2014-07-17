@@ -10,7 +10,6 @@ import std.conv : to;
 import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting for std.log
 import std.range : isInputRange, take;
 
-
 alias Program = Handle!Program_Impl;
 
 Program program(Range)(Range shaders)
@@ -40,6 +39,7 @@ private struct Program_Impl
 	ShaderParameter[]			uniforms;
 	UniformSetter[]				uniformSetters;
 	Uniform[]					uniformValues;
+	const(GLchar)[]				errorLog;
 	bool						linked;
 	
 	@disable this(this);
@@ -80,11 +80,12 @@ private struct Program_Impl
 			auto log = new GLchar[](logLength);
 			gl.GetProgramInfoLog(handle, log.length, null, log.ptr);
 			writeln(log);
-			
-			assert(false);
+
+			this.errorLog = log;
 		}
 		else
 		{
+			this.errorLog = null;
 			linked = true;
 		}
 
@@ -105,6 +106,11 @@ private struct Program_Impl
 			setter = uniformSetter[parameter.type];
 			value.value = defaultUniformValue[parameter.type];
 		}
+	}
+
+	@property bool hasErrors() const
+	{
+		return !!errorLog.length;
 	}
 
 	private void invalidate()
@@ -156,6 +162,42 @@ private struct Program_Impl
 	}
 }
 
+unittest
+{
+	import kratos.window;
+	auto window = Window(unittestWindowProperties);
+
+	auto vertexShader = shaderModule(
+		ShaderModule.Type.Vertex,
+		"in vec3 position; in float w; uniform vec3 offset; void main(){gl_Position = vec4(position + offset, w);}"
+	);
+	auto fragmentShader = shaderModule(
+		ShaderModule.Type.Fragment,
+		"uniform vec4 color; void main(){gl_FragData[0] = color;}"
+	);
+
+	import std.range;
+	import std.algorithm;
+	auto prog = program(only(vertexShader, fragmentShader));
+
+	auto expectedAttributes = only(ShaderParameter(1, GL_FLOAT_VEC3, "position"), ShaderParameter(1, GL_FLOAT, "w"));
+	auto expectedUniforms = [ShaderParameter(1, GL_FLOAT_VEC3, "offset"), ShaderParameter(1, GL_FLOAT_VEC4, "color")].sort!((a, b) => cmp(a.name, b.name)>0);
+
+	assert(!prog.hasErrors);
+	assert(prog.linked);
+	assert(prog.shaders[].equal(only(vertexShader, fragmentShader)));
+	assert(prog.attributes.equal(expectedAttributes));
+	assert(prog.uniforms.dup.sort!((a, b) => cmp(a.name, b.name)>0).equal(expectedUniforms));
+
+
+	vertexShader.source = "in vec3 position; void main(){gl_Position = vec4(position, 1);}";
+	vertexShader.compile();
+	assert(!prog.linked);
+	prog.link();
+	assert(prog.linked);
+	assert(prog.attributes.equal(only(ShaderParameter(1, GL_FLOAT_VEC3, "position"))));
+}
+
 
 alias ShaderModule = Handle!ShaderModule_Impl;
 
@@ -186,6 +228,7 @@ private struct ShaderModule_Impl
 	private Type			type;
 	// Used to mark programs as dirty. Use delegates because of lack of weak references to RefCounted
 	Array!(void delegate())	compileCallbacks;
+	private const(GLchar)[]	errorLog;
 	private bool			compiled;
 	
 	@disable this(this);
@@ -202,6 +245,11 @@ private struct ShaderModule_Impl
 		const srcLength = source.length.to!GLint;
 		gl.ShaderSource(handle, 1, &srcPtr, &srcLength);
 		compiled = false;
+	}
+
+	@property bool hasErrors() const
+	{
+		return !!errorLog.length;
 	}
 
 	void compile()
@@ -224,15 +272,32 @@ private struct ShaderModule_Impl
 			
 			writeln("Error compiling ", type, " Shader ", handle, ":");
 			writeln(log);
-			
-			assert(false);
+
+			this.errorLog = log;
 		}
 		else
 		{
 			compiled = true;
+			errorLog = null;
 			foreach(callback; compileCallbacks) callback();
 		}
 	}
+}
+
+unittest
+{
+	import kratos.window;
+	auto window = Window(unittestWindowProperties);
+
+	auto shader = shaderModule(ShaderModule.Type.Vertex, "void main(){}");
+	assert(shader.compiled);
+	shader.source = "void main";
+	assert(!shader.compiled);
+	shader.compile();
+	assert(!shader.compiled);
+	assert(shader.hasErrors);
+	assert(shader.errorLog.length);
+
 }
 
 
