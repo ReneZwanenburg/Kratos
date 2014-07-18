@@ -10,7 +10,14 @@ private struct Mesh_Impl
 {
 	@disable this(this);
 
-	IBO ibo;
-	VBO vbo;
-	ShaderParameter[] vertexAttributes;
+	@property
+	{
+		auto ibo() const { return _ibo; }
+		auto vbo() const { return _vbo; }
+	}
+
+
+	private			IBO					_ibo;
+	private			VBO					_vbo;
+	public const	ShaderParameter[]	vertexAttributes;
 }

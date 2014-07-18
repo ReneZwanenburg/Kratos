@@ -27,14 +27,14 @@ private struct BO_Impl(GLenum Target)
 	private GLuint handle;
 	
 	@disable this(this);
-	
+
 	~this()
 	{
 		gl.DeleteBuffers(1, &handle);
 		debug writeln("Deleted Buffer Object ", handle);
 	}
 	
-	void bind()
+	void bind() const nothrow
 	{
 		gl.BindBuffer(Target, handle);
 	}

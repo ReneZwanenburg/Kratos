@@ -31,8 +31,8 @@ package alias UniformValue = Algebraic!ShaderParameterTypes;
 
 struct Uniform
 {
-	ShaderParameter	parameter;
-	UniformValue	value;
+	const	ShaderParameter	parameter;
+	private	UniformValue	value;
 
 	@disable this();
 
