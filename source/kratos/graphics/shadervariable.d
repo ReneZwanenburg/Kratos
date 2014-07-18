@@ -39,6 +39,7 @@ struct Uniform
 	this(ShaderParameter parameter)
 	{
 		this.parameter = parameter;
+		this.value = defaultUniformValue[parameter.type];
 	}
 
 	ref auto opAssign(T)(auto ref T value)
@@ -121,7 +122,7 @@ static this()
 }
 
 
-package UniformValue[GLenum] defaultUniformValue;
+private UniformValue[GLenum] defaultUniformValue;
 static this()
 {
 	foreach(T; ShaderParameterTypes)

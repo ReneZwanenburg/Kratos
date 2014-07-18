@@ -4,7 +4,8 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
 
-import std.algorithm : copy, find;
+import std.algorithm : copy, find, map;
+import std.array : array;
 import std.container : Array;
 import std.conv : to;
 import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting for std.log
@@ -96,16 +97,8 @@ private struct Program_Impl
 
 		attributes		= getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)();
 		uniforms		= getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)();
-		uniformSetters	= new UniformSetter[]	(uniforms.length);
+		uniformSetters	= uniforms.map!(a => uniformSetter[a.type]).array;
 		uniformValues	= createUniforms();
-		
-		import std.range : zip;
-		foreach(const parameter, ref setter, ref value;
-		        zip(uniforms, uniformSetters, uniformValues))
-		{
-			setter = uniformSetter[parameter.type];
-			value.value = defaultUniformValue[parameter.type];
-		}
 	}
 
 	@property bool hasErrors() const
