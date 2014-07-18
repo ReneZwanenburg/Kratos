@@ -20,7 +20,6 @@ final abstract class gl
 		//alias func = mixin("gl"~functionName); // Doesn't work, probably DMD bug
 		mixin("alias func = gl" ~ functionName ~ ";");
 
-
 		debug scope(success)
 		{
 			import std.exception : assumeWontThrow;
