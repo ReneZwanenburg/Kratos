@@ -4,6 +4,7 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 
 import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting for std.log
+import std.container : Array;
 
 
 alias VBO = BO!GL_ARRAY_BUFFER;
@@ -14,11 +15,17 @@ alias ibo = bo!GL_ELEMENT_ARRAY_BUFFER;
 
 private alias BO(GLenum Target) = Handle!(BO_Impl!Target);
 
-private BO!Target bo(GLenum Target)()
+private BO!Target bo(GLenum Target)(void[] data, bool dynamic = false)
 {
+	assert(!dynamic, "Dynamic Buffer Objects not yet supported");
+
 	auto bo = initialized!(BO!Target);
 	gl.GenBuffers(1, &bo.handle);
 	debug writeln("Created Buffer Object ", bo.handle);
+
+	bo.bind();
+	gl.BufferData(Target, data.length, data.ptr, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+
 	return bo;
 }
 

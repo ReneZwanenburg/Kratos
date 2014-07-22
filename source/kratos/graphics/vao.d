@@ -51,14 +51,14 @@ private struct VAO_Impl
 	private GLuint handle;
 	
 	@disable this(this);
-	
+
 	~this()
 	{
 		gl.DeleteVertexArrays(1, &handle);
 		debug writeln("Deleted Vertex Array Object ", handle);
 	}
 	
-	void bind()
+	void bind() const
 	{
 		gl.BindVertexArray(handle);
 	}
