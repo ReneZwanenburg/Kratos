@@ -16,6 +16,8 @@ private struct Mesh_Impl
 {
 	this(IBO ibo, VBO vbo, const ShaderParameter[] vertexAttributes)
 	{
+		assert(vbo.byteLength % vertexAttributes.totalByteSize == 0);
+
 		_ibo = ibo;
 		_vbo = vbo;
 		this.vertexAttributes = vertexAttributes;

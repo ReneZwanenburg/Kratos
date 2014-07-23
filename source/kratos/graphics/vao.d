@@ -12,7 +12,7 @@ import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting
 
 alias VAO = Handle!VAO_Impl;
 
-VAO vao(Mesh mesh, Program program)
+VAO vao(const Mesh mesh, const Program program)
 {
 	auto vao = initialized!VAO;
 	gl.GenVertexArrays(1, &vao.handle);
@@ -35,8 +35,8 @@ VAO vao(Mesh mesh, Program program)
 		gl.EnableVertexAttribArray(programIndex);
 		gl.VertexAttribPointer(
 			programIndex,
-			vboVariable.size,
-			vboVariable.type,
+			vboVariable.backingTypeSize,
+			vboVariable.backingType,
 			false,
 			stride,
 			cast(GLvoid*)mesh.vertexAttributes[0..vboIndex].totalByteSize

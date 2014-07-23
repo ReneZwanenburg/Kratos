@@ -15,11 +15,11 @@ alias ibo = bo!GL_ELEMENT_ARRAY_BUFFER;
 
 private alias BO(GLenum Target) = Handle!(BO_Impl!Target);
 
-private BO!Target bo(GLenum Target)(void[] data, bool dynamic = false)
+BO!Target bo(GLenum Target)(void[] data, bool dynamic = false)
 {
 	assert(!dynamic, "Dynamic Buffer Objects not yet supported");
 
-	auto bo = initialized!(BO!Target);
+	auto bo = BO!Target(data.length);
 	gl.GenBuffers(1, &bo.handle);
 	debug writeln("Created Buffer Object ", bo.handle);
 
@@ -31,7 +31,8 @@ private BO!Target bo(GLenum Target)(void[] data, bool dynamic = false)
 
 private struct BO_Impl(GLenum Target)
 {
-	private GLuint handle;
+	const	size_t	byteLength;
+	private GLuint	handle;
 	
 	@disable this(this);
 

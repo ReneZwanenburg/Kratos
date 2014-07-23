@@ -11,6 +11,45 @@ import std.conv : to;
 import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting for std.log
 import std.range : isInputRange, take;
 
+
+struct Shader
+{
+	private	Program		_program;
+	private Uniform[]	_uniforms;
+
+	@disable this();
+
+	this(this)
+	{
+		_uniforms = _uniforms.dup;
+	}
+
+	this(Program program)
+	{
+		_program = program;
+		_uniforms = program.createUniforms();
+	}
+
+	//TODO: Testing code. Remove
+	void prepare()
+	{
+		_program.use();
+		_program.setUniforms(_uniforms);
+	}
+
+	@property const auto program()
+	{
+		return _program;
+	}
+
+	ref Uniform opIndex(string name)
+	{
+		import std.algorithm : find;
+		import std.array : front;
+		return _uniforms.find!q{a.parameter.name == b}(name).front;
+	}
+}
+
 alias Program = Handle!Program_Impl;
 
 Program program(Range)(Range shaders)
@@ -36,12 +75,13 @@ private struct Program_Impl
 {
 	private GLuint				handle;
 	private Array!ShaderModule	shaders;
-	ShaderParameter[]			attributes;
-	ShaderParameter[]			uniforms;
-	UniformSetter[]				uniformSetters;
-	Uniform[]					uniformValues;
-	const(GLchar)[]				errorLog;
-	bool						linked;
+	//TODO Use fixed size array to store attributes.
+	private	ShaderParameter[]	_attributes;
+	private	ShaderParameter[]	_uniforms;
+	private	UniformSetter[]		_uniformSetters;
+	private	Uniform[]			_uniformValues;
+	private	const(GLchar)[]		_errorLog;
+	private	bool				_linked;
 	
 	@disable this(this);
 	
@@ -61,12 +101,12 @@ private struct Program_Impl
 	{
 		import std.algorithm : map;
 		import std.array : array;
-		return uniforms.map!Uniform.array;
+		return _uniforms.map!Uniform.array;
 	}
 
 	void link()
 	{
-		if(linked) return;
+		if(_linked) return;
 
 		gl.LinkProgram(handle);
 		GLint linkResult;
@@ -82,12 +122,12 @@ private struct Program_Impl
 			gl.GetProgramInfoLog(handle, log.length, null, log.ptr);
 			writeln(log);
 
-			this.errorLog = log;
+			this._errorLog = log;
 		}
 		else
 		{
-			this.errorLog = null;
-			linked = true;
+			this._errorLog = null;
+			_linked = true;
 		}
 
 
@@ -95,20 +135,49 @@ private struct Program_Impl
 		static void GetActiveAttrib_Impl(T...)(T args) { gl.GetActiveAttrib(args); }
 		static void GetActiveUniform_Impl(T...)(T args) { gl.GetActiveUniform(args); }
 
-		attributes		= getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)();
-		uniforms		= getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)();
-		uniformSetters	= uniforms.map!(a => uniformSetter[a.type]).array;
-		uniformValues	= createUniforms();
+		_attributes		= getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)();
+		_uniforms		= getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)();
+		_uniformSetters	= _uniforms.map!(a => uniformSetter[a.type]).array;
+		_uniformValues	= createUniforms();
+
+		//TODO: Update Shaders using this Program
+	}
+
+	void use()
+	{
+		gl.UseProgram(handle);
 	}
 
 	@property bool hasErrors() const
 	{
-		return !!errorLog.length;
+		return !!_errorLog.length;
 	}
 
 	private void invalidate()
 	{
-		linked = false;
+		_linked = false;
+	}
+
+	private void setUniforms(const Uniform[] uniforms)
+	{
+		//TODO: Ensure this program is currently bound
+		import std.range : zip, iota;
+
+		foreach(i, ref currentVal, ref newVal; zip(_uniforms.length.iota, _uniformValues, uniforms))
+		{
+			if(currentVal !is newVal)
+			{
+				_uniformSetters[i](i, newVal);
+				currentVal = newVal;
+			}
+		}
+	}
+
+	@property const
+	{
+		auto attributes()	{ return _attributes; }
+		auto uniforms()		{ return _uniforms; }
+		auto errorLog()		{ return _errorLog; }
 	}
 
 	private ShaderParameter[] getShaderParameters

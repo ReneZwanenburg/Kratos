@@ -24,8 +24,7 @@ final class Entity
 		import std.algorithm : filter, map;
 		static if(derived)
 		{
-			//TODO: support finding derived components
-			static assert(false, "Not implemented yet");
+			return _components[].map!(a => cast(T)a).filter!(a => a !is null);
 		}
 		else
 		{
