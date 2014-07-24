@@ -8,8 +8,8 @@ import std.algorithm : copy, find, map;
 import std.array : array;
 import std.container : Array;
 import std.conv : to;
-import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting for std.log
 import std.range : isInputRange, take;
+import std.logger;
 
 
 struct Shader
@@ -26,6 +26,7 @@ struct Shader
 
 	this(Program program)
 	{
+		info("Creating Shader from Program ", program.handle); //TODO: Print Program name instead
 		_program = program;
 		_uniforms = program.createUniforms();
 	}
@@ -57,7 +58,7 @@ Program program(Range)(Range shaders)
 {
 	auto program = initialized!Program;
 	program.handle = gl.CreateProgram();
-	debug writeln("Created Shader Program ", program.handle);
+	info("Created Shader Program ", program.handle);
 	shaders.copy(program.shaders.backInserter);
 
 	foreach(shader; shaders)
@@ -93,7 +94,7 @@ private struct Program_Impl
 		}
 
 		gl.DeleteProgram(handle);
-		debug writeln("Deleted Shader Program ", handle);
+		info("Deleted Shader Program ", handle);
 	}
 
 	/// Create an array of Uniforms for use with this Program
@@ -108,6 +109,8 @@ private struct Program_Impl
 	{
 		if(_linked) return;
 
+		info("Linking Program ", handle);
+
 		gl.LinkProgram(handle);
 		GLint linkResult;
 		gl.GetProgramiv(handle, GL_LINK_STATUS, &linkResult);
@@ -120,16 +123,16 @@ private struct Program_Impl
 			
 			auto log = new GLchar[](logLength);
 			gl.GetProgramInfoLog(handle, log.length, null, log.ptr);
-			writeln(log);
-
 			this._errorLog = log;
-		}
-		else
-		{
-			this._errorLog = null;
-			_linked = true;
+
+			warningf("Linking Program %s failed:\n%s", handle, log);
+
+			return;
 		}
 
+		info("Linking Program ", handle, " successful");
+		this._errorLog = null;
+		_linked = true;
 
 		// Workaround for forward reference error
 		static void GetActiveAttrib_Impl(T...)(T args) { gl.GetActiveAttrib(args); }
@@ -140,11 +143,15 @@ private struct Program_Impl
 		_uniformSetters	= _uniforms.map!(a => uniformSetter[a.type]).array;
 		_uniformValues	= createUniforms();
 
+		trace("Program ", handle, " vertex attributes:\n", _attributes);
+		trace("Program ", handle, " uniforms:\n", _uniforms);
+
 		//TODO: Update Shaders using this Program
 	}
 
 	void use()
 	{
+		trace("Binding Program ", handle);
 		gl.UseProgram(handle);
 	}
 
@@ -155,6 +162,7 @@ private struct Program_Impl
 
 	private void invalidate()
 	{
+		trace("Invalidating Program ", handle);
 		_linked = false;
 	}
 
@@ -268,8 +276,8 @@ ShaderModule shaderModule(ShaderModule.Type type, const(GLchar)[] shaderSource)
 	auto shader = initialized!ShaderModule;
 	shader.type = type;
 	shader.handle = gl.CreateShader(type);
-	
-	debug writeln("Created ", type, " Shader ", shader.handle);
+
+	info("Created ", type, " Shader ", shader.handle);
 
 	shader.source = shaderSource;
 	shader.compile();
@@ -298,11 +306,12 @@ private struct ShaderModule_Impl
 	~this()
 	{
 		gl.DeleteShader(handle);
-		debug writeln("Deleted ", type, " Shader ", handle);
+		info("Deleted ", type, " Shader ", handle);
 	}
 
 	@property void source(const(GLchar)[] source)
 	{
+		info("Updating Shader ", handle, " source");
 		const srcPtr = source.ptr;
 		const srcLength = source.length.to!GLint;
 		gl.ShaderSource(handle, 1, &srcPtr, &srcLength);
@@ -318,6 +327,7 @@ private struct ShaderModule_Impl
 	{
 		if(compiled) return;
 
+		info("Compiling Shader ", handle);
 		gl.CompileShader(handle);
 
 		GLint compileStatus;
@@ -331,14 +341,13 @@ private struct ShaderModule_Impl
 			
 			auto log = new GLchar[](logLength);
 			gl.GetShaderInfoLog(handle, log.length, null, log.ptr);
-			
-			writeln("Error compiling ", type, " Shader ", handle, ":");
-			writeln(log);
-
 			this.errorLog = log;
+
+			warningf("Compiling Shader %s failed:\n%s", handle, log);
 		}
 		else
 		{
+			info("Compiling Shader ", handle, " successful");
 			compiled = true;
 			errorLog = null;
 			foreach(callback; compileCallbacks) callback();

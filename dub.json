@@ -35,6 +35,7 @@
 		"gl3n": { "version": "~master", "path": "../gl3n" },
 		"derelict-gl3": "~master",
 		"derelict-glfw3": "~master",
-		"derelict-assimp3": "~master"
+		"derelict-assimp3": "~master",
+		"logger": ">=0.2.0"
 	}
 }

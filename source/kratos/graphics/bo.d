@@ -3,7 +3,7 @@
 import kratos.resource.resource;
 import kratos.graphics.gl;
 
-import std.stdio : writeln; // TODO replace writeln with proper logging. Waiting for std.log
+import std.logger;
 import std.container : Array;
 
 
@@ -21,7 +21,7 @@ BO!Target bo(GLenum Target)(void[] data, bool dynamic = false)
 
 	auto bo = BO!Target(data.length);
 	gl.GenBuffers(1, &bo.handle);
-	debug writeln("Created Buffer Object ", bo.handle);
+	info("Created Buffer Object ", bo.handle);
 
 	bo.bind();
 	gl.BufferData(Target, data.length, data.ptr, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
@@ -39,11 +39,12 @@ private struct BO_Impl(GLenum Target)
 	~this()
 	{
 		gl.DeleteBuffers(1, &handle);
-		debug writeln("Deleted Buffer Object ", handle);
+		info("Deleted Buffer Object ", handle);
 	}
 	
-	void bind() const nothrow
+	void bind() const
 	{
+		trace("Binding Buffer Object ", handle);
 		gl.BindBuffer(Target, handle);
 	}
 }
