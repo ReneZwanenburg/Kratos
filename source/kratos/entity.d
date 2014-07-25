@@ -10,11 +10,10 @@ final class Entity
 
 	T addComponent(T)() if(is(T : Component))
 	{
-		//TODO: Don't use the GC
-		auto component = new T;
-		component.owner = this;
+		auto component = ComponentFactory!T.build(this);
+		component._owner = this;
 		_components.insertBack(component);
-		return _components;
+		return component;
 	}
 
 	alias AllowDerived = Flag!"AllowDerived";
@@ -31,9 +30,47 @@ final class Entity
 			return _components[].filter!(a => a.classinfo == typeid(T)).map!(a => cast(T)(cast(void*)a));
 		}
 	}
+
+	T getComponent(T, AllowDerived derived = AllowDerived.no)()
+	{
+		auto range = getComponents!(T, derived);
+		return range.empty ? null : range.front;
+	}
+
+	T getOrAddComponent(T, AllowDerived derived = AllowDerived.no)()
+	{
+		auto component = getComponent!(T, derived);
+		return component is null ? addComponent!T : component;
+	}
 }
 
 abstract class Component
 {
 	private Entity _owner;
+}
+
+// Used for Components depending on another Component on the same Entity
+struct dependency{};
+enum isDependency(T) = is(T == dependency);
+
+
+private template ComponentFactory(T) if(is(T : Component))
+{
+	T build(Entity owner)
+	{
+		//TODO: Don´t use GC
+		auto component = new T;
+
+		import std.traits;
+		foreach(i, FT; typeof(T.tupleof))
+		{
+			import std.typetuple;
+			static if(anySatisfy!(isDependency, __traits(getAttributes, T.tupleof[i])))
+			{
+				component.tupleof[i] = owner.getOrAddComponent!FT;
+			}
+		}
+
+		return component;
+	}
 }
