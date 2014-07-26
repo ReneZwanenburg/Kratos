@@ -16,8 +16,6 @@ final class Entity
 		return component;
 	}
 
-	alias AllowDerived = Flag!"AllowDerived";
-
 	auto getComponents(T, AllowDerived derived = AllowDerived.no)()
 	{
 		import std.algorithm : filter, map;
@@ -49,8 +47,13 @@ abstract class Component
 	private Entity _owner;
 }
 
+alias AllowDerived = Flag!"AllowDerived";
+
 // Used for Components depending on another Component on the same Entity
-struct dependency{};
+struct dependency
+{
+	AllowDerived allowDerived = AllowDerived.yes;
+};
 enum isDependency(T) = is(T == dependency);
 
 
@@ -61,12 +64,12 @@ private template ComponentFactory(T) if(is(T : Component))
 		//TODO: Don´t use GC
 		auto component = new T;
 
-		import std.traits;
 		foreach(i, FT; typeof(T.tupleof))
 		{
 			import std.typetuple;
 			static if(anySatisfy!(isDependency, __traits(getAttributes, T.tupleof[i])))
 			{
+				//TODO: Respect dependency allowDerived property
 				component.tupleof[i] = owner.getOrAddComponent!FT;
 			}
 		}
