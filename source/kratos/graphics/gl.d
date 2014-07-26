@@ -29,6 +29,18 @@ final abstract class gl
 
 		return func(args);
 	}
+
+	static auto setEnabled(GLenum target, bool enabled)
+	{
+		if(enabled)
+		{
+			gl.Enable(target);
+		}
+		else
+		{
+			gl.Disable(target);
+		}
+	}
 }
 
 private void checkGLError(alias func, Args...)(Args args)
