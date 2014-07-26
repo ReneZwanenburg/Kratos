@@ -33,9 +33,10 @@
 	"dependencies":
 	{
 		"gl3n": { "version": "~master", "path": "../gl3n" },
-		"derelict-gl3": "~master",
-		"derelict-glfw3": "~master",
-		"derelict-assimp3": "~master",
-		"logger": ">=0.2.0"
+		"derelict-gl3": "~>1.0",
+		"derelict-glfw3": "~>1.0",
+		"derelict-assimp3": "~>1.0",
+		"logger": "~>0.2",
+		"vibe-d": "~>0.7"
 	}
 }

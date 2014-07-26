@@ -12,8 +12,13 @@ final class MeshRenderer : Component
 	private Shader	_shader;
 	private VAO		_vao;
 
-	@dependency
+	@Dependency()
 	private Transform _transform;
+
+	this()
+	{
+		_shader = Shader.init;
+	}
 
 	this(Mesh mesh, Shader shader)
 	{

@@ -2,14 +2,22 @@
 
 import std.container : Array;
 import std.typecons : Flag;
+import std.logger;
 
 final class Entity
 {
-	public	string			name;
+	private	string			_name;
 	private	Array!Component	_components;
+
+	this(string name = null)
+	{
+		this.name = name;
+	}
 
 	T addComponent(T)() if(is(T : Component))
 	{
+		info("Adding ", T.stringof, " to ", name);
+
 		auto component = ComponentFactory!T.build(this);
 		component._owner = this;
 		_components.insertBack(component);
@@ -40,6 +48,19 @@ final class Entity
 		auto component = getComponent!(T, derived);
 		return component is null ? addComponent!T : component;
 	}
+
+	@property
+	{
+		string name() const
+		{
+			return _name.length ? _name : "Anonymous Entity";
+		}
+
+		void name(string name)
+		{
+			this._name = name;
+		}
+	}
 }
 
 abstract class Component
@@ -50,11 +71,11 @@ abstract class Component
 alias AllowDerived = Flag!"AllowDerived";
 
 // Used for Components depending on another Component on the same Entity
-struct dependency
+struct Dependency
 {
 	AllowDerived allowDerived = AllowDerived.yes;
 };
-enum isDependency(T) = is(T == dependency);
+enum isDependency(T) = is(T == Dependency);
 
 
 private template ComponentFactory(T) if(is(T : Component))
@@ -66,11 +87,12 @@ private template ComponentFactory(T) if(is(T : Component))
 
 		foreach(i, FT; typeof(T.tupleof))
 		{
-			import std.typetuple;
-			static if(anySatisfy!(isDependency, __traits(getAttributes, T.tupleof[i])))
+			import vibe.internal.meta.uda;
+			enum uda = findFirstUDA!(Dependency, T.tupleof[i]);
+			static if(uda.found)
 			{
-				//TODO: Respect dependency allowDerived property
-				component.tupleof[i] = owner.getOrAddComponent!FT;
+				trace("Resolving dependency ", T.stringof, ".", T.tupleof[i].stringof);
+				component.tupleof[i] = owner.getOrAddComponent!(FT, __traits(getAttributes, T.tupleof[i])[uda.index].allowDerived);
 			}
 		}
 
