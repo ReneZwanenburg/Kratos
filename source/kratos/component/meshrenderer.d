@@ -4,12 +4,16 @@ import kratos.entity;
 import kratos.graphics.mesh;
 import kratos.graphics.shader;
 import kratos.graphics.vao;
+import kratos.component.transform;
 
 final class MeshRenderer : Component
 {
 	private Mesh	_mesh;
 	private Shader	_shader;
 	private VAO		_vao;
+
+	@dependency
+	private Transform _transform;
 
 	this(Mesh mesh, Shader shader)
 	{
