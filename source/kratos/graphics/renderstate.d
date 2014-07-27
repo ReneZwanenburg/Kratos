@@ -8,6 +8,7 @@ struct RenderState
 	Cull		cull;
 	Blend		blend;
 	DepthTest	depthTest;
+	Stencil		stencil;
 
 	void apply() const
 	{
@@ -184,5 +185,78 @@ struct Cull
 		if(current.enabled != enabled)		gl.setEnabled(GL_CULL_FACE, enabled);
 
 		current = this;
+	}
+}
+
+
+enum StencilFunction : GLuint
+{
+	Never			= GL_NEVER,
+	Less			= GL_LESS,
+	LessOrEqual		= GL_LEQUAL,
+	Greater			= GL_GREATER,
+	GreaterOrEqual	= GL_GEQUAL,
+	Equal			= GL_EQUAL,
+	NotEqual		= GL_NOTEQUAL,
+	Always			= GL_ALWAYS
+}
+
+enum StencilOp : GLuint
+{
+	Keep			= GL_KEEP,
+	Zero			= GL_ZERO,
+	Replace			= GL_REPLACE,
+	Increment		= GL_INCR,
+	IncrementWrap	= GL_INCR_WRAP,
+	Decrement		= GL_DECR,
+	DecrementWrap	= GL_DECR_WRAP,
+	Invert			= GL_INVERT
+}
+
+struct Stencil
+{
+	StencilFunction	stencilFunction		= StencilFunction.Always;
+	StencilOp		stencilFail			= StencilOp.Keep;
+	StencilOp		depthFail			= StencilOp.Keep;
+	StencilOp		pass				= StencilOp.Keep;
+	GLint			reference			= 0;
+	GLuint			mask				= ~0;
+	bool			enabled				= false;
+
+	private static current = Stencil(
+		StencilFunction.Always,
+		StencilOp.Keep, StencilOp.Keep, StencilOp.Keep,
+		0, ~0, false
+	);
+
+	void apply() const
+	{
+		if(enabled)
+		{
+			if(
+				current.stencilFunction	!= stencilFunction	||
+				current.reference		!= reference		||
+				current.mask			!= mask
+			) gl.StencilFunc(stencilFunction, reference, mask);
+
+			if(
+				current.stencilFail	!= stencilFail	||
+				current.depthFail	!= depthFail	||
+				current.pass		!= pass
+			) gl.StencilOp(stencilFail, depthFail, pass);
+			
+			if(current.enabled != enabled)
+				gl.setEnabled(GL_STENCIL_TEST, enabled);
+
+			current = this;
+		}
+		else
+		{
+			if(current.enabled != enabled)
+			{
+				gl.setEnabled(GL_STENCIL_TEST, enabled);
+				current.enabled = enabled;
+			}
+		}
 	}
 }
