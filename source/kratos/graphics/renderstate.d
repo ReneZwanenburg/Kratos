@@ -270,9 +270,10 @@ struct Shader
 	import kratos.graphics.shadervariable;
 	import std.typecons;
 
-	private	Program		_program;
+	private	Program			_program;
 	//TODO: Perhaps store uniforms in fixed size array + fixed size backing array
-	private Uniform[]	_uniforms;
+	private Uniform[]		_uniforms;
+	private size_t[string]	_uniformMap;
 	
 	this(this)
 	{
@@ -285,6 +286,11 @@ struct Shader
 		info("Creating Shader from Program ", program.name);
 		_program = program;
 		_uniforms = program.createUniforms();
+
+		foreach(i, ref uniform; _uniforms)
+		{
+			_uniformMap[uniform.parameter.name] = i;
+		}
 	}
 
 	void apply()
@@ -304,9 +310,7 @@ struct Shader
 	
 	ref Uniform opIndex(string name)
 	{
-		import std.algorithm : find;
-		import std.array : front;
-		return _uniforms.find!q{a.parameter.name == b}(name).front;
+		return _uniforms[_uniformMap[name]];
 	}
 	
 	@property string name() const

@@ -51,11 +51,13 @@ void main(string[] args)
 		import std.math;
 		renderer.shader["scale"] = (sin(Time.total) + 1).to!float;
 
-		renderer.draw();
 
 		import kratos.graphics.gl;
-		window.swapBuffers();
 		gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		renderer.draw();
+
+		window.swapBuffers();
 		Time.update();
 	}
 }

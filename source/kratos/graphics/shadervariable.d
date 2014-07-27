@@ -71,17 +71,6 @@ struct Uniform
 		return this;
 	}
 
-	ref auto opAssign(ref Uniform uniform)
-	{
-		this.value = uniform.value;
-		return this;
-	}
-
-	ref auto opAssign(Uniform uniform)
-	{
-		return this = uniform;
-	}
-
 	ref auto opAssign(T)(auto ref T[] values)
 	{
 		static assert(false, "Uniform arrays not implemented yet");
@@ -92,6 +81,16 @@ struct Uniform
 		       ", provided array length = " ~ values.length.text);
 		// TODO store values
 		return this;
+	}
+
+	package @property ref const(UniformValue) valueStore() const
+	{
+		return value;
+	}
+
+	package @property void valueStore(ref const UniformValue value)
+	{
+		this.value = value;
 	}
 }
 

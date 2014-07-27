@@ -159,14 +159,12 @@ private struct Program_Impl
 	package void setUniforms(const Uniform[] uniforms)
 	{
 		//TODO: Ensure this program is currently bound
-		import std.range : zip, iota;
-
-		foreach(i, ref currentVal, ref newVal; zip(_uniforms.length.iota, _uniformValues, uniforms))
+		foreach(i, ref newVal; uniforms)
 		{
-			if(currentVal !is newVal)
+			if(_uniformValues[i].valueStore !is newVal.valueStore)
 			{
 				_uniformSetters[i](i, newVal);
-				currentVal = newVal;
+				_uniformValues[i].valueStore = newVal.valueStore;
 			}
 		}
 	}

@@ -17,6 +17,8 @@ final class MeshRenderer : Component
 	@Dependency()
 	private Transform _transform;
 
+	alias renderState this;
+
 	this()
 	{
 		this(emptyMesh, defaultShader);
