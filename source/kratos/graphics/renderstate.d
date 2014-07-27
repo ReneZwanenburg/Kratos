@@ -122,27 +122,36 @@ struct Blend
 
 	void apply()
 	{
-		//TODO: Don't update unnecessary settings
-
-		if(current.rgbEquation != rgbEquation || 
-		   current.alphaEquation != alphaEquation
-		)
+		if(enabled)
 		{
-			gl.BlendEquationSeparate(rgbEquation, alphaEquation);
-		}
+			if(current.rgbEquation != rgbEquation || 
+			   current.alphaEquation != alphaEquation
+			)
+			{
+				gl.BlendEquationSeparate(rgbEquation, alphaEquation);
+			}
 
-		if(current.srcRgbFunction != srcRgbFunction ||
-		   current.srcAlphaFunction != srcAlphaFunction ||
-		   current.dstRgbFunction != dstRgbFunction ||
-		   current.dstAlphaFunction != dstRgbFunction)
+			if(current.srcRgbFunction != srcRgbFunction ||
+			   current.srcAlphaFunction != srcAlphaFunction ||
+			   current.dstRgbFunction != dstRgbFunction ||
+			   current.dstAlphaFunction != dstRgbFunction)
+			{
+				gl.BlendFuncSeparate(srcRgbFunction, srcAlphaFunction, dstRgbFunction, dstAlphaFunction);
+			}
+
+			if(current.color != color) gl.BlendColor(color.r, color.g, color.b, color.a);
+			if(current.enabled != enabled) gl.setEnabled(GL_BLEND, enabled);
+
+			current = this;
+		}
+		else
 		{
-			gl.BlendFuncSeparate(srcRgbFunction, srcAlphaFunction, dstRgbFunction, dstAlphaFunction);
+			if(current.enabled != enabled)
+			{
+				gl.setEnabled(GL_BLEND, enabled);
+				current.enabled = enabled;
+			}
 		}
-
-		if(current.color != color) gl.BlendColor(color.r, color.g, color.b, color.a);
-		if(current.enabled != enabled) gl.setEnabled(GL_BLEND, enabled);
-
-		current = this;
 	}
 }
 
