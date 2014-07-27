@@ -17,12 +17,14 @@ private alias BO(GLenum Target) = Handle!(BO_Impl!Target);
 
 BO!Target bo(GLenum Target)(void[] data, bool dynamic = false)
 {
+	import kratos.graphics.vao;
 	assert(!dynamic, "Dynamic Buffer Objects not yet supported");
 
 	auto bo = BO!Target(data.length);
 	gl.GenBuffers(1, &bo.handle);
 	info("Created Buffer Object ", bo.handle);
 
+	VAO.unbind();
 	bo.bind();
 	gl.BufferData(Target, data.length, data.ptr, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
 

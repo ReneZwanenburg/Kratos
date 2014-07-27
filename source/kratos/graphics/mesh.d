@@ -12,6 +12,20 @@ Mesh mesh(IBO indices, VBO vertices, const ShaderParameter[] vertexAttributes)
 	return Mesh(indices, vertices, vertexAttributes);
 }
 
+Mesh emptyMesh()
+{
+	static Mesh emptyMesh;
+	static bool initialized = false;
+
+	if(!initialized)
+	{
+		import kratos.graphics.gl;
+		emptyMesh = mesh(ibo(null), vbo(null), [ShaderParameter(1, GL_FLOAT_VEC3, "position")]);
+		initialized = true;
+	}
+	return emptyMesh;
+}
+
 private struct Mesh_Impl
 {
 	this(IBO ibo, VBO vbo, const ShaderParameter[] vertexAttributes)

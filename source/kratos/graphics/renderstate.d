@@ -1,5 +1,6 @@
 ﻿module kratos.graphics.renderstate;
 
+import std.logger;
 import kratos.graphics.gl;
 import gl3n.linalg;
 
@@ -9,12 +10,13 @@ struct RenderState
 	Blend		blend;
 	DepthTest	depthTest;
 	Stencil		stencil;
+	Shader		shader; // Should be package(kratos)
 
-	void apply() const
+	void apply()
 	{
-		foreach(state; this.tupleof)
+		foreach(ref state; this.tupleof)
 		{
-			if(state !is typeof(state).current)
+			if(state != typeof(state).current)
 			{
 				state.apply();
 			}
@@ -258,5 +260,70 @@ struct Stencil
 				current.enabled = enabled;
 			}
 		}
+	}
+}
+
+
+struct Shader
+{
+	import kratos.graphics.shader;
+	import kratos.graphics.shadervariable;
+	import std.typecons;
+
+	private	Program		_program;
+	//TODO: Perhaps store uniforms in fixed size array + fixed size backing array
+	private Uniform[]	_uniforms;
+	
+	this(this)
+	{
+		trace("Duplicating Shader ", _program.name);
+		_uniforms = _uniforms.dup;
+	}
+	
+	this(Program program)
+	{
+		info("Creating Shader from Program ", program.name);
+		_program = program;
+		_uniforms = program.createUniforms();
+	}
+
+	void apply()
+	{
+		_program.use();
+		_program.setUniforms(_uniforms);
+
+		current.program = _program;
+		current.uniforms.clear();
+		current.uniforms.put(_uniforms);
+	}
+	
+	@property const auto program()
+	{
+		return _program;
+	}
+	
+	ref Uniform opIndex(string name)
+	{
+		import std.algorithm : find;
+		import std.array : front;
+		return _uniforms.find!q{a.parameter.name == b}(name).front;
+	}
+	
+	@property string name() const
+	{
+		return _program.name;
+	}
+
+	private static struct Current
+	{
+		import std.array;
+		private Program program;
+		private Appender!(Uniform[]) uniforms;
+	}
+	private static Current current;
+
+	bool opEquals(Current current)
+	{
+		return current.program is _program && current.uniforms.data == _uniforms;
 	}
 }

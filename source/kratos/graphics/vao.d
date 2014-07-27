@@ -58,10 +58,26 @@ private struct VAO_Impl
 		gl.DeleteVertexArrays(1, &handle);
 		info("Deleted Vertex Array Object ", handle);
 	}
-	
+
 	void bind() const
 	{
-		trace("Binding VAO ", handle);
-		gl.BindVertexArray(handle);
+		bind(handle);
+	}
+	
+	private static void bind(GLuint handle)
+	{
+		static GLuint current = 0;
+
+		if(current != handle)
+		{
+			trace("Binding VAO ", handle);
+			gl.BindVertexArray(handle);
+			current = handle;
+		}
+	}
+
+	package static void unbind()
+	{
+		bind(0);
 	}
 }

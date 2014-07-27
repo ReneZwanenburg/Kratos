@@ -12,53 +12,17 @@ import std.range : isInputRange, take;
 import std.logger;
 
 
-struct Shader
-{
-	private	Program		_program;
-	private Uniform[]	_uniforms;
-
-	@disable this();
-
-	this(this)
-	{
-		_uniforms = _uniforms.dup;
-	}
-
-	this(Program program)
-	{
-		info("Creating Shader from Program ", program.handle); //TODO: Print Program name instead
-		_program = program;
-		_uniforms = program.createUniforms();
-	}
-
-	//TODO: Testing code. Remove
-	void prepare()
-	{
-		_program.use();
-		_program.setUniforms(_uniforms);
-	}
-
-	@property const auto program()
-	{
-		return _program;
-	}
-
-	ref Uniform opIndex(string name)
-	{
-		import std.algorithm : find;
-		import std.array : front;
-		return _uniforms.find!q{a.parameter.name == b}(name).front;
-	}
-}
-
 alias Program = Handle!Program_Impl;
 
-Program program(Range)(Range shaders)
+Program program(Range)(Range shaders, string name = null)
 	//if(isInputRange!Range && is(ElementType!Range == ShaderModule)) // TODO re-enable contraint. DMD bug, fixed in 2.066
 {
-	auto program = initialized!Program;
-	program.handle = gl.CreateProgram();
-	info("Created Shader Program ", program.handle);
+	import std.conv : text;
+
+	auto program	= initialized!Program;
+	program.handle	= gl.CreateProgram();
+	program._name	= name ? name : program.handle.text;
+	info("Created Shader Program ", program.name);
 	shaders.copy(program.shaders.backInserter);
 
 	foreach(shader; shaders)
@@ -72,8 +36,28 @@ Program program(Range)(Range shaders)
 	return program;
 }
 
+Program errorProgram()
+{
+	import std.range : only;
+	static Program errorProgram;
+	static bool initialized = false;
+	if(!initialized)
+	{
+		auto vertexSource = "mat4 mvp; in vec3 position; void main() {gl_Position = mvp * vec4(position, 1); }";
+		auto fragmentSource = "void main() { gl_FragData[0] = vec4(1, 0, 1, 1); }";
+
+		errorProgram = program(
+			only(
+				shaderModule(ShaderModule.Type.Vertex, vertexSource, "Error Vertex Shader"),
+				shaderModule(ShaderModule.Type.Fragment, fragmentSource, "Error Fragment Shader")
+			), "Error Program");
+	}
+	return errorProgram;
+}
+
 private struct Program_Impl
 {
+	private	string				_name;
 	private GLuint				handle;
 	private Array!ShaderModule	shaders;
 	//TODO Use fixed size array to store attributes.
@@ -94,7 +78,7 @@ private struct Program_Impl
 		}
 
 		gl.DeleteProgram(handle);
-		info("Deleted Shader Program ", handle);
+		info("Deleted Shader Program ", name);
 	}
 
 	/// Create an array of Uniforms for use with this Program
@@ -109,7 +93,7 @@ private struct Program_Impl
 	{
 		if(_linked) return;
 
-		info("Linking Program ", handle);
+		info("Linking Program ", name);
 
 		gl.LinkProgram(handle);
 		GLint linkResult;
@@ -125,12 +109,12 @@ private struct Program_Impl
 			gl.GetProgramInfoLog(handle, log.length, null, log.ptr);
 			this._errorLog = log;
 
-			warningf("Linking Program %s failed:\n%s", handle, log);
+			warningf("Linking Program %s failed:\n%s", name, log);
 
 			return;
 		}
 
-		info("Linking Program ", handle, " successful");
+		info("Linking Program ", name, " successful");
 		this._errorLog = null;
 		_linked = true;
 
@@ -143,16 +127,22 @@ private struct Program_Impl
 		_uniformSetters	= _uniforms.map!(a => uniformSetter[a.type]).array;
 		_uniformValues	= createUniforms();
 
-		trace("Program ", handle, " vertex attributes:\n", _attributes);
-		trace("Program ", handle, " uniforms:\n", _uniforms);
+		trace("Program ", name, " vertex attributes:\n", _attributes);
+		trace("Program ", name, " uniforms:\n", _uniforms);
 
 		//TODO: Update Shaders using this Program
 	}
 
-	void use()
+	void use() const
 	{
-		trace("Binding Program ", handle);
-		gl.UseProgram(handle);
+		static GLuint current = 0;
+
+		if(current != handle)
+		{
+			trace("Binding Program ", name);
+			gl.UseProgram(handle);
+			current = handle;
+		}
 	}
 
 	@property bool hasErrors() const
@@ -162,11 +152,11 @@ private struct Program_Impl
 
 	private void invalidate()
 	{
-		trace("Invalidating Program ", handle);
+		info("Invalidating Program ", name);
 		_linked = false;
 	}
 
-	private void setUniforms(const Uniform[] uniforms)
+	package void setUniforms(const Uniform[] uniforms)
 	{
 		//TODO: Ensure this program is currently bound
 		import std.range : zip, iota;
@@ -230,6 +220,11 @@ private struct Program_Impl
 			return null;
 		}
 	}
+
+	@property string name() const
+	{
+		return _name;
+	}
 }
 
 unittest
@@ -251,7 +246,9 @@ unittest
 	auto prog = program(only(vertexShader, fragmentShader));
 
 	auto expectedAttributes = only(ShaderParameter(1, GL_FLOAT_VEC3, "position"), ShaderParameter(1, GL_FLOAT, "w"));
-	auto expectedUniforms = [ShaderParameter(1, GL_FLOAT_VEC3, "offset"), ShaderParameter(1, GL_FLOAT_VEC4, "color")].sort!((a, b) => cmp(a.name, b.name)>0);
+	auto expectedUniforms = 
+		[ShaderParameter(1, GL_FLOAT_VEC3, "offset"), ShaderParameter(1, GL_FLOAT_VEC4, "color")]
+		.sort!((a, b) => cmp(a.name, b.name)>0);
 
 	assert(!prog.hasErrors);
 	assert(prog.linked);
@@ -271,13 +268,16 @@ unittest
 
 alias ShaderModule = Handle!ShaderModule_Impl;
 
-ShaderModule shaderModule(ShaderModule.Type type, const(GLchar)[] shaderSource)
+ShaderModule shaderModule(ShaderModule.Type type, const(GLchar)[] shaderSource, string name = null)
 {
+	import std.conv : text;
+
 	auto shader = initialized!ShaderModule;
 	shader.type = type;
 	shader.handle = gl.CreateShader(type);
+	shader._name = name ? name : shader.handle.text;
 
-	info("Created ", type, " Shader ", shader.handle);
+	info("Created ", type, " Shader ", shader.name);
 
 	shader.source = shaderSource;
 	shader.compile();
@@ -293,7 +293,8 @@ private struct ShaderModule_Impl
 		Geometry	= GL_GEOMETRY_SHADER,
 		Fragment	= GL_FRAGMENT_SHADER
 	}
-	
+
+	private string			_name;
 	private GLuint			handle;
 	private Type			type;
 	// Used to mark programs as dirty. Use delegates because of lack of weak references to RefCounted
@@ -306,12 +307,12 @@ private struct ShaderModule_Impl
 	~this()
 	{
 		gl.DeleteShader(handle);
-		info("Deleted ", type, " Shader ", handle);
+		info("Deleted ", type, " Shader ", name);
 	}
 
 	@property void source(const(GLchar)[] source)
 	{
-		info("Updating Shader ", handle, " source");
+		info("Updating Shader ", name, " source");
 		const srcPtr = source.ptr;
 		const srcLength = source.length.to!GLint;
 		gl.ShaderSource(handle, 1, &srcPtr, &srcLength);
@@ -327,7 +328,7 @@ private struct ShaderModule_Impl
 	{
 		if(compiled) return;
 
-		info("Compiling Shader ", handle);
+		info("Compiling Shader ", name);
 		gl.CompileShader(handle);
 
 		GLint compileStatus;
@@ -343,15 +344,20 @@ private struct ShaderModule_Impl
 			gl.GetShaderInfoLog(handle, log.length, null, log.ptr);
 			this.errorLog = log;
 
-			warningf("Compiling Shader %s failed:\n%s", handle, log);
+			warningf("Compiling Shader %s failed:\n%s", name, log);
 		}
 		else
 		{
-			info("Compiling Shader ", handle, " successful");
+			info("Compiling Shader ", name, " successful");
 			compiled = true;
 			errorLog = null;
 			foreach(callback; compileCallbacks) callback();
 		}
+	}
+
+	@property string name() const
+	{
+		return _name;
 	}
 }
 

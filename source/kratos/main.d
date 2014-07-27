@@ -13,6 +13,7 @@ void main(string[] args)
 	import kratos.graphics.shader;
 	import gl3n.linalg;
 	import kratos.graphics.shadervariable;
+	import kratos.graphics.renderstate;
 	import kratos.graphics.gl;
 	import std.range;
 	import kratos.component.meshrenderer;
