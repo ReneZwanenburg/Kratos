@@ -9,7 +9,7 @@ struct RenderState
 	Blend		blend;
 	DepthTest	depthTest;
 
-	void apply()
+	void apply() const
 	{
 		foreach(state; this.tupleof)
 		{
@@ -41,7 +41,7 @@ struct DepthTest
 
 	private static current = DepthTest(DepthFunc.Less, false, true);
 
-	void apply()
+	void apply() const
 	{
 		if(current.func != func)	gl.DepthFunc(func);
 		if(current.read != read)	gl.setEnabled(GL_DEPTH_TEST, read);
@@ -120,7 +120,7 @@ struct Blend
 		BlendFunction.Zero, BlendFunction.Zero,
 		vec4(0), false);
 
-	void apply()
+	void apply() const
 	{
 		if(enabled)
 		{
@@ -177,11 +177,11 @@ struct Cull
 
 	private static current = Cull(FrontFace.CounterClockwise, CullFace.Back, false);
 
-	void apply()
+	void apply() const
 	{
-		if(current.frontFace != frontFace) gl.FrontFace(frontFace);
-		if(current.cullFace != cullFace) gl.CullFace(cullFace);
-		if(current.enabled != enabled) gl.setEnabled(GL_CULL_FACE, enabled);
+		if(current.frontFace != frontFace)	gl.FrontFace(frontFace);
+		if(current.cullFace != cullFace)	gl.CullFace(cullFace);
+		if(current.enabled != enabled)		gl.setEnabled(GL_CULL_FACE, enabled);
 
 		current = this;
 	}

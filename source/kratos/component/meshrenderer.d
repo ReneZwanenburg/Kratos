@@ -4,13 +4,16 @@ import kratos.entity;
 import kratos.graphics.mesh;
 import kratos.graphics.shader;
 import kratos.graphics.vao;
+import kratos.graphics.renderstate;
 import kratos.component.transform;
 
 final class MeshRenderer : Component
 {
-	private Mesh	_mesh;
-	private Shader	_shader;
-	private VAO		_vao;
+	private Mesh		_mesh;
+	//TODO: Make Shader part of RenderState
+	private RenderState	_renderState;
+	private Shader		_shader;
+	private VAO			_vao;
 
 	@Dependency()
 	private Transform _transform;
@@ -45,6 +48,16 @@ final class MeshRenderer : Component
 		{
 			return _shader;
 		}
+
+		ref RenderState renderState()
+		{
+			return _renderState;
+		}
+
+		void renderState(RenderState renderState)
+		{
+			this._renderState = renderState;
+		}
 	}
 
 	private void updateVao(Mesh mesh, Shader shader)
@@ -61,6 +74,7 @@ final class MeshRenderer : Component
 
 	void draw()
 	{
+		_renderState.apply();
 		_shader.prepare();
 		_vao.bind();
 		import kratos.graphics.gl;
