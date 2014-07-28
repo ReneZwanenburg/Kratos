@@ -42,10 +42,13 @@ template Cache(T, I)
 
 	alias opIndex = get;
 
-	T get(Identifier id)
+ 	T get(alias create)(Identifier id)
 	{
 		const idx = id.index;
-		if(idx == -1) assert(0);
+		if(idx == -1)
+		{
+			return put(id, create(id));
+		}
 
 		return resources[idx].resource;
 	}

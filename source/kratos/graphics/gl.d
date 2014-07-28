@@ -4,6 +4,7 @@ public
 {
 	import derelict.opengl3.constants;
 	import derelict.opengl3.types;
+	import derelict.opengl3.ext : GL_TEXTURE_MAX_ANISOTROPY_EXT;
 }
 
 import derelict.opengl3.gl3;
@@ -30,7 +31,7 @@ final abstract class gl
 		return func(args);
 	}
 
-	static auto setEnabled(GLenum target, bool enabled)
+	static void setEnabled(GLenum target, bool enabled)
 	{
 		if(enabled)
 		{
@@ -40,6 +41,20 @@ final abstract class gl
 		{
 			gl.Disable(target);
 		}
+	}
+
+	static GLuint genTexture()
+	{
+		GLuint handle;
+		gl.GenTextures(1, &handle);
+		return handle;
+	}
+
+	static GLuint genSampler()
+	{
+		GLuint handle;
+		gl.GenSamplers(1, &handle);
+		return handle;
 	}
 }
 
@@ -99,7 +114,8 @@ template GLType(T)
 	enum GLType = {
 		foreach(B; GLTypes)
 		{
-			static if(is(B.nativeType == T)) return B.glType;
+			import std.traits : Unqual;
+			static if(is(B.nativeType == Unqual!T)) return B.glType;
 		}
 		assert(false, "Not a valid OpenGL Type or Type not implemented");
 	}();

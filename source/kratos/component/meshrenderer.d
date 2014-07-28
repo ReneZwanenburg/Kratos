@@ -15,7 +15,7 @@ final class MeshRenderer : Component
 	private VAO			_vao;
 
 	@Dependency()
-	private Transform _transform;
+	Transform transform;
 
 	alias renderState this;
 
