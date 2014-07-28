@@ -98,7 +98,7 @@ Texture texture(TextureFormat format, vec2i resolution, void[] data, bool compre
 	assert(pixelSize[format] * resolution.x * resolution.y == data.length);
 
 	auto texture = Texture(gl.genTexture(), resolution, format, compressed);
-	TextureUnit.makeActiveScratch(texture);
+	ScratchTextureUnit.makeActiveScratch(texture);
 	gl.TexImage2D(
 		GL_TEXTURE_2D, 
 		0, 
@@ -150,47 +150,56 @@ static this()
 	}
 }
 
-public abstract final class TextureUnit
-{
-	static:
+private enum ScratchTextureUnit = TextureUnit(TextureUnit.Size-1);
 
-	private enum Size = 48;
-	private enum ScratchUnit = Size - 1;
-	private Texture[Size] units;
-	private Sampler[Size] samplers;
-	private size_t current = 0;
+struct TextureUnit
+{
+	const GLint index;
+
+	this(GLint index)
+	{
+		assert(0 <= index && index < Size);
+		this.index = index;
+	}
+
+	static
+	{
+		private enum Size = 48;
+		private Texture[Size] units;
+		private Sampler[Size] samplers;
+		private size_t current = 0;
+	}
 
 	private void makeActiveScratch(ref Texture texture)
 	{
 		// Ensure the scratch unit is active, or consecutive updates to
 		// the same texture may fail if another unit is activated in the mean time
-		setCurrentUnit(ScratchUnit);
-		set(ScratchUnit, texture, samplers[ScratchUnit]);
+		makeCurrent();
+		set(texture, samplers[index]);
 	}
 
-	void set(size_t unit, ref Texture texture, ref Sampler sampler)
+	void set(ref Texture texture, ref Sampler sampler)
 	{
-		if(units[unit] != texture)
+		if(units[index] != texture)
 		{
-			setCurrentUnit(unit);
+			makeCurrent();
 			gl.BindTexture(GL_TEXTURE_2D, texture.handle);
-			units[unit] = texture;
+			units[index] = texture;
 		}
 
-		if(samplers[unit] != sampler)
+		if(samplers[index] != sampler)
 		{
-			gl.BindSampler(unit, sampler.handle);
-			samplers[unit] = sampler;
+			gl.BindSampler(index, sampler.handle);
+			samplers[index] = sampler;
 		}
 	}
 
-	private void setCurrentUnit(size_t unit)
+	private void makeCurrent()
 	{
-		assert(unit < Size);
-		if(current != unit)
+		if(current != index)
 		{
-			gl.ActiveTexture(GL_TEXTURE0 + unit);
-			current = unit;
+			gl.ActiveTexture(GL_TEXTURE0 + index);
+			current = index;
 		}
 	}
 }
