@@ -8,8 +8,10 @@ import gl3n.linalg;
 
 import std.conv : text;
 import std.typetuple : TypeTuple, staticIndexOf;
+import std.container : Array;
 
 
+// Parameter specification. Name, type, and size. No specific value
 struct ShaderParameter
 {
 	GLint	size; // Size in 'type' units, not byte size
@@ -49,7 +51,6 @@ struct ShaderParameter
 			return !(isSampler || isBuiltin);
 		}
 	}
-
 }
 
 GLsizei totalByteSize(const ShaderParameter[] parameters)
@@ -58,6 +59,7 @@ GLsizei totalByteSize(const ShaderParameter[] parameters)
 	return reduce!q{a + b.byteSize}(0, parameters);
 }
 
+// Value storage struct for an Uniform
 package struct UniformValue
 {
 	this(T)(T val)
@@ -72,6 +74,7 @@ package struct UniformValue
 	}
 }
 
+// Actual Uniform instance. Combination of a Parameter and a value to pass to that parameter
 struct Uniform
 {
 	const	ShaderParameter	parameter;
@@ -120,9 +123,10 @@ struct Uniform
 	}
 }
 
-
+// Set of all uniforms for use with a Program, and Textures bound to sampler Uniforms.
 struct Uniforms
 {
+
 	//TODO: Perhaps a Uniform backing store can be put in here
 
 	@disable this();
@@ -131,34 +135,53 @@ struct Uniforms
 	{
 		this._allUniforms = allUniforms.dup;
 
-		import std.range;
-		import std.algorithm;
-		import std.array;
-		import std.exception;
-		import std.typecons;
+		import std.range : zip, iota;
+		import std.algorithm : map, filter;
+		import std.array : array, assocArray;
+		import std.exception : assumeUnique;
+		import std.typecons : tuple;
 
-		auto indexedUniforms = _allUniforms.map!(a => a.parameter).zip(iota(uint.max));
+		auto indexedParameters = 
+			_allUniforms
+			.map!(a => a.parameter)
+			.zip(iota(uint.max));
 
 		_builtinUniforms =
-			indexedUniforms
+			indexedParameters
 			.filter!(a => a[0].isBuiltin)
 			.map!(a => a[1])
 			.array
 			.assumeUnique;
 
 		auto samplerUniforms =
-			indexedUniforms
+			indexedParameters
 			.filter!(a => a[0].isSampler);
+
+		{ // TODO: remove those temporaries, should not be neccesary in 2.066
+			auto tmpTextureIndices = 
+				samplerUniforms
+				.map!(a => tuple(a[0].name, a[1]))
+				.assocArray;
+			_textureIndices = tmpTextureIndices.assumeUnique;
+		}
 
 		foreach(parameter, ui, tu; zip(samplerUniforms, iota(TextureUnit.Size)))
 		{
 			_allUniforms[ui] = TextureUnit(tu);
-			_textureIndices[parameter.name] = ui;
 		}
+		//TODO: Assign default textures
 		_textures.length = _textureIndices.length;
 
-		auto userUniforms	= indexedUniforms.filter!(a => a[0].isUser)		.map!(a => tuple(a[0].name, a[1])).assocArray;
-		_userUniforms		= userUniforms.assumeUnique;
+		{
+			auto tmpUserUniforms = 
+				indexedParameters
+				.filter!(a => a[0].isUser)
+				.map!(a => tuple(a[0].name, a[1]))
+				.assocArray;
+			_userUniforms = tmpUserUniforms.assumeUnique;
+		}
+
+		_setters = _allUniforms.map!(a => uniformSetter[a.type]).array;
 	}
 
 	this(this)
@@ -167,16 +190,25 @@ struct Uniforms
 		_textures		= _textures.dup;
 	}
 
-	private Uniform[] _allUniforms;
-	private Texture[] _textures;
-	private immutable uint[] _builtinUniforms;
-	private immutable uint[string] _userUniforms;
-	private immutable uint[string] _textureIndices;
+	private Uniform[]					_allUniforms;
+	private Array!Texture				_textures;
+	private immutable uint[]			_builtinUniforms;
+	private immutable uint[string]		_userUniforms;
+	private immutable uint[string]		_textureIndices;
+	private immutable UniformSetter[]	_setters;
 
+	void opIndexAssign(ref Texture texture, string name)
+	{
+		_textures[_textureIndices[name]] = texture;
+	}
 
+	ref Uniform opIndex(string name)
+	{
+		return _allUniforms[_userUniforms[name]];
+	}
 }
 
-
+// Generator for UniformValue union members
 private string uniformValueMembers()
 {
 	string retVal;
@@ -247,6 +279,9 @@ static this()
 		else static if(is(T == mat4))
 			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.parameter.size, false, cast(float*)&uniform.value);
 
+		else static if(is(T == TextureUnit))
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)&uniform.value);
+
 		else static assert(false, "No uniform setter implemented for " ~ T.stringof);
 	}
 }
@@ -279,8 +314,6 @@ static this()
 }
 
 private immutable GLenum[GLenum] backingType;
-
-
 private immutable GLint[GLenum] backingTypeSize;
 
 static this()
