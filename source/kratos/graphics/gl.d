@@ -91,6 +91,7 @@ private template GLTypeBinding(GLenum _glType, T)
 }
 
 import std.typetuple;
+import kratos.graphics.texture : TextureUnit;
 alias GLTypes = TypeTuple!(
 	GLTypeBinding!(GL_FLOAT, float),
 	GLTypeBinding!(GL_FLOAT_VEC2, vec2),
@@ -106,7 +107,9 @@ alias GLTypes = TypeTuple!(
 
 	GLTypeBinding!(GL_FLOAT_MAT2, mat2),
 	GLTypeBinding!(GL_FLOAT_MAT3, mat3),
-	GLTypeBinding!(GL_FLOAT_MAT4, mat4)
+	GLTypeBinding!(GL_FLOAT_MAT4, mat4),
+
+	GLTypeBinding!(GL_SAMPLER_2D, TextureUnit)
 );
 
 template GLType(T)

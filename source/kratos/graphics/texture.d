@@ -164,7 +164,7 @@ struct TextureUnit
 
 	static
 	{
-		private enum Size = 48;
+		enum Size = 48;
 		private Texture[Size] units;
 		private Sampler[Size] samplers;
 		private size_t current = 0;

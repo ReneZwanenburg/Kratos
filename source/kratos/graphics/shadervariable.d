@@ -1,6 +1,7 @@
 ﻿module kratos.graphics.shadervariable;
 
 import kratos.graphics.gl;
+import kratos.graphics.texture;
 
 import std.variant;
 import gl3n.linalg;
@@ -14,21 +15,41 @@ struct ShaderParameter
 	GLint	size; // Size in 'type' units, not byte size
 	GLenum	type;
 	string	name;
-	
-	@property GLsizei byteSize() const pure nothrow
+
+	@property
 	{
-		return size * GLTypeSize[type];
+		GLsizei byteSize() const pure nothrow
+		{
+			return size * GLTypeSize[type];
+		}
+
+		GLenum backingType() const pure nothrow
+		{
+			return .backingType[type];
+		}
+
+		GLint backingTypeSize() const pure nothrow
+		{
+			return .backingTypeSize[type];
+		}
+
+		bool isSampler() const
+		{
+			return type == GLType!TextureUnit;
+		}
+		
+		bool isBuiltin() const
+		{
+			//TODO: Implement builtins
+			return false;
+		}
+		
+		bool isUser() const
+		{
+			return !(isSampler || isBuiltin);
+		}
 	}
 
-	@property GLenum backingType() const pure nothrow
-	{
-		return .backingType[type];
-	}
-
-	@property GLint backingTypeSize() const pure nothrow
-	{
-		return .backingTypeSize[type];
-	}
 }
 
 GLsizei totalByteSize(const ShaderParameter[] parameters)
@@ -55,6 +76,8 @@ struct Uniform
 {
 	const	ShaderParameter	parameter;
 			UniformValue	value;
+
+	alias parameter this;
 
 	@disable this();
 
@@ -83,15 +106,74 @@ struct Uniform
 		return this;
 	}
 
-	package @property ref const(UniformValue) valueStore() const
+	@property
 	{
-		return value;
+		package ref const(UniformValue) valueStore() const
+		{
+			return value;
+		}
+		
+		package void valueStore(ref const UniformValue value)
+		{
+			this.value = value;
+		}
+	}
+}
+
+
+struct Uniforms
+{
+	//TODO: Perhaps a Uniform backing store can be put in here
+
+	@disable this();
+
+	this(Uniform[] allUniforms)
+	{
+		this._allUniforms = allUniforms.dup;
+
+		import std.range;
+		import std.algorithm;
+		import std.array;
+		import std.exception;
+		import std.typecons;
+
+		auto indexedUniforms = _allUniforms.map!(a => a.parameter).zip(iota(uint.max));
+
+		_builtinUniforms =
+			indexedUniforms
+			.filter!(a => a[0].isBuiltin)
+			.map!(a => a[1])
+			.array
+			.assumeUnique;
+
+		auto samplerUniforms =
+			indexedUniforms
+			.filter!(a => a[0].isSampler);
+
+		foreach(parameter, ui, tu; zip(samplerUniforms, iota(TextureUnit.Size)))
+		{
+			_allUniforms[ui] = TextureUnit(tu);
+			_textureIndices[parameter.name] = ui;
+		}
+		_textures.length = _textureIndices.length;
+
+		auto userUniforms	= indexedUniforms.filter!(a => a[0].isUser)		.map!(a => tuple(a[0].name, a[1])).assocArray;
+		_userUniforms		= userUniforms.assumeUnique;
 	}
 
-	package @property void valueStore(ref const UniformValue value)
+	this(this)
 	{
-		this.value = value;
+		_allUniforms	= _allUniforms.dup;
+		_textures		= _textures.dup;
 	}
+
+	private Uniform[] _allUniforms;
+	private Texture[] _textures;
+	private immutable uint[] _builtinUniforms;
+	private immutable uint[string] _userUniforms;
+	private immutable uint[string] _textureIndices;
+
+
 }
 
 
@@ -124,7 +206,9 @@ alias ShaderParameterTypes = TypeTuple!(
 	
 	mat2,
 	mat3,
-	mat4
+	mat4,
+
+	TextureUnit
 );
 
 package alias UniformSetter = void function(GLint location, ref const Uniform uniform);
