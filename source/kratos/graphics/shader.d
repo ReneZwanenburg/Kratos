@@ -3,12 +3,13 @@
 import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
+import kratos.graphics.texture;
 
 import std.algorithm : copy, find, map;
 import std.array : array;
 import std.container : Array;
 import std.conv : to;
-import std.range : isInputRange, take;
+import std.range : isInputRange, take, repeat;
 import std.logger;
 
 
@@ -63,6 +64,7 @@ private struct Program_Impl
 	//TODO Use fixed size array to store attributes.
 	private	ShaderParameter[]	_attributes;
 	private Uniforms			_uniforms;
+	private Array!Sampler		_samplers;
 	private	const(GLchar)[]		_errorLog;
 	private	bool				_linked;
 	
@@ -120,9 +122,10 @@ private struct Program_Impl
 
 		_attributes		= getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)();
 		_uniforms		= Uniforms(getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)());
+		_samplers		= typeof(_samplers)(defaultSampler.repeat(_uniforms.textures.length));
 
-		trace("Program ", name, " vertex attributes:\n", _attributes);
-		trace("Program ", name, " uniforms:\n", _uniforms);
+		trace("Program ", name, " vertex attributes:\n", _attributes.map!(a => a.name));
+		trace("Program ", name, " uniforms:\n", _uniforms.allUniforms.map!(a => a.name));
 
 		//TODO: Update Shaders using this Program
 	}
@@ -150,9 +153,9 @@ private struct Program_Impl
 		_linked = false;
 	}
 
-	package void updateUniformValues(const ref Uniforms uniforms)
+	package void updateUniformValues(ref Uniforms uniforms)
 	{
-		_uniforms.apply(uniforms);
+		_uniforms.apply(uniforms, _samplers);
 	}
 
 	@property const

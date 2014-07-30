@@ -120,7 +120,7 @@ struct Uniforms
 
 	this(ShaderParameter[] parameters)
 	{
-		import std.range : zip, iota;
+		import std.range : zip, iota, repeat;
 		import std.algorithm : map, filter;
 		import std.array : array, assocArray;
 		import std.exception : assumeUnique;
@@ -146,7 +146,8 @@ struct Uniforms
 		{ // TODO: remove those temporaries, should not be neccesary in 2.066
 			auto tmpTextureIndices = 
 				samplerUniforms
-				.map!(a => tuple(a[0].name, a[1]))
+				.zip(iota(uint.max))
+				.map!(a => tuple(a[0][0].name, a[1]))
 				.assocArray;
 			_textureIndices = tmpTextureIndices.assumeUnique;
 		}
@@ -155,8 +156,8 @@ struct Uniforms
 		{
 			_allUniforms[ui] = TextureUnit(tu);
 		}
-		//TODO: Assign default textures
-		_textures.length = _textureIndices.length;
+
+		_textures.insert(defaultTexture.repeat(_textureIndices.length));
 
 		{
 			auto tmpUserUniforms = 
@@ -189,6 +190,11 @@ struct Uniforms
 		_textures[_textureIndices[name]] = texture;
 	}
 
+	void opIndexAssign(Texture texture, string name)
+	{
+		this[name] = texture;
+	}
+
 	void opIndexAssign(T)(auto ref T value, string name)
 	{
 		_allUniforms[_userUniforms[name]] = value;
@@ -199,7 +205,7 @@ struct Uniforms
 		return &_allUniforms[_userUniforms[name]];
 	}
 
-	package void apply(ref const Uniforms newValues)
+	package void apply(ref Uniforms newValues, ref Array!Sampler samplers)
 	{
 		//TODO: Ensure equivalent Uniforms passed
 		foreach(i, ref newVal; newValues._allUniforms)
@@ -210,6 +216,23 @@ struct Uniforms
 				_allUniforms[i].value = newVal.value;
 			}
 		}
+
+		import std.range : zip, iota;
+		foreach(i, texture, sampler; zip(iota(TextureUnit.Size), newValues._textures[], samplers[]))
+		{
+			TextureUnit(i).set(texture, sampler);
+			_textures[i] = texture;
+		}
+	}
+
+	package auto textures() const
+	{
+		return _textures;
+	}
+
+	package auto allUniforms() const
+	{
+		return _allUniforms;
 	}
 }
 

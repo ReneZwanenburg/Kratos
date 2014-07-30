@@ -3,6 +3,7 @@
 import kratos.resource.resource;
 import kratos.graphics.gl;
 import gl3n.linalg;
+import std.logger;
 
 public import kratos.graphics.textureunit;
 
@@ -64,6 +65,11 @@ Sampler sampler(SamplerSettings settings)
 	)(settings);
 }
 
+Sampler defaultSampler()
+{
+	return sampler(SamplerSettings.init);
+}
+
 alias Sampler = Handle!Sampler_Impl;
 
 private struct Sampler_Impl
@@ -77,11 +83,11 @@ private struct Sampler_Impl
 
 struct SamplerSettings
 {
-	SamplerMinFilter	minFilter;
-	SamplerMagFilter	magFilter;
-	SamplerWrap			xWrap;
-	SamplerWrap			yWrap;
-	SamplerAnisotropy	anisotropy;
+	SamplerMinFilter	minFilter	= SamplerMinFilter.Trilinear;
+	SamplerMagFilter	magFilter	= SamplerMagFilter.Bilinear;
+	SamplerWrap			xWrap		= SamplerWrap.Repeat;
+	SamplerWrap			yWrap		= SamplerWrap.Repeat;
+	SamplerAnisotropy	anisotropy	= 1;
 }
 
 enum TextureFormat : GLenum
@@ -93,12 +99,14 @@ enum TextureFormat : GLenum
 
 enum DefaultTextureCompression = false;
 
-Texture texture(TextureFormat format, vec2i resolution, void[] data, bool compressed = DefaultTextureCompression)
+Texture texture(TextureFormat format, vec2i resolution, void[] data, string name = null, bool compressed = DefaultTextureCompression)
 {
 	assert(pixelSize[format] * resolution.x * resolution.y == data.length);
 
-	auto texture = Texture(gl.genTexture(), resolution, format, compressed);
+	const handle = gl.genTexture();
+	auto texture = Texture(handle, resolution, format, name ? name : handle.text, compressed);
 	ScratchTextureUnit.makeActiveScratch(texture);
+
 	gl.TexImage2D(
 		GL_TEXTURE_2D, 
 		0, 
@@ -111,6 +119,27 @@ Texture texture(TextureFormat format, vec2i resolution, void[] data, bool compre
 		data.ptr
 	);
 
+	gl.GenerateMipmap(GL_TEXTURE_2D);
+
+	return texture;
+}
+
+Texture defaultTexture()
+{
+	static Texture texture;
+	static bool initialized = false;
+	
+	if(!initialized)
+	{
+		ubyte[] data = [
+			255, 0, 255, 255,
+			127, 0, 127, 255,
+			127, 0, 127, 255,
+			255, 0, 255, 255
+		];
+		texture = .texture(TextureFormat.RGBA, vec2i(2, 2), data, "Default Texture", false);
+		initialized = true;
+	}
 	return texture;
 }
 
@@ -122,6 +151,7 @@ struct Texture_Impl
 	private GLuint	handle;
 	vec2i			resolution;
 	TextureFormat	format;
+	string			name;
 	bool			compressed;
 }
 
@@ -172,14 +202,15 @@ private void makeActiveScratch(TextureUnit unit, ref Texture texture)
 
 void set(TextureUnit unit, ref Texture texture, ref Sampler sampler)
 {
-	if(TextureUnits.units[unit.index] != texture)
+	if(TextureUnits.units[unit.index] !is texture)
 	{
 		unit.makeCurrent();
+		trace("Binding Texture ", texture.name, " to unit ", unit.index);
 		gl.BindTexture(GL_TEXTURE_2D, texture.handle);
 		TextureUnits.units[unit.index] = texture;
 	}
 	
-	if(TextureUnits.samplers[unit.index] != sampler)
+	if(TextureUnits.samplers[unit.index] !is sampler)
 	{
 		gl.BindSampler(unit.index, sampler.handle);
 		TextureUnits.samplers[unit.index] = sampler;
@@ -190,6 +221,8 @@ private void makeCurrent(TextureUnit unit)
 {
 	if(TextureUnits.current != unit.index)
 	{
+		trace("Switching to texture unit ", unit.index);
+
 		gl.ActiveTexture(GL_TEXTURE0 + unit.index);
 		TextureUnits.current = unit.index;
 	}

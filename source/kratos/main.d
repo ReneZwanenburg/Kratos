@@ -5,7 +5,8 @@ import kratos.window;
 
 void main(string[] args)
 {
-	auto window = Window(WindowProperties.init);
+	WindowProperties windowProperties = { };
+	auto window = Window(windowProperties);
 	//glfwSetKeyCallback(window, &glfwKeyCallback);
 
 	import kratos.graphics.bo;
@@ -17,6 +18,7 @@ void main(string[] args)
 	import kratos.graphics.gl;
 	import std.range;
 	import kratos.component.meshrenderer;
+	import kratos.graphics.texture;
 
 	auto indices = ibo([
 		0, 2, 1,
@@ -35,13 +37,21 @@ void main(string[] args)
 	auto quad = mesh(indices, vertices, attributes);
 
 	auto prog = program(only(
-		shaderModule(ShaderModule.Type.Vertex,  "in vec3 position; uniform float scale; void main() { gl_Position = vec4(position * scale, 1); }"),
-		shaderModule(ShaderModule.Type.Fragment,  "uniform vec3 color; void main() { gl_FragData[0] = vec4(color, 1); }")
+		shaderModule(ShaderModule.Type.Vertex,  "#version 330\nin vec3 position; uniform float scale; out vec2 texCoord; void main() { gl_Position = vec4(position * scale, 1); texCoord = position.xy; }"),
+		shaderModule(ShaderModule.Type.Fragment,  "#version 330\nuniform sampler2D texture; uniform vec3 color; in vec2 texCoord; void main() { gl_FragData[0] = texture2D(texture, texCoord) * vec4(color, 1); }")
 	));
 
 	scope renderer = new MeshRenderer(quad, Shader(prog));
-	renderer.shader["color"] = vec3(1, 0, 0);
+	renderer.shader["color"] = vec3(1, 1, 1);
 
+	ubyte[] textureData = [
+		255, 255, 255, 255,
+		255,   0,   0, 255,
+		  0, 255,   0, 255,
+		  0,   0, 255, 255
+	];
+
+	renderer.shader["texture"] = texture(TextureFormat.RGBA, vec2i(2, 2), textureData);
 
 	Time.reset();
 	while(!window.closeRequested)
