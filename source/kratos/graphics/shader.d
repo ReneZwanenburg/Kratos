@@ -122,7 +122,7 @@ private struct Program_Impl
 
 		_attributes		= getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)();
 		_uniforms		= Uniforms(getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)());
-		_samplers		= typeof(_samplers)(defaultSampler.repeat(_uniforms.textures.length));
+		_samplers		= typeof(_samplers)(defaultSampler.repeat(_uniforms.textureCount));
 
 		trace("Program ", name, " vertex attributes:\n", _attributes.map!(a => a.name));
 		trace("Program ", name, " uniforms:\n", _uniforms.allUniforms.map!(a => a.name));

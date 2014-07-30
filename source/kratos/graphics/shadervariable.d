@@ -225,12 +225,12 @@ struct Uniforms
 		}
 	}
 
-	package auto textures() const
+	package @property auto textureCount() const
 	{
-		return _textures;
+		return _textures.length;
 	}
 
-	package auto allUniforms() const
+	package @property auto allUniforms() const
 	{
 		return _allUniforms;
 	}
