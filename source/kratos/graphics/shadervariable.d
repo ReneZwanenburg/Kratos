@@ -9,6 +9,7 @@ import gl3n.linalg;
 import std.conv : text;
 import std.typetuple : TypeTuple, staticIndexOf;
 import std.container : Array;
+import std.logger;
 
 
 // Parameter specification. Name, type, and size. No specific value
@@ -108,42 +109,27 @@ struct Uniform
 		// TODO store values
 		return this;
 	}
-
-	@property
-	{
-		package ref const(UniformValue) valueStore() const
-		{
-			return value;
-		}
-		
-		package void valueStore(ref const UniformValue value)
-		{
-			this.value = value;
-		}
-	}
 }
 
+//TODO: Make package protected?
 // Set of all uniforms for use with a Program, and Textures bound to sampler Uniforms.
 struct Uniforms
 {
 
 	//TODO: Perhaps a Uniform backing store can be put in here
 
-	@disable this();
-
-	this(Uniform[] allUniforms)
+	this(ShaderParameter[] parameters)
 	{
-		this._allUniforms = allUniforms.dup;
-
 		import std.range : zip, iota;
 		import std.algorithm : map, filter;
 		import std.array : array, assocArray;
 		import std.exception : assumeUnique;
 		import std.typecons : tuple;
 
+		this._allUniforms = parameters.map!Uniform.array;
+
 		auto indexedParameters = 
-			_allUniforms
-			.map!(a => a.parameter)
+			parameters
 			.zip(iota(uint.max));
 
 		_builtinUniforms =
@@ -186,6 +172,7 @@ struct Uniforms
 
 	this(this)
 	{
+		trace("Duplicating Uniforms");
 		_allUniforms	= _allUniforms.dup;
 		_textures		= _textures.dup;
 	}
@@ -202,9 +189,27 @@ struct Uniforms
 		_textures[_textureIndices[name]] = texture;
 	}
 
-	ref Uniform opIndex(string name)
+	void opIndexAssign(T)(auto ref T value, string name)
 	{
-		return _allUniforms[_userUniforms[name]];
+		_allUniforms[_userUniforms[name]] = value;
+	}
+
+	Uniform* opIndex(string name)
+	{
+		return &_allUniforms[_userUniforms[name]];
+	}
+
+	package void apply(ref const Uniforms newValues)
+	{
+		//TODO: Ensure equivalent Uniforms passed
+		foreach(i, ref newVal; newValues._allUniforms)
+		{
+			if(_allUniforms[i].value !is newVal.value)
+			{
+				_setters[i](i, newVal);
+				_allUniforms[i].value = newVal.value;
+			}
+		}
 	}
 }
 
@@ -243,8 +248,8 @@ alias ShaderParameterTypes = TypeTuple!(
 	TextureUnit
 );
 
-package alias UniformSetter = void function(GLint location, ref const Uniform uniform);
-package immutable UniformSetter[GLenum] uniformSetter;
+private alias UniformSetter = void function(GLint location, ref const Uniform uniform);
+private immutable UniformSetter[GLenum] uniformSetter;
 static this()
 {
 	foreach(T; ShaderParameterTypes)

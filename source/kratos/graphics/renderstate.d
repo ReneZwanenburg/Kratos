@@ -270,47 +270,32 @@ struct Shader
 	import kratos.graphics.shadervariable;
 	import std.typecons;
 
-	private	Program			_program;
-	//TODO: Perhaps store uniforms in fixed size array + fixed size backing array
-	private Uniform[]		_uniforms;
-	private size_t[string]	_uniformMap;
-	
-	this(this)
-	{
-		trace("Duplicating Shader ", _program.name);
-		_uniforms = _uniforms.dup;
-	}
+	private	Program		_program;
+	private Uniforms	_uniforms;
+
+	alias uniforms this;
 	
 	this(Program program)
 	{
 		info("Creating Shader from Program ", program.name);
 		_program = program;
 		_uniforms = program.createUniforms();
-
-		foreach(i, ref uniform; _uniforms)
-		{
-			_uniformMap[uniform.parameter.name] = i;
-		}
 	}
 
 	void apply()
 	{
 		_program.use();
-		_program.setUniforms(_uniforms);
-
-		current.program = _program;
-		current.uniforms.clear();
-		current.uniforms.put(_uniforms);
+		_program.updateUniformValues(_uniforms);
 	}
 	
 	@property const auto program()
 	{
 		return _program;
 	}
-	
-	ref Uniform opIndex(string name)
+
+	@property ref Uniforms uniforms()
 	{
-		return _uniforms[_uniformMap[name]];
+		return _uniforms;
 	}
 	
 	@property string name() const
@@ -320,14 +305,12 @@ struct Shader
 
 	private static struct Current
 	{
-		import std.array;
-		private Program program;
-		private Appender!(Uniform[]) uniforms;
 	}
 	private static Current current;
 
 	bool opEquals(Current current)
 	{
-		return current.program is _program && current.uniforms.data == _uniforms;
+		//TODO: Test if initial equality test is faster. Probably not, at least one uniform differs in the general case.
+		return false;
 	}
 }

@@ -4,7 +4,7 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 import gl3n.linalg;
 
-
+public import kratos.graphics.textureunit;
 
 
 enum SamplerMinFilter : GLenum
@@ -152,54 +152,45 @@ static this()
 
 private enum ScratchTextureUnit = TextureUnit(TextureUnit.Size-1);
 
-struct TextureUnit
+struct TextureUnits
 {
-	const GLint index;
-
-	this(GLint index)
-	{
-		assert(0 <= index && index < Size);
-		this.index = index;
-	}
-
 	static
 	{
-		enum Size = 48;
-		private Texture[Size] units;
-		private Sampler[Size] samplers;
+		private Texture[TextureUnit.Size] units;
+		private Sampler[TextureUnit.Size] samplers;
 		private size_t current = 0;
 	}
+}
 
-	private void makeActiveScratch(ref Texture texture)
+private void makeActiveScratch(TextureUnit unit, ref Texture texture)
+{
+	// Ensure the scratch unit is active, or consecutive updates to
+	// the same texture may fail if another unit is activated in the mean time
+	unit.makeCurrent();
+	unit.set(texture, TextureUnits.samplers[unit.index]);
+}
+
+void set(TextureUnit unit, ref Texture texture, ref Sampler sampler)
+{
+	if(TextureUnits.units[unit.index] != texture)
 	{
-		// Ensure the scratch unit is active, or consecutive updates to
-		// the same texture may fail if another unit is activated in the mean time
-		makeCurrent();
-		set(texture, samplers[index]);
+		unit.makeCurrent();
+		gl.BindTexture(GL_TEXTURE_2D, texture.handle);
+		TextureUnits.units[unit.index] = texture;
 	}
-
-	void set(ref Texture texture, ref Sampler sampler)
+	
+	if(TextureUnits.samplers[unit.index] != sampler)
 	{
-		if(units[index] != texture)
-		{
-			makeCurrent();
-			gl.BindTexture(GL_TEXTURE_2D, texture.handle);
-			units[index] = texture;
-		}
-
-		if(samplers[index] != sampler)
-		{
-			gl.BindSampler(index, sampler.handle);
-			samplers[index] = sampler;
-		}
+		gl.BindSampler(unit.index, sampler.handle);
+		TextureUnits.samplers[unit.index] = sampler;
 	}
+}
 
-	private void makeCurrent()
+private void makeCurrent(TextureUnit unit)
+{
+	if(TextureUnits.current != unit.index)
 	{
-		if(current != index)
-		{
-			gl.ActiveTexture(GL_TEXTURE0 + index);
-			current = index;
-		}
+		gl.ActiveTexture(GL_TEXTURE0 + unit.index);
+		TextureUnits.current = unit.index;
 	}
 }

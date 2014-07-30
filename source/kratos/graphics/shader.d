@@ -62,9 +62,7 @@ private struct Program_Impl
 	private Array!ShaderModule	shaders;
 	//TODO Use fixed size array to store attributes.
 	private	ShaderParameter[]	_attributes;
-	private	ShaderParameter[]	_uniforms;
-	private	UniformSetter[]		_uniformSetters;
-	private	Uniform[]			_uniformValues;
+	private Uniforms			_uniforms;
 	private	const(GLchar)[]		_errorLog;
 	private	bool				_linked;
 	
@@ -82,11 +80,9 @@ private struct Program_Impl
 	}
 
 	/// Create an array of Uniforms for use with this Program
-	Uniform[] createUniforms()
+	Uniforms createUniforms()
 	{
-		import std.algorithm : map;
-		import std.array : array;
-		return _uniforms.map!Uniform.array;
+		return _uniforms;
 	}
 
 	void link()
@@ -123,9 +119,7 @@ private struct Program_Impl
 		static void GetActiveUniform_Impl(T...)(T args) { gl.GetActiveUniform(args); }
 
 		_attributes		= getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)();
-		_uniforms		= getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)();
-		_uniformSetters	= _uniforms.map!(a => uniformSetter[a.type]).array;
-		_uniformValues	= createUniforms();
+		_uniforms		= Uniforms(getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)());
 
 		trace("Program ", name, " vertex attributes:\n", _attributes);
 		trace("Program ", name, " uniforms:\n", _uniforms);
@@ -156,17 +150,9 @@ private struct Program_Impl
 		_linked = false;
 	}
 
-	package void setUniforms(const Uniform[] uniforms)
+	package void updateUniformValues(const ref Uniforms uniforms)
 	{
-		//TODO: Ensure this program is currently bound
-		foreach(i, ref newVal; uniforms)
-		{
-			if(_uniformValues[i].valueStore !is newVal.valueStore)
-			{
-				_uniformSetters[i](i, newVal);
-				_uniformValues[i].valueStore = newVal.valueStore;
-			}
-		}
+		_uniforms.apply(uniforms);
 	}
 
 	@property const
