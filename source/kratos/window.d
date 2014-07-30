@@ -20,6 +20,7 @@ struct WindowProperties
 	bool	sRGB			= false;
 	int		refreshRate		= 60;
 	bool	debugContext	= false;
+	bool	vSync			= true;
 }
 
 
@@ -65,6 +66,8 @@ struct Window
 		//TODO: hmm, do we really want to do that here?
 		import kratos.graphics.gl;
 		glfwSetFramebufferSizeCallback(handle, (_, width, height) => assumeWontThrow(gl.Viewport(0, 0, width, height)));
+
+		glfwSwapInterval(properties.vSync);
 	}
 
 	~this()
