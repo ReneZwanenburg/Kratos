@@ -2,9 +2,12 @@
 
 import kratos.time;
 import kratos.window;
+import kratos.resource.filesystem;
 
 void main(string[] args)
 {
+	activeFileSystem = new PackFileSystem("Kratos.assetpack");
+
 	WindowProperties windowProperties = { };
 	auto window = Window(windowProperties);
 	//glfwSetKeyCallback(window, &glfwKeyCallback);
