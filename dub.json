@@ -22,12 +22,14 @@
 	"copyFiles-windows-x86":
 	[
 		"lib/windows/x86/glfw3.dll",
-		"lib/windows/x86/Assimp32.dll"
+		"lib/windows/x86/Assimp32.dll",
+		"lib/windows/x86/DevIL.dll"
 	],
 	"copyFiles-windows-x86_64":
 	[
 		"lib/windows/x86_64/glfw3.dll",
-		"lib/windows/x86_64/Assimp64.dll"
+		"lib/windows/x86_64/Assimp64.dll",
+		"lib/windows/x86_64/DevIL.dll"
 	],
 
 	"dependencies":
@@ -36,6 +38,7 @@
 		"derelict-gl3": "~>1.0",
 		"derelict-glfw3": "~>1.0",
 		"derelict-assimp3": "~>1.0",
+		"derelict-il": "~master",
 		"logger": "~>0.2",
 		"vibe-d": "~>0.7"
 	}

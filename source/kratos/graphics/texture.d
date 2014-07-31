@@ -50,8 +50,7 @@ Sampler sampler(SamplerSettings settings)
 {
 	import kratos.resource.cache;
 
-	alias SamplerCache = Cache!(Sampler, SamplerSettings);
-	return SamplerCache.get!(
+	auto createSampler = 
 		(SamplerSettings settings)
 		{
 			auto sampler = Sampler(gl.genSampler, settings);
@@ -61,8 +60,10 @@ Sampler sampler(SamplerSettings settings)
 			gl.SamplerParameteri(sampler.handle, GL_TEXTURE_WRAP_T, settings.yWrap);
 			gl.SamplerParameteri(sampler.handle, GL_TEXTURE_MAX_ANISOTROPY_EXT, settings.anisotropy);
 			return sampler;
-		}
-	)(settings);
+	};
+
+	alias SamplerCache = Cache!(Sampler, SamplerSettings, createSampler);
+	return SamplerCache.get(settings);
 }
 
 Sampler defaultSampler()
@@ -101,7 +102,7 @@ enum DefaultTextureCompression = false;
 
 Texture texture(TextureFormat format, vec2i resolution, void[] data, string name = null, bool compressed = DefaultTextureCompression)
 {
-	assert(pixelSize[format] * resolution.x * resolution.y == data.length);
+	assert(bytesPerPixel[format] * resolution.x * resolution.y == data.length);
 
 	const handle = gl.genTexture();
 	auto texture = Texture(handle, resolution, format, name ? name : handle.text, compressed);
@@ -155,8 +156,8 @@ struct Texture_Impl
 	bool			compressed;
 }
 
-private immutable GLenum[GLenum] compressedFormat;
-private immutable size_t[GLenum] pixelSize;
+private	immutable GLenum[GLenum]		compressedFormat;
+public	immutable size_t[TextureFormat]	bytesPerPixel;
 static this()
 {
 	import std.traits;
@@ -166,15 +167,15 @@ static this()
 		{
 			case R:
 				compressedFormat[format]	= GL_COMPRESSED_RED;
-				pixelSize[format]			= 1;
+				bytesPerPixel[format]		= 1;
 			break;
 			case RGB:
 				compressedFormat[format]	= GL_COMPRESSED_RGB;
-				pixelSize[format]			= 3;
+				bytesPerPixel[format]		= 3;
 			break;
 			case RGBA:
 				compressedFormat[format]	= GL_COMPRESSED_RGBA;
-				pixelSize[format]			= 4;
+				bytesPerPixel[format]		= 4;
 			break;
 		}
 	}

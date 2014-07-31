@@ -3,7 +3,7 @@ module kratos.resource.cache;
 import std.container : Array;
 import kratos.resource.resource;
 
-template Cache(T, I)
+template Cache(T, I, alias loader)
 //if(is(T == Handle!R, R)) //TODO re-enable contraint. DMD bug, fixed in 2.066
 {
 	alias Identifier = I;
@@ -37,17 +37,17 @@ template Cache(T, I)
 		return 
 			resources[].countUntil!(
 				(a, b) => a.hash == b[0] && a.id == b[1]
-			)(tuple(id.hashId, id));
+			)(tuple(hashId(id), id));
 	}
 
 	alias opIndex = get;
 
- 	T get(alias create)(Identifier id)
+ 	T get(Identifier id)
 	{
-		const idx = id.index;
+		const idx = index(id);
 		if(idx == -1)
 		{
-			return put(id, create(id));
+			return put(id, loader(id));
 		}
 
 		return resources[idx].resource;
@@ -55,9 +55,9 @@ template Cache(T, I)
 
 	T put(Identifier id, T resource)
 	{
-		assert(id.index == -1);
+		assert(index(id) == -1);
 
-		resources.insert(Element(id.hashId, id, resource));
+		resources.insert(Element(hashId(id), id, resource));
 		return resource;
 	}
 
