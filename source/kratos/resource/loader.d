@@ -1,4 +1,4 @@
-﻿module kratos.resource.textureloader;
+﻿module kratos.resource.loader;
 
 import kratos.resource.cache;
 import kratos.graphics.texture;
@@ -18,7 +18,7 @@ package Texture loadTexture(string name)
 	import std.string : toLower;
 
 	auto buffer = activeFileSystem.get(name);
-	ilLoadL(extensionFormat[name.extension.toLower()], buffer.ptr, buffer.length);
+	ilLoadL(imageExtensionFormat[name.extension.toLower()], buffer.ptr, buffer.length);
 
 	auto dataPtr = ilGetData();
 	auto resolution = vec2i(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
@@ -44,12 +44,12 @@ shared static ~this()
 
 
 //Sigh, for some reason DevIL doesn't provide this..
-private immutable ILenum[string] extensionFormat;
+private immutable ILenum[string] imageExtensionFormat;
 private immutable TextureFormat[ILint] ilTextureFormat;
 
 static this()
 {
-	extensionFormat = [
+	imageExtensionFormat = [
 		".bmp"	: IL_BMP,
 		".cut"	: IL_CUT,
 		".dds"	: IL_DDS,

@@ -22,7 +22,7 @@ void main(string[] args)
 	import std.range;
 	import kratos.component.meshrenderer;
 	import kratos.graphics.texture;
-	import kratos.resource.textureloader;
+	import kratos.resource.loader;
 	import std.typecons;
 
 	auto indices = ibo([
