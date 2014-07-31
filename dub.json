@@ -9,8 +9,6 @@
 	"targetType": "executable",
 	"targetPath": "build",
 
-	"workingDirectory": "./",
-
 	"buildTypes":
 	{
 		"performance-debug":

@@ -20,21 +20,21 @@ private FileSystem _activeFileSystem;
 
 interface FileSystem
 {
-	bool	has(string name);
-	void[]	get(string name);
+	bool			has(string name);
+	const(void[])	get(string name);
 }
 
 class MultiFileSystem : FileSystem
 {
 	private FileSystem[] _fileSystems;
 
-	override bool	has(string name)
+	override bool has(string name)
 	{
 		import std.algorithm : any;
 		return _fileSystems.any!(a => a.has(name));
 	}
 
-	override void[]	get(string name)
+	override const(void[]) get(string name)
 	{
 		assert(has(name));
 
@@ -67,7 +67,7 @@ class NormalFileSystem : FileSystem
 		return buildPath(name).isFile();
 	}
 
-	override void[] get(string name)
+	override const(void[]) get(string name)
 	{
 		return buildPath(name).read();
 	}
@@ -78,5 +78,52 @@ class NormalFileSystem : FileSystem
 		_pathBuilder ~= _basePath;
 		_pathBuilder ~= name;
 		return _pathBuilder.data;
+	}
+}
+
+class PackFileSystem : FileSystem
+{
+	import std.mmfile;
+	import std.digest.md;
+
+	alias FileHash = ubyte[digestLength!MD5];
+
+	static struct FileOffset
+	{
+		ulong startOffset;
+		ulong endOffset;
+	}
+
+	static struct FileInfo
+	{
+		FileHash	hash;
+		FileOffset	offset;
+	}
+
+	private MmFile					_pack;
+	private FileOffset[FileHash]	_fileMap;
+
+	this(string packFile)
+	{
+		_pack = new MmFile(packFile);
+
+		import std.bitmanip;
+		uint numFiles = (cast(uint[])_pack[0..uint.sizeof])[0];
+
+		foreach(file; cast(FileInfo[])_pack[uint.sizeof .. uint.sizeof + numFiles * FileInfo.sizeof])
+		{
+			_fileMap[file.hash] = file.offset;
+		}
+	}
+
+	override bool has(string name)
+	{
+		return !!(md5Of(name) in _fileMap);
+	}
+	
+	override const(void[]) get(string name)
+	{
+		auto offset = _fileMap[md5Of(name)];
+		return _pack[offset.startOffset .. offset.endOffset];
 	}
 }

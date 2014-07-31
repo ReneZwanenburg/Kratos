@@ -17,7 +17,7 @@ package Texture loadTexture(string name)
 	import gl3n.linalg : vec2i;
 	import std.string : toLower;
 
-	void[] buffer = activeFileSystem.get(name);
+	auto buffer = activeFileSystem.get(name);
 	ilLoadL(extensionFormat[name.extension.toLower()], buffer.ptr, buffer.length);
 
 	auto dataPtr = ilGetData();
