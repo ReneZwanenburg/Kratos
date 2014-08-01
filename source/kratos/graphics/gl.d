@@ -129,7 +129,10 @@ shared static this()
 {
 	foreach(B; GLTypes)
 	{
-		GLTypeSize[B.glType] = B.nativeType.sizeof;
+		import std.algorithm : max;
+		auto size = max(B.nativeType.sizeof, 4);
+		assert(size % 4 == 0, "GL Types should have four byte alignment");
+		GLTypeSize[B.glType] = size;
 	}
 }
 

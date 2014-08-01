@@ -60,54 +60,39 @@ GLsizei totalByteSize(const ShaderParameter[] parameters)
 	return reduce!q{a + b.byteSize}(0, parameters);
 }
 
-// Value storage struct for an Uniform
-package struct UniformValue
-{
-	this(T)(T val)
-	{
-		import std.conv : text;
-		mixin("_" ~ staticIndexOf!(T, ShaderParameterTypes).text ~ " = val;");
-	}
 
-	union
-	{
-		mixin(uniformValueMembers);
-	}
-}
-
-// Actual Uniform instance. Combination of a Parameter and a value to pass to that parameter
+// Uniform descriptor for a particular program. Combination of a Parameter and an offset in the storage buffer
 struct Uniform
 {
 	const	ShaderParameter	parameter;
-			UniformValue	value;
+	const	ptrdiff_t		offset;
+	const	size_t			byteSize;
 
 	alias parameter this;
+}
 
-	@disable this();
+// Reference to an Uniform instance. Can be used to set the value of this Uniform
+struct UniformRef
+{
+	private const	ShaderParameter	parameter;
+	private			void[]			store;
 
-	this(ShaderParameter parameter)
+
+	private void opAssign(void[] value)
 	{
-		this.parameter = parameter;
-		this.value = defaultUniformValue[parameter.type];
+		store[] = value[];
 	}
 
-	ref auto opAssign(T)(auto ref T value)
+	auto opAssign(T)(auto ref T value)
 	{
 		assert(GLType!T == parameter.type, "Uniform type mismatch: " ~ T.stringof);
-		this.value = UniformValue(value);
+		(cast(T[])store)[0] = value;
 		return this;
 	}
 
-	ref auto opAssign(T)(auto ref T[] values)
+	private inout(void*) ptr() inout
 	{
-		static assert(false, "Uniform arrays not implemented yet");
-
-		assert(GLType!T == parameter.type, "Uniform type mismatch: " ~ T.stringof);
-		assert(values.length <= parameter.size, 
-		       "Uniform array length = " ~ parameter.size.text ~ 
-		       ", provided array length = " ~ values.length.text);
-		// TODO store values
-		return this;
+		return store.ptr;
 	}
 }
 
@@ -115,18 +100,23 @@ struct Uniform
 // Set of all uniforms for use with a Program, and Textures bound to sampler Uniforms.
 struct Uniforms
 {
-
-	//TODO: Perhaps a Uniform backing store can be put in here
-
 	this(ShaderParameter[] parameters)
 	{
-		import std.range : zip, iota, repeat;
+		import std.range : zip, iota, repeat, sequence;
 		import std.algorithm : map, filter;
 		import std.array : array, assocArray;
 		import std.exception : assumeUnique;
 		import std.typecons : tuple;
 
-		this._allUniforms = parameters.map!Uniform.array;
+		this._allUniforms = 
+			parameters
+			.zip(iota(parameters.length))
+			.map!(a => Uniform(a[0], parameters[0..a[1]].totalByteSize, a[0].byteSize))
+			.array
+			.assumeUnique;
+
+		//TODO: Use some per-program pool allocator?
+		this._uniformData = new ubyte[parameters.totalByteSize];
 
 		auto indexedParameters = 
 			parameters
@@ -154,7 +144,7 @@ struct Uniforms
 
 		foreach(parameter, ui, tu; zip(samplerUniforms, iota(TextureUnit.Size)))
 		{
-			_allUniforms[ui] = TextureUnit(tu);
+			toRef(_allUniforms[ui]) = TextureUnit(tu);
 		}
 
 		_textures.insert(defaultTexture.repeat(_textureIndices.length));
@@ -174,12 +164,13 @@ struct Uniforms
 	this(this)
 	{
 		trace("Duplicating Uniforms");
-		_allUniforms	= _allUniforms.dup;
+		_uniformData	= _uniformData.dup;
 		_textures		= _textures.dup;
 	}
 
-	private Uniform[]					_allUniforms;
+	private ubyte[]						_uniformData;
 	private Array!Texture				_textures;
+	private immutable Uniform[]			_allUniforms;
 	private immutable uint[]			_builtinUniforms;
 	private immutable uint[string]		_userUniforms;
 	private immutable uint[string]		_textureIndices;
@@ -197,23 +188,26 @@ struct Uniforms
 
 	void opIndexAssign(T)(auto ref T value, string name)
 	{
-		_allUniforms[_userUniforms[name]] = value;
+		auto uRef = this[name];
+		uRef = value;
 	}
 
-	Uniform* opIndex(string name)
+	UniformRef opIndex(string name)
 	{
-		return &_allUniforms[_userUniforms[name]];
+		return toRef(_allUniforms[_userUniforms[name]]);
 	}
 
 	package void apply(ref Uniforms newValues, ref Array!Sampler samplers)
 	{
 		//TODO: Ensure equivalent Uniforms passed
-		foreach(i, ref newVal; newValues._allUniforms)
+		foreach(i, uniform; _allUniforms)
 		{
-			if(_allUniforms[i].value !is newVal.value)
+			auto currentValue	= toRef(uniform);
+			auto newValue		= newValues.toRef(uniform);
+			if(currentValue.store != newValue.store)
 			{
-				_setters[i](i, newVal);
-				_allUniforms[i].value = newVal.value;
+				_setters[i](i, newValue);
+				currentValue = newValue.store;
 			}
 		}
 
@@ -234,20 +228,14 @@ struct Uniforms
 	{
 		return _allUniforms;
 	}
-}
 
-// Generator for UniformValue union members
-private string uniformValueMembers()
-{
-	string retVal;
-
-	foreach(i, T; ShaderParameterTypes)
+	private UniformRef toRef(Uniform uniform)
 	{
-		import std.conv : text;
-		retVal ~= T.stringof ~ " _" ~ i.text ~ ";";
+		return UniformRef(
+			uniform.parameter,
+			_uniformData[uniform.offset .. uniform.offset + uniform.byteSize]
+		);
 	}
-
-	return retVal;
 }
 
 /// TypeTuple of all types which can be used as shader uniforms and attributes
@@ -271,7 +259,7 @@ alias ShaderParameterTypes = TypeTuple!(
 	TextureUnit
 );
 
-private alias UniformSetter = void function(GLint location, ref const Uniform uniform);
+private alias UniformSetter = void function(GLint location, ref const UniformRef uniform);
 private immutable UniformSetter[GLenum] uniformSetter;
 static this()
 {
@@ -280,42 +268,42 @@ static this()
 		enum type = GLType!T;
 
 		static if(is(T == float))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1fv(location, uniform.parameter.size, cast(float*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1fv(location, uniform.parameter.size, cast(float*)uniform.ptr);
 		else static if(is(T == vec2))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform2fv(location, uniform.parameter.size, cast(float*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform2fv(location, uniform.parameter.size, cast(float*)uniform.ptr);
 		else static if(is(T == vec3))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform3fv(location, uniform.parameter.size, cast(float*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform3fv(location, uniform.parameter.size, cast(float*)uniform.ptr);
 		else static if(is(T == vec4))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform4fv(location, uniform.parameter.size, cast(float*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform4fv(location, uniform.parameter.size, cast(float*)uniform.ptr);
 
 		else static if(is(T == int))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
 		else static if(is(T == vec2i))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform2iv(location, uniform.parameter.size, cast(int*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform2iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
 		else static if(is(T == vec3i))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform3iv(location, uniform.parameter.size, cast(int*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform3iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
 		else static if(is(T == vec4i))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform4iv(location, uniform.parameter.size, cast(int*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform4iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
 
 		else static if(is(T == bool))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
 
 		else static if(is(T == mat2))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix2fv(location, uniform.parameter.size, false, cast(float*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix2fv(location, uniform.parameter.size, false, cast(float*)uniform.ptr);
 		else static if(is(T == mat3))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix3fv(location, uniform.parameter.size, false, cast(float*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix3fv(location, uniform.parameter.size, false, cast(float*)uniform.ptr);
 		else static if(is(T == mat4))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.parameter.size, false, cast(float*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.parameter.size, false, cast(float*)uniform.ptr);
 
 		else static if(is(T == TextureUnit))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)&uniform.value);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
 
 		else static assert(false, "No uniform setter implemented for " ~ T.stringof);
 	}
 }
 
 
-private UniformValue[GLenum] defaultUniformValue;
+private void[][GLenum] defaultUniformValue;
 static this()
 {
 	foreach(T; ShaderParameterTypes)
@@ -324,19 +312,19 @@ static this()
 
 		static if(is(T == float))
 		{
-			defaultUniformValue[type] = UniformValue(0f);
+			defaultUniformValue[type] = [0f];
 		}
 		else static if(is(T == Vector!(float, P), P...))
 		{
-			defaultUniformValue[type] = UniformValue(T(0));
+			defaultUniformValue[type] = [T(0)];
 		}
 		else static if(is(T == Matrix!(float, P), P...))
 		{
-			defaultUniformValue[type] = UniformValue(T.identity);
+			defaultUniformValue[type] = [T.identity];
 		}
 		else
 		{
-			defaultUniformValue[type] = UniformValue(T.init);
+			defaultUniformValue[type] = [T.init];
 		}
 	}
 }

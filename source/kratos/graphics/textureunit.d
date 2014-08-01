@@ -7,12 +7,17 @@ import kratos.graphics.gl;
 
 struct TextureUnit
 {
-	const GLint index;
+	private GLint _index;
 	
 	this(GLint index)
 	{
 		assert(0 <= index && index < Size);
-		this.index = index;
+		this._index = index;
+	}
+
+	@property auto index() const
+	{
+		return _index;
 	}
 
 	enum Size = 48;
