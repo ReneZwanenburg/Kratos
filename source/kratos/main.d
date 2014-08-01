@@ -42,21 +42,14 @@ void main(string[] args)
 	auto quad = mesh(indices, vertices, attributes);
 
 	auto prog = program(only(
-		shaderModule(ShaderModule.Type.Vertex,  "#version 330\nin vec3 position; in vec2 texCoord; uniform float scale; out vec2 _texCoord; void main() { gl_Position = vec4(position * scale, 1); _texCoord = texCoord; }"),
-		shaderModule(ShaderModule.Type.Fragment,  "#version 330\nuniform sampler2D texture; uniform vec3 color; in vec2 _texCoord; void main() { gl_FragData[0] = texture2D(texture, _texCoord) * vec4(color, 1); }")
+		ShaderModuleCache.get("shaders/Test.vert"),
+		ShaderModuleCache.get("shaders/Test.frag")
 	));
 
 	scope renderer = new MeshRenderer(quad, Shader(prog));
 	renderer.shader["color"] = vec3(1, 1, 1);
 
-	ubyte[] textureData = [
-		255, 255, 255, 255,
-		255,   0,   0, 255,
-		  0, 255,   0, 255,
-		  0,   0, 255, 255
-	];
-
-	renderer.shader["texture"] = texture(TextureFormat.RGBA, vec2i(2, 2), textureData);
+	renderer.shader["texture"] = TextureCache.get("textures/sci_fi_metal_floor.png");
 
 	Time.reset();
 	while(!window.closeRequested)

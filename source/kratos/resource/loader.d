@@ -1,6 +1,9 @@
 ﻿module kratos.resource.loader;
 
 import kratos.resource.cache;
+import kratos.resource.filesystem : activeFileSystem;
+
+
 import kratos.graphics.texture;
 import derelict.devil.il;
 
@@ -12,13 +15,10 @@ package Texture loadTexture(string name)
 	scope(exit) ilDeleteImage(handle);
 	ilBindImage(handle);
 
-	import kratos.resource.filesystem : activeFileSystem;
-	import std.path : extension;
 	import gl3n.linalg : vec2i;
-	import std.string : toLower;
 
 	auto buffer = activeFileSystem.get(name);
-	ilLoadL(imageExtensionFormat[name.extension.toLower()], buffer.ptr, buffer.length);
+	ilLoadL(imageExtensionFormat[name.lowerCaseExtension], buffer.ptr, buffer.length);
 
 	auto dataPtr = ilGetData();
 	auto resolution = vec2i(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
@@ -28,7 +28,6 @@ package Texture loadTexture(string name)
 
 	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*bytesPerPixel[format]], name);
 }
-
 
 shared static this()
 {
@@ -41,7 +40,6 @@ shared static ~this()
 	ilShutDown();
 	DerelictIL.unload();
 }
-
 
 //Sigh, for some reason DevIL doesn't provide this..
 private immutable ILenum[string] imageExtensionFormat;
@@ -66,6 +64,7 @@ static this()
 		".pcd"	: IL_PCD,
 		".pcx"	: IL_PCX,
 		".pic"	: IL_PIC,
+		".png"	: IL_PNG,
 		".pbm"	: IL_PNM,
 		".pgm"	: IL_PNM,
 		".ppm"	: IL_PNM,
@@ -86,4 +85,34 @@ static this()
 		IL_RGB			: TextureFormat.RGB,
 		IL_RGBA			: TextureFormat.RGBA
 	];
+}
+
+
+import kratos.graphics.shader;
+
+alias ShaderModuleCache = Cache!(ShaderModule, string, loadShaderModule);
+
+package ShaderModule loadShaderModule(string name)
+{
+	auto buffer = activeFileSystem.get!char(name);
+	return shaderModule(shaderExtensionType[name.lowerCaseExtension], buffer, name);
+}
+
+immutable ShaderModule.Type[string] shaderExtensionType;
+
+static this()
+{
+	shaderExtensionType = [
+		".vert": ShaderModule.Type.Vertex,
+		".geom": ShaderModule.Type.Geometry,
+		".frag": ShaderModule.Type.Fragment
+	];
+}
+
+
+private @property auto lowerCaseExtension(string path)
+{
+	import std.path : extension;
+	import std.string : toLower;
+	return path.extension.toLower();
 }

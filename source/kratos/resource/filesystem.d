@@ -22,6 +22,11 @@ interface FileSystem
 {
 	bool			has(string name);
 	const(void[])	get(string name);
+
+	const(T[]) get(T)(string name)
+	{
+		return cast(const T[])get(name);
+	}
 }
 
 class MultiFileSystem : FileSystem
