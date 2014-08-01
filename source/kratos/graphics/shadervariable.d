@@ -85,8 +85,22 @@ struct UniformRef
 
 	auto opAssign(T)(auto ref T value)
 	{
+		this[0] = value;
+	}
+
+	auto opAssign(T)(T[] values)
+	{
+		foreach(i, ref value; values)
+		{
+			this[i] = value;
+		}
+	}
+
+	auto opIndexAssign(T)(auto ref T value, size_t index)
+	{
 		assert(GLType!T == parameter.type, "Uniform type mismatch: " ~ T.stringof);
-		(cast(T[])store)[0] = value;
+		assert(index < parameter.size, "Uniform index out of bounds");
+		(cast(T[])store)[index] = value;
 		return this;
 	}
 
