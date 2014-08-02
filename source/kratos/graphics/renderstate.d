@@ -303,14 +303,22 @@ struct Shader
 		return _program.name;
 	}
 
-	private static struct Current
-	{
-	}
+	private static struct Current { }
 	private static Current current;
 
 	bool opEquals(Current current)
 	{
 		//TODO: Test if initial equality test is faster. Probably not, at least one uniform differs in the general case.
 		return false;
+	}
+
+	bool opEquals(ref const Shader shader)
+	{
+		foreach(i, ref field; this.tupleof)
+		{
+			if(shader.tupleof[i] != field) return false;
+		}
+
+		return true;
 	}
 }
