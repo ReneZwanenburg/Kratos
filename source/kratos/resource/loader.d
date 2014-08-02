@@ -3,6 +3,7 @@
 import kratos.resource.cache;
 import kratos.resource.filesystem : activeFileSystem;
 
+import vibe.data.json;
 
 import kratos.graphics.texture;
 import derelict.devil.il;
@@ -118,6 +119,25 @@ package Program loadProgram(string[] modules)
 	import std.conv : text;
 	return program(modules.map!(a => ShaderModuleCache.get(a)), modules.text);
 }
+
+
+import kratos.graphics.renderstate;
+
+alias RenderStateCache = Cache!(RenderState, string, loadRenderState);
+
+package RenderState loadRenderState(string name)
+{
+	RenderState renderState;
+	auto json = parseJsonString(activeFileSystem.get!char(name));
+
+	foreach(field; renderState.tupleof)
+	{
+
+	}
+
+	return renderState;
+}
+
 
 private @property auto lowerCaseExtension(string path)
 {

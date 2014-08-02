@@ -1,5 +1,7 @@
 ﻿module kratos.resource.filesystem;
 
+import std.exception : assumeUnique;
+
 private FileSystem _activeFileSystem;
 
 @property FileSystem activeFileSystem()
@@ -20,12 +22,12 @@ private FileSystem _activeFileSystem;
 
 interface FileSystem
 {
-	bool			has(string name);
-	const(void[])	get(string name);
+	bool				has(string name);
+	immutable(void[])	get(string name);
 
-	const(T[]) get(T)(string name)
+	immutable(T[])		get(T)(string name)
 	{
-		return cast(const T[])get(name);
+		return cast(immutable T[])get(name);
 	}
 }
 
@@ -39,7 +41,7 @@ class MultiFileSystem : FileSystem
 		return _fileSystems.any!(a => a.has(name));
 	}
 
-	override const(void[]) get(string name)
+	override immutable(void[]) get(string name)
 	{
 		assert(has(name));
 
@@ -72,9 +74,10 @@ class NormalFileSystem : FileSystem
 		return buildPath(name).isFile();
 	}
 
-	override const(void[]) get(string name)
+	override immutable(void[]) get(string name)
 	{
-		return buildPath(name).read();
+		assert(has(name), "File " ~ name ~ " does not exist");
+		return buildPath(name).read().assumeUnique;
 	}
 
 	private const(char[]) buildPath(string name)
@@ -126,9 +129,10 @@ class PackFileSystem : FileSystem
 		return !!(md5Of(name) in _fileMap);
 	}
 	
-	override const(void[]) get(string name)
+	override immutable(void[]) get(string name)
 	{
+		assert(has(name), "File " ~ name ~ " does not exist");
 		auto offset = _fileMap[md5Of(name)];
-		return _pack[offset.startOffset .. offset.endOffset];
+		return _pack[offset.startOffset .. offset.endOffset].assumeUnique;
 	}
 }
