@@ -64,12 +64,16 @@ template Cache(T, I, alias loader)
 	void purge()
 	{
 		size_t writeIndex = 0;
-		foreach(i; 0..resources.length)
+
+		static if(is(typeof(resources[0].resource.refCountedStore)))
 		{
-			auto element = resources[i];
-			if(element.resource.refCountedStore.refCount > 2)
+			foreach(i; 0..resources.length)
 			{
-				resources[writeIndex++] = element;
+				auto element = resources[i];
+				if(element.resource.refCountedStore.refCount > 2)
+				{
+					resources[writeIndex++] = element;
+				}
 			}
 		}
 
