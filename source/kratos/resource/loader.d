@@ -110,6 +110,15 @@ static this()
 }
 
 
+alias ProgramCache = Cache!(Program, string[], loadProgram);
+
+package Program loadProgram(string[] modules)
+{
+	import std.algorithm : map;
+	import std.conv : text;
+	return program(modules.map!(a => ShaderModuleCache.get(a)), modules.text);
+}
+
 private @property auto lowerCaseExtension(string path)
 {
 	import std.path : extension;

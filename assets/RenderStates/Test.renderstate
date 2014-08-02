@@ -1,0 +1,31 @@
+{
+	"blend":
+	{
+		"equation":		"Add",
+		"srcFunction":	"SrcAlpha",
+		"dstFunction":	"OneMinusSrcAlpha"
+	}
+	
+	"depthTest":
+	{
+		"func":		"LessOrEqual",
+		"read":		true,
+		"write":	true
+	}
+	
+	"shader":
+	{
+		"modules":
+		[
+			"Test.vert",
+			"Test.frag"
+		],
+		
+		"uniforms":
+		{
+			"scale":	0.5,
+			"color":	[1.0, 0.5, 0.5],
+			"texture":	"sci_fi_metal_floor.png"
+		}
+	}
+}

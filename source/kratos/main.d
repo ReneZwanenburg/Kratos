@@ -41,15 +41,12 @@ void main(string[] args)
 
 	auto quad = mesh(indices, vertices, attributes);
 
-	auto prog = program(only(
-		ShaderModuleCache.get("shaders/Test.vert"),
-		ShaderModuleCache.get("shaders/Test.frag")
-	));
+	auto prog = ProgramCache.get(["Shaders/Test.vert", "Shaders/Test.frag"]);
 
 	scope renderer = new MeshRenderer(quad, Shader(prog));
 	renderer.shader["color"] = vec3(1, 1, 1);
 
-	renderer.shader["texture"] = TextureCache.get("textures/sci_fi_metal_floor.png");
+	renderer.shader["texture"] = TextureCache.get("Textures/sci_fi_metal_floor.png");
 
 	Time.reset();
 	while(!window.closeRequested)
