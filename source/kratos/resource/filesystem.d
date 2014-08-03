@@ -23,7 +23,16 @@ private FileSystem _activeFileSystem;
 interface FileSystem
 {
 	bool				has(string name);
-	immutable(void[])	get(string name);
+
+	protected
+	immutable(void[])	getImpl(string name);
+
+	final
+	immutable(void[])	get(string name)
+	{
+		assert(has(name), "File " ~ name ~ " does not exist");
+		return getImpl(name);
+	}
 
 	immutable(T[])		get(T)(string name)
 	{
@@ -41,10 +50,8 @@ class MultiFileSystem : FileSystem
 		return _fileSystems.any!(a => a.has(name));
 	}
 
-	override immutable(void[]) get(string name)
+	override immutable(void[]) getImpl(string name)
 	{
-		assert(has(name));
-
 		import std.algorithm : find;
 		import std.array : front;
 		return _fileSystems.find!(a => a.has(name)).front.get(name);
@@ -74,9 +81,8 @@ class NormalFileSystem : FileSystem
 		return buildPath(name).isFile();
 	}
 
-	override immutable(void[]) get(string name)
+	override immutable(void[]) getImpl(string name)
 	{
-		assert(has(name), "File " ~ name ~ " does not exist");
 		return buildPath(name).read().assumeUnique;
 	}
 
@@ -129,9 +135,8 @@ class PackFileSystem : FileSystem
 		return !!(md5Of(name) in _fileMap);
 	}
 	
-	override immutable(void[]) get(string name)
+	override immutable(void[]) getImpl(string name)
 	{
-		assert(has(name), "File " ~ name ~ " does not exist");
 		auto offset = _fileMap[md5Of(name)];
 		return _pack[offset.startOffset .. offset.endOffset].assumeUnique;
 	}
