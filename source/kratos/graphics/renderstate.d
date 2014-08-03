@@ -4,6 +4,8 @@ import std.logger;
 import kratos.graphics.gl;
 import gl3n.linalg;
 
+import vibe.data.serialization;
+
 struct RenderState
 {
 	Cull		cull;
@@ -38,6 +40,7 @@ enum DepthFunc : GLenum
 
 struct DepthTest
 {
+	@optional @byName:
 	DepthFunc	func	= DepthFunc.LessOrEqual;
 	bool		read	= true;
 	bool		write	= true;
@@ -85,6 +88,7 @@ enum BlendFunction : GLenum
 
 struct Blend
 {
+	@optional @byName:
 	BlendEquation	rgbEquation			= BlendEquation.Add;
 	BlendEquation	alphaEquation		= BlendEquation.Add;
 
@@ -174,6 +178,7 @@ enum CullFace : GLenum
 
 struct Cull
 {
+	@optional @byName:
 	FrontFace	frontFace	= FrontFace.CounterClockwise;
 	CullFace	cullFace	= CullFace.Back;
 	bool		enabled		= true;
@@ -217,6 +222,7 @@ enum StencilOp : GLuint
 
 struct Stencil
 {
+	@optional @byName:
 	StencilFunction	stencilFunction		= StencilFunction.Always;
 	StencilOp		stencilFail			= StencilOp.Keep;
 	StencilOp		depthFail			= StencilOp.Keep;

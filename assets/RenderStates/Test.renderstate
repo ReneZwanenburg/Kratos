@@ -1,31 +1,31 @@
 {
-	"blend":
+	"Blend":
 	{
 		"equation":		"Add",
 		"srcFunction":	"SrcAlpha",
 		"dstFunction":	"OneMinusSrcAlpha"
-	}
+	},
 	
-	"depthTest":
+	"DepthTest":
 	{
 		"func":		"LessOrEqual",
 		"read":		true,
 		"write":	true
-	}
+	},
 	
-	"shader":
+	"Shader":
 	{
 		"modules":
 		[
-			"Test.vert",
-			"Test.frag"
+			"Shaders/Test.vert",
+			"Shaders/Test.frag"
 		],
 		
 		"uniforms":
 		{
 			"scale":	0.5,
-			"color":	[1.0, 0.5, 0.5],
-			"texture":	"sci_fi_metal_floor.png"
+			"color":	[1, 0.5, 0.5],
+			"texture":	"Textures/sci_fi_metal_floor.png"
 		}
 	}
 }

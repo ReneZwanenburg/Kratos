@@ -132,7 +132,72 @@ package RenderState loadRenderState(string name)
 
 	foreach(field; renderState.tupleof)
 	{
+		alias T = typeof(field);
+		auto stateJson = json[T.stringof];
+		if(stateJson.type == Json.Type.Undefined) continue;
 
+		static if(is(T == Shader))
+		{
+			auto modules = deserializeJson!(string[])(stateJson["modules"]);
+			import std.algorithm : sort;
+			modules.sort();
+
+			renderState.shader = Shader(ProgramCache.get(modules));
+
+			auto uniforms = stateJson["uniforms"];
+			if(uniforms.type != Json.Type.Undefined)
+			{
+				foreach(string name, value; uniforms)
+				{
+					if(value.type == Json.Type.String)
+					{
+						renderState.shader[name] = TextureCache.get(value.get!string);
+					}
+					else
+					{
+						auto uniform = renderState.shader[name];
+
+						import kratos.graphics.gl;
+						foreach(TypeBinding; GLTypes)
+						{
+							alias UT = TypeBinding.nativeType;
+							if(TypeBinding.glType == uniform.type)
+							{
+								//TODO: Add support for uniform arrays and matrices
+								import std.traits;
+								import gl3n.linalg;
+
+								static if(is(UT == TextureUnit))
+								{
+
+								}
+								else static if(isInstanceOf!(Vector, UT))
+								{
+									assert(value.type == Json.Type.Array);
+									UT ut;
+									ut.vector = deserializeJson!(typeof(ut.vector))(value);
+									uniform = ut;
+								}
+								else static if(isInstanceOf!(Matrix, UT))
+								{
+									UT ut;
+									ut.matrix = deserializeJson!(typeof(ut.matrix))(value);
+									uniform = ut;
+								}
+								else
+								{
+									uniform = deserializeJson!(UT)(value);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			field = deserializeJson!T(stateJson);
+		}
 	}
 
 	return renderState;

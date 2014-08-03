@@ -43,10 +43,7 @@ void main(string[] args)
 
 	auto prog = ProgramCache.get(["Shaders/Test.vert", "Shaders/Test.frag"]);
 
-	scope renderer = new MeshRenderer(quad, Shader(prog));
-	renderer.shader["color"] = vec3(1, 1, 1);
-
-	renderer.shader["texture"] = TextureCache.get("Textures/sci_fi_metal_floor.png");
+	scope renderer = new MeshRenderer(quad, RenderStateCache.get("RenderStates/Test.renderstate"));
 
 	Time.reset();
 	while(!window.closeRequested)

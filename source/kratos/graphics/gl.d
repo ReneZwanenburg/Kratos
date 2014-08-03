@@ -84,7 +84,7 @@ private void checkGLError(alias func, Args...)(Args args)
 	}
 }
 
-private template GLTypeBinding(GLenum _glType, T)
+template GLTypeBinding(GLenum _glType, T)
 {
 	enum glType = _glType;
 	alias nativeType = T;

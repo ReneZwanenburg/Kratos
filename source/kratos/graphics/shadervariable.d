@@ -74,14 +74,10 @@ struct Uniform
 // Reference to an Uniform instance. Can be used to set the value of this Uniform
 struct UniformRef
 {
-	private const	ShaderParameter	parameter;
-	private			void[]			store;
+	const	ShaderParameter	parameter;
+	private	void[]			store;
 
-
-	private void opAssign(void[] value)
-	{
-		store[] = value[];
-	}
+	alias parameter this;
 
 	auto opAssign(T)(auto ref T value)
 	{
@@ -98,8 +94,8 @@ struct UniformRef
 
 	auto opIndexAssign(T)(auto ref T value, size_t index)
 	{
-		assert(GLType!T == parameter.type, "Uniform type mismatch: " ~ T.stringof);
-		assert(index < parameter.size, "Uniform index out of bounds");
+		assert(GLType!T == type, "Uniform type mismatch: " ~ T.stringof);
+		assert(index < size, "Uniform index out of bounds");
 		(cast(T[])store)[index] = value;
 		return this;
 	}
@@ -221,7 +217,7 @@ struct Uniforms
 			if(currentValue.store != newValue.store)
 			{
 				_setters[i](i, newValue);
-				currentValue = newValue.store;
+				currentValue.store[] = newValue.store[];
 			}
 		}
 

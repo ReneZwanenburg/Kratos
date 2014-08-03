@@ -21,13 +21,13 @@ final class MeshRenderer : Component
 
 	this()
 	{
-		this(emptyMesh, defaultShader);
+		this(emptyMesh, defaultRenderState);
 	}
 
-	this(Mesh mesh, Shader shader)
+	this(Mesh mesh, RenderState renderState)
 	{
 		this._mesh = mesh;
-		this.renderState.shader = shader;
+		this.renderState = renderState;
 		_vao = vao(mesh, shader.program);
 	}
 
@@ -81,16 +81,16 @@ final class MeshRenderer : Component
 		gl.DrawElements(GL_TRIANGLES, _mesh.ibo.byteLength / GLuint.sizeof, GL_UNSIGNED_INT, null);
 	}
 
-	private static ref Shader defaultShader()
+	private static ref RenderState defaultRenderState()
 	{
 		static bool initialized = false;
-		static Shader shader;
+		static RenderState state;
 		
 		if(!initialized)
 		{
-			shader = Shader(errorProgram);
+			state.shader = Shader(errorProgram);
 			initialized = true;
 		}
-		return shader;
+		return state;
 	}
 }
