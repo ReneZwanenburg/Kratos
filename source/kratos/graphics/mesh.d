@@ -10,7 +10,7 @@ Mesh emptyMesh()
 	if(!initialized)
 	{
 		import gl3n.linalg;
-		static struct S{ vec3 _; }
+		static struct S{ vec3 position; }
 		S[] sArr;
 		uint[] iArr;
 

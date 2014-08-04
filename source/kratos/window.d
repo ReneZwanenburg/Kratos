@@ -68,6 +68,8 @@ struct Window
 		glfwSetFramebufferSizeCallback(handle, (_, width, height) => assumeWontThrow(gl.Viewport(0, 0, width, height)));
 
 		glfwSwapInterval(properties.vSync);
+
+		_activeProperties = properties;
 	}
 
 	~this()
@@ -90,6 +92,15 @@ struct Window
 		bool closeRequested()
 		{
 			return !!glfwWindowShouldClose(handle);
+		}
+	}
+
+	static
+	{
+		private WindowProperties _activeProperties;
+		const(WindowProperties) activeProperties()
+		{
+			return _activeProperties;
 		}
 	}
 }

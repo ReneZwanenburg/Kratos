@@ -6,6 +6,11 @@
 		"dstFunction":	"OneMinusSrcAlpha"
 	},
 	
+	"Cull":
+	{
+		"enabled": false
+	},
+	
 	"DepthTest":
 	{
 		"func":		"LessOrEqual",
@@ -23,7 +28,6 @@
 		
 		"uniforms":
 		{
-			"scale":	0.5,
 			"color":	[1, 1, 1],
 			"texture":	"Textures/sci_fi_metal_floor.png"
 		}

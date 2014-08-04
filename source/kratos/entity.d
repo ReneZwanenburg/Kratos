@@ -72,7 +72,7 @@ abstract class Component
 alias AllowDerived = Flag!"AllowDerived";
 
 
-auto dependency(AllowDerived allowDerived = AllowDerived.yes)
+auto @property dependency(AllowDerived allowDerived = AllowDerived.yes)
 {
 	return Dependency(allowDerived);
 }

@@ -21,14 +21,16 @@ final class MeshRenderer : Component
 
 	this()
 	{
-		this(emptyMesh, defaultRenderState);
+		this._mesh = emptyMesh;
+		this._renderState = defaultRenderState;
+		_vao = vao(_mesh, _renderState.shader.program);
 	}
 
-	this(Mesh mesh, RenderState renderState)
+	void set(Mesh mesh, RenderState renderState)
 	{
+		updateVao(mesh, renderState.shader.program);
 		this._mesh = mesh;
 		this.renderState = renderState;
-		_vao = vao(mesh, shader.program);
 	}
 
 	@property
@@ -76,6 +78,7 @@ final class MeshRenderer : Component
 	void draw()
 	{
 		_vao.bind();
+		shader.uniforms.updateBuiltins(this);
 		_renderState.apply();
 		import kratos.graphics.gl;
 		gl.DrawElements(GL_TRIANGLES, _mesh.ibo.numIndices, _mesh.ibo.indexType, null);

@@ -24,6 +24,10 @@ void main(string[] args)
 	import kratos.graphics.texture;
 	import kratos.resource.loader;
 	import std.typecons;
+	import kratos.entity;
+	import kratos.component.camera;
+	import kratos.component.transform;
+	import std.stdio;
 
 	auto indices = IBO([
 		0, 2, 1,
@@ -43,8 +47,17 @@ void main(string[] args)
 		P3T2(vec3( .5f, -.5f, 0), vec2(1, 1))
 	]);
 
-	auto quad = Mesh(indices, vertices);
-	scope renderer = new MeshRenderer(quad, RenderStateCache.get("RenderStates/Test.renderstate"));
+	auto quadEntity = new Entity("quad");
+	auto renderer = quadEntity.addComponent!MeshRenderer;
+	auto quadTransform = quadEntity.getComponent!Transform;
+	quadTransform.position = vec3(0, 0, -1);
+	renderer.set(Mesh(indices, vertices), RenderStateCache.get("RenderStates/Test.renderstate"));
+
+	auto cameraEntity = new Entity("Camera");
+	Camera camera = cameraEntity.addComponent!Camera;
+	auto cameraTransform = cameraEntity.getComponent!Transform;
+	cameraTransform.position = vec3(0, 0, 2);
+	camera.makeCurrent();
 
 	Time.reset();
 	while(!window.closeRequested)
@@ -52,7 +65,8 @@ void main(string[] args)
 		window.updateInput();
 
 		import std.math;
-		renderer.shader["scale"] = (sin(Time.total) + 1).to!float;
+		//renderer.shader["scale"] = (sin(Time.total) + 1).to!float;
+		quadTransform.rotation = quat.euler_rotation(Time.total / 2, 0, 0);
 
 
 		import kratos.graphics.gl;

@@ -2,12 +2,12 @@
 in vec3 position;
 in vec2 texCoord;
 
-uniform float scale;
+uniform mat4 WVP;
 
 out vec2 _texCoord;
 
 void main()
 {
-	gl_Position = vec4(position * scale, 1);
+	gl_Position = WVP * vec4(position, 1);
 	_texCoord = texCoord;
 }

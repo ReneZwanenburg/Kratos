@@ -130,7 +130,7 @@ package RenderState loadRenderState(string name)
 	RenderState renderState;
 	auto json = parseJsonString(activeFileSystem.get!char(name));
 
-	foreach(field; renderState.tupleof)
+	foreach(ref field; renderState.tupleof)
 	{
 		alias T = typeof(field);
 		auto stateJson = json[T.stringof];

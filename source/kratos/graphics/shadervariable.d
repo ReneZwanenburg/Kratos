@@ -2,6 +2,7 @@
 
 import kratos.graphics.gl;
 import kratos.graphics.texture;
+import kratos.component.meshrenderer;
 
 import std.variant;
 import gl3n.linalg;
@@ -117,8 +118,7 @@ struct Uniform
 	
 	bool isBuiltin() const
 	{
-		//TODO: Implement builtins
-		return false;
+		return !!(name in builtinUniformUpdaters);
 	}
 	
 	bool isUser() const
@@ -153,7 +153,8 @@ struct UniformRef
 	{
 		assert(GLType!T == type, "Uniform type mismatch: " ~ T.stringof);
 		assert(index < size, "Uniform index out of bounds");
-		(cast(T[])store)[index] = value;
+		import std.traits;
+		(cast(Unqual!T[])store)[index] = value;
 		return this;
 	}
 
@@ -188,6 +189,13 @@ struct Uniforms
 			indexedUniforms
 			.filter!(a => a[0].isBuiltin)
 			.map!(a => a[1])
+			.array
+			.assumeUnique;
+
+		_builtinUpdaters =
+			allUniforms
+			.filter!(a => a.isBuiltin)
+			.map!(a => builtinUniformUpdaters[a.name])
 			.array
 			.assumeUnique;
 
@@ -230,14 +238,15 @@ struct Uniforms
 		_textures		= _textures.dup;
 	}
 
-	private ubyte[]						_uniformData;
-	private Array!Texture				_textures;
+	private ubyte[]								_uniformData;
+	private Array!Texture						_textures;
 
-	private immutable Uniform[]			_allUniforms;
-	private immutable uint[]			_builtinUniforms;
-	private immutable uint[string]		_userUniforms;
-	private immutable uint[string]		_textureIndices;
-	private immutable UniformSetter[]	_setters;
+	private immutable Uniform[]					_allUniforms;
+	private immutable uint[]					_builtinUniforms;
+	private immutable uint[string]				_userUniforms;
+	private immutable uint[string]				_textureIndices;
+	private immutable UniformSetter[]			_setters;
+	private immutable BuiltinUniformUpdater[]	_builtinUpdaters;
 
 	void opIndexAssign(ref Texture texture, string name)
 	{
@@ -258,6 +267,14 @@ struct Uniforms
 	UniformRef opIndex(string name)
 	{
 		return toRef(_allUniforms[_userUniforms[name]]);
+	}
+
+	void updateBuiltins(MeshRenderer renderer)
+	{
+		foreach(i, ui; _builtinUniforms)
+		{
+			_builtinUpdaters[i](toRef(_allUniforms[ui]), renderer);
+		}
 	}
 
 	package void apply(ref Uniforms newValues, ref Array!Sampler samplers)
@@ -353,17 +370,34 @@ static this()
 			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
 
 		else static if(is(T == mat2))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix2fv(location, uniform.size, false, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix2fv(location, uniform.size, true, cast(float*)uniform.ptr);
 		else static if(is(T == mat3))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix3fv(location, uniform.size, false, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix3fv(location, uniform.size, true, cast(float*)uniform.ptr);
 		else static if(is(T == mat4))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.size, false, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.size, true, cast(float*)uniform.ptr);
 
 		else static if(is(T == TextureUnit))
 			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
 
 		else static assert(false, "No uniform setter implemented for " ~ T.stringof);
 	}
+}
+
+
+private alias BuiltinUniformUpdater = void function(UniformRef uniform, MeshRenderer renderer);
+private immutable BuiltinUniformUpdater[string] builtinUniformUpdaters;
+static this()
+{
+	import kratos.component.camera;
+
+	builtinUniformUpdaters = [
+		"W"		: (uniform, renderer) { uniform = renderer.transform.worldMatrix; },
+		"V"		: (uniform, renderer) { uniform = Camera.current.viewMatrix; },
+		"P"		: (uniform, renderer) { uniform = Camera.current.projectionMatrix; },
+		"WV"	: (uniform, renderer) { uniform = Camera.current.viewMatrix * renderer.transform.worldMatrix; },
+		"VP"	: (uniform, renderer) { uniform = Camera.current.viewProjectionMatrix; },
+		"WVP"	: (uniform, renderer) { uniform = Camera.current.viewProjectionMatrix * renderer.transform.worldMatrix; },
+	];
 }
 
 
