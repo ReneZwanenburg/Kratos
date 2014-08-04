@@ -12,76 +12,131 @@ import std.container : Array;
 import std.logger;
 
 
-// Parameter specification. Name, type, and size. No specific value
-struct ShaderParameter
+immutable VertexAttributes toVertexAttributes(T) = toVertexAttributesImpl!T;
+
+private auto toVertexAttributesImpl(T)()
 {
-	GLint	size; // Size in 'type' units, not byte size
-	GLenum	type;
+	auto attributes = VertexAttributes(T.tupleof.length);
+
+	foreach(i, FT; typeof(T.tupleof))
+	{
+		//TODO: Add support for static arrays
+		attributes[][i] = VertexAttribute(GLType!FT, T.tupleof[i].stringof);
+	}
+
+	return attributes;
+}
+
+struct VertexAttribute
+{
+	// Type of this vertex attribute as returned by get active attrib. For example, GL_FLOAT_VEC3
+	GLenum	aggregateType;
 	string	name;
 
-	@property
+	@property const
 	{
-		GLsizei byteSize() const pure nothrow
+		// Basic type of this attribute as expected by vertex attrib pointer. For example, GL_FLOAT for GL_FLOAT_VEC3
+		GLenum basicType()
 		{
-			return size * GLTypeSize[type];
+			return attributeBasicType[aggregateType];
 		}
 
-		GLenum backingType() const pure nothrow
+		// Size in basic type units of the aggregate type. For example, 3 for GL_FLOAT_VEC3
+		GLsizei basicTypeSize()
 		{
-			return .backingType[type];
+			return attributeTypeSize[aggregateType];
 		}
 
-		GLint backingTypeSize() const pure nothrow
+		GLsizei byteSize()
 		{
-			return .backingTypeSize[type];
-		}
-
-		bool isSampler() const
-		{
-			return type == GLType!TextureUnit;
-		}
-		
-		bool isBuiltin() const
-		{
-			//TODO: Implement builtins
-			return false;
-		}
-		
-		bool isUser() const
-		{
-			return !(isSampler || isBuiltin);
+			return GLTypeSize[aggregateType];
 		}
 	}
 }
 
-GLsizei totalByteSize(const ShaderParameter[] parameters)
+struct VertexAttributes
+{
+	enum GLsizei			Max = 16;
+
+	VertexAttribute[Max]	attributes;
+	GLsizei					count;
+
+	this(GLsizei count)
+	{
+		this.count = count;
+	}
+
+	inout(VertexAttribute[]) opSlice(size_t startIdx, size_t endIdx) inout
+	{
+		assert(startIdx <= endIdx);
+		assert(endIdx <= count);
+		return attributes[startIdx..endIdx];
+	}
+
+	inout(VertexAttribute[]) opSlice() inout
+	{
+		return this[0..count];
+	}
+
+	ref inout(VertexAttribute) opIndex(size_t index) inout
+	{
+		return this[][index];
+	}
+
+	void opIndexAssign(VertexAttribute attribute, size_t index)
+	{
+		this[][index] = attribute;
+	}
+
+	@property GLsizei totalByteSize() const
+	{
+		return this[].totalByteSize;
+	}
+}
+
+@property GLsizei totalByteSize(const VertexAttribute[] attributes)
 {
 	import std.algorithm : reduce;
-	return reduce!q{a + b.byteSize}(0, parameters);
+	return reduce!q{a + b.byteSize}(0, attributes);
 }
 
 
 // Uniform descriptor for a particular program. Combination of a Parameter and an offset in the storage buffer
 struct Uniform
 {
-	const	ShaderParameter	parameter;
-	const	ptrdiff_t		offset;
-	const	size_t			byteSize;
-
-	alias parameter this;
+	GLenum		type;
+	string		name;
+	ptrdiff_t	offset;
+	GLsizei		size;
+	GLsizei		byteSize;
+	
+	bool isSampler() const
+	{
+		return type == GLType!TextureUnit;
+	}
+	
+	bool isBuiltin() const
+	{
+		//TODO: Implement builtins
+		return false;
+	}
+	
+	bool isUser() const
+	{
+		return !(isSampler || isBuiltin);
+	}
 }
 
 // Reference to an Uniform instance. Can be used to set the value of this Uniform
 struct UniformRef
 {
-	const	ShaderParameter	parameter;
-	private	void[]			store;
-
-	alias parameter this;
+	const	GLenum	type;
+	const	GLsizei	size;
+	private	ubyte[]	store;
 
 	auto opAssign(T)(auto ref T value)
 	{
-		this[0] = value;
+		return this[0] = value;
 	}
 
 	auto opAssign(T)(T[] values)
@@ -90,6 +145,8 @@ struct UniformRef
 		{
 			this[i] = value;
 		}
+
+		return this;
 	}
 
 	auto opIndexAssign(T)(auto ref T value, size_t index)
@@ -110,37 +167,32 @@ struct UniformRef
 // Set of all uniforms for use with a Program, and Textures bound to sampler Uniforms.
 struct Uniforms
 {
-	this(ShaderParameter[] parameters)
+	this(immutable Uniform[] allUniforms)
 	{
 		import std.range : zip, iota, repeat, sequence;
-		import std.algorithm : map, filter;
+		import std.algorithm : map, filter, reduce;
 		import std.array : array, assocArray;
 		import std.exception : assumeUnique;
 		import std.typecons : tuple;
 
-		this._allUniforms = 
-			parameters
-			.zip(iota(parameters.length))
-			.map!(a => Uniform(a[0], parameters[0..a[1]].totalByteSize, a[0].byteSize))
-			.array
-			.assumeUnique;
+		this._allUniforms = allUniforms;
 
 		//TODO: Use some per-program pool allocator?
-		this._uniformData = new ubyte[parameters.totalByteSize];
+		this._uniformData = new ubyte[reduce!q{a + b.byteSize}(0, allUniforms)];
 
-		auto indexedParameters = 
-			parameters
+		auto indexedUniforms = 
+			allUniforms
 			.zip(iota(uint.max));
 
 		_builtinUniforms =
-			indexedParameters
+			indexedUniforms
 			.filter!(a => a[0].isBuiltin)
 			.map!(a => a[1])
 			.array
 			.assumeUnique;
 
 		auto samplerUniforms =
-			indexedParameters
+			indexedUniforms
 			.filter!(a => a[0].isSampler);
 
 		{ // TODO: remove those temporaries, should not be neccesary in 2.066
@@ -152,7 +204,7 @@ struct Uniforms
 			_textureIndices = tmpTextureIndices.assumeUnique;
 		}
 
-		foreach(parameter, ui, tu; zip(samplerUniforms, iota(TextureUnit.Size)))
+		foreach(uniform, ui, tu; zip(samplerUniforms, iota(TextureUnit.Size)))
 		{
 			toRef(_allUniforms[ui]) = TextureUnit(tu);
 		}
@@ -161,7 +213,7 @@ struct Uniforms
 
 		{
 			auto tmpUserUniforms = 
-				indexedParameters
+				indexedUniforms
 				.filter!(a => a[0].isUser)
 				.map!(a => tuple(a[0].name, a[1]))
 				.assocArray;
@@ -180,6 +232,7 @@ struct Uniforms
 
 	private ubyte[]						_uniformData;
 	private Array!Texture				_textures;
+
 	private immutable Uniform[]			_allUniforms;
 	private immutable uint[]			_builtinUniforms;
 	private immutable uint[string]		_userUniforms;
@@ -242,7 +295,8 @@ struct Uniforms
 	private UniformRef toRef(Uniform uniform)
 	{
 		return UniformRef(
-			uniform.parameter,
+			uniform.type,
+			uniform.size,
 			_uniformData[uniform.offset .. uniform.offset + uniform.byteSize]
 		);
 	}
@@ -278,35 +332,35 @@ static this()
 		enum type = GLType!T;
 
 		static if(is(T == float))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1fv(location, uniform.parameter.size, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1fv(location, uniform.size, cast(float*)uniform.ptr);
 		else static if(is(T == vec2))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform2fv(location, uniform.parameter.size, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform2fv(location, uniform.size, cast(float*)uniform.ptr);
 		else static if(is(T == vec3))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform3fv(location, uniform.parameter.size, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform3fv(location, uniform.size, cast(float*)uniform.ptr);
 		else static if(is(T == vec4))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform4fv(location, uniform.parameter.size, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform4fv(location, uniform.size, cast(float*)uniform.ptr);
 
 		else static if(is(T == int))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
 		else static if(is(T == vec2i))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform2iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform2iv(location, uniform.size, cast(int*)uniform.ptr);
 		else static if(is(T == vec3i))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform3iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform3iv(location, uniform.size, cast(int*)uniform.ptr);
 		else static if(is(T == vec4i))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform4iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform4iv(location, uniform.size, cast(int*)uniform.ptr);
 
 		else static if(is(T == bool))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
 
 		else static if(is(T == mat2))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix2fv(location, uniform.parameter.size, false, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix2fv(location, uniform.size, false, cast(float*)uniform.ptr);
 		else static if(is(T == mat3))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix3fv(location, uniform.parameter.size, false, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix3fv(location, uniform.size, false, cast(float*)uniform.ptr);
 		else static if(is(T == mat4))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.parameter.size, false, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.size, false, cast(float*)uniform.ptr);
 
 		else static if(is(T == TextureUnit))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.parameter.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
 
 		else static assert(false, "No uniform setter implemented for " ~ T.stringof);
 	}
@@ -339,12 +393,12 @@ static this()
 	}
 }
 
-private immutable GLenum[GLenum] backingType;
-private immutable GLint[GLenum] backingTypeSize;
+private immutable GLenum[GLenum]	attributeBasicType;
+private immutable GLint[GLenum]		attributeTypeSize;
 
 static this()
 {
-	backingType = [
+	attributeBasicType = [
 		GL_FLOAT: GL_FLOAT,
 		GL_FLOAT_VEC2: GL_FLOAT,
 		GL_FLOAT_VEC3: GL_FLOAT,
@@ -358,7 +412,7 @@ static this()
 		GL_BOOL: GL_BOOL,
 	];
 
-	backingTypeSize = [
+	attributeTypeSize = [
 		GL_FLOAT: 1,
 		GL_FLOAT_VEC2: 2,
 		GL_FLOAT_VEC3: 3,

@@ -7,7 +7,7 @@ import kratos.graphics.shadervariable;
 alias Mesh = Handle!Mesh_Impl;
 
 // Provided for API consistency
-Mesh mesh(IBO indices, VBO vertices, const ShaderParameter[] vertexAttributes)
+Mesh mesh(IBO indices, VBO vertices, const VertexAttributes vertexAttributes)
 {
 	return Mesh(indices, vertices, vertexAttributes);
 }
@@ -20,7 +20,9 @@ Mesh emptyMesh()
 	if(!initialized)
 	{
 		import kratos.graphics.gl;
-		emptyMesh = mesh(ibo(null), vbo(null), [ShaderParameter(1, GL_FLOAT_VEC3, "position")]);
+		auto attributes = VertexAttributes(1);
+		attributes[0] = VertexAttribute(GL_FLOAT_VEC3, "position");
+		emptyMesh = mesh(ibo(null), vbo(null), attributes);
 		initialized = true;
 	}
 	return emptyMesh;
@@ -28,7 +30,7 @@ Mesh emptyMesh()
 
 private struct Mesh_Impl
 {
-	this(IBO ibo, VBO vbo, const ShaderParameter[] vertexAttributes)
+	this(IBO ibo, VBO vbo, const VertexAttributes vertexAttributes)
 	{
 		assert(vbo.byteLength % vertexAttributes.totalByteSize == 0);
 		assert(ibo.byteLength % uint.sizeof == 0);
@@ -49,5 +51,5 @@ private struct Mesh_Impl
 
 	private			IBO					_ibo;
 	private			VBO					_vbo;
-	public const	ShaderParameter[]	vertexAttributes;
+	public const	VertexAttributes	vertexAttributes;
 }

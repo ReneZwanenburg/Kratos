@@ -30,16 +30,20 @@ void main(string[] args)
 		1, 2, 3
 	]);
 
+	static struct P3T2
+	{
+		vec3 position;
+		vec2 texCoord;
+	}
+
 	auto vertices = vbo([
-		tuple(vec3(-.5f,  .5f, 0)	, vec2(0, 0)),
-		tuple(vec3( .5f,  .5f, 0)	, vec2(1, 0)),
-		tuple(vec3(-.5f, -.5f, 0)	, vec2(0, 1)),
-		tuple(vec3( .5f, -.5f, 0)	, vec2(1, 1))
+		P3T2(vec3(-.5f,  .5f, 0), vec2(0, 0)),
+		P3T2(vec3( .5f,  .5f, 0), vec2(1, 0)),
+		P3T2(vec3(-.5f, -.5f, 0), vec2(0, 1)),
+		P3T2(vec3( .5f, -.5f, 0), vec2(1, 1))
 	]);
 
-	auto attributes = [ShaderParameter(1, GL_FLOAT_VEC3, "position"), ShaderParameter(1, GL_FLOAT_VEC2, "texCoord")];
-
-	auto quad = mesh(indices, vertices, attributes);
+	auto quad = mesh(indices, vertices, toVertexAttributes!P3T2);
 
 	auto prog = ProgramCache.get(["Shaders/Test.vert", "Shaders/Test.frag"]);
 

@@ -25,19 +25,19 @@ VAO vao(const Mesh mesh, const Program program)
 
 	const stride = mesh.vertexAttributes.totalByteSize;
 	
-	foreach(programIndex, programVariable; program.attributes)
+	foreach(programIndex, programAttribute; program.attributes)
 	{
 		import std.algorithm : countUntil;
 		
-		const vboIndex = mesh.vertexAttributes.countUntil!q{a.name == b.name}(programVariable);
-		fatalc(vboIndex < 0, "VBO does not contain variable '", programVariable.name, "': ", mesh.vertexAttributes.text);
-		const vboVariable = mesh.vertexAttributes[vboIndex];
+		const vboIndex = mesh.vertexAttributes[].countUntil!q{a.name == b.name}(programAttribute);
+		fatalc(vboIndex < 0, "VBO does not contain variable '", programAttribute.name, "': ", mesh.vertexAttributes.text);
+		const vboAttribute = mesh.vertexAttributes[vboIndex];
 		
 		gl.EnableVertexAttribArray(programIndex);
 		gl.VertexAttribPointer(
 			programIndex,
-			vboVariable.backingTypeSize,
-			vboVariable.backingType,
+			vboAttribute.basicTypeSize,
+			vboAttribute.basicType,
 			false,
 			stride,
 			cast(GLvoid*)mesh.vertexAttributes[0..vboIndex].totalByteSize

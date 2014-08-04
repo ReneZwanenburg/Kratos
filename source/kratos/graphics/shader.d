@@ -62,7 +62,7 @@ private struct Program_Impl
 	private GLuint				handle;
 	private Array!ShaderModule	shaders;
 	//TODO Use fixed size array to store attributes.
-	private	ShaderParameter[]	_attributes;
+	private	VertexAttributes	_attributes;
 	private Uniforms			_uniforms;
 	private Array!Sampler		_samplers;
 	private	const(GLchar)[]		_errorLog;
@@ -116,16 +116,9 @@ private struct Program_Impl
 		this._errorLog = null;
 		_linked = true;
 
-		// Workaround for forward reference error
-		static void GetActiveAttrib_Impl(T...)(T args) { gl.GetActiveAttrib(args); }
-		static void GetActiveUniform_Impl(T...)(T args) { gl.GetActiveUniform(args); }
-
-		_attributes		= getShaderParameters!(GL_ACTIVE_ATTRIBUTES, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, GetActiveAttrib_Impl)();
-		_uniforms		= Uniforms(getShaderParameters!(GL_ACTIVE_UNIFORMS, GL_ACTIVE_UNIFORM_MAX_LENGTH, GetActiveUniform_Impl)());
-		_samplers		= typeof(_samplers)(defaultSampler.repeat(_uniforms.textureCount));
-
-		trace("Program ", name, " vertex attributes:\n", _attributes.map!(a => a.name));
-		trace("Program ", name, " uniforms:\n", _uniforms.allUniforms.map!(a => a.name));
+		updateAttributes();
+		updateUniforms();
+		_samplers = typeof(_samplers)(defaultSampler.repeat(_uniforms.textureCount));
 
 		//TODO: Update Shaders using this Program
 	}
@@ -161,51 +154,87 @@ private struct Program_Impl
 	@property const
 	{
 		auto attributes()	{ return _attributes; }
-		auto uniforms()		{ return _uniforms; }
 		auto errorLog()		{ return _errorLog; }
 	}
 
-	private ShaderParameter[] getShaderParameters
-		(
-			GLenum ParameterCountGetter, 
-			GLenum ParameterNameLengthGetter,
-			alias ParameterGetter
-		)()
+	private void updateAttributes()
 	{
-		GLint numParameters;
-		gl.GetProgramiv(handle, ParameterCountGetter, &numParameters);
-		
-		if(numParameters > 0)
+		VertexAttributes attributes;
+
+		gl.GetProgramiv(handle, GL_ACTIVE_ATTRIBUTES, &attributes.count);
+
+		static GLchar[] nameBuffer;
 		{
 			GLint maxNameLength;
-			gl.GetProgramiv(handle, ParameterNameLengthGetter, &maxNameLength);
-			assert(maxNameLength > 0, "Shader Parameter declared without name. Please verify the universe is in a consistent state.");
-			
-			auto parameters = new ShaderParameter[](numParameters);
-			auto parameterName = new GLchar[](maxNameLength);
-			
-			foreach(parameterIndex; 0..numParameters)
-			{
-				GLsizei nameLength;
-				ParameterGetter(
-					handle,
-					parameterIndex,
-					parameterName.length,
-					&nameLength,
-					&parameters[parameterIndex].size,
-					&parameters[parameterIndex].type,
-					parameterName.ptr
-				);
-				
-				parameters[parameterIndex].name = parameterName[0..nameLength].idup;
-			}
-			
-			return parameters;
+			gl.GetProgramiv(handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxNameLength);
+			nameBuffer.assumeSafeAppend;
+			nameBuffer.length = maxNameLength;
 		}
-		else
+
+		foreach(i, ref attribute; attributes[])
 		{
-			return null;
+			GLsizei nameLength;
+			GLsizei size;
+
+			gl.GetActiveAttrib(
+				handle,
+				i,
+				nameBuffer.length,
+				&nameLength,
+				&size,
+				&attribute.aggregateType,
+				nameBuffer.ptr
+			);
+
+			assert(size == 1, "Attribute arrays not supported yet");
+			attribute.name = nameBuffer[0..nameLength].idup;
 		}
+
+		this._attributes = attributes;
+	}
+
+	private void updateUniforms()
+	{
+		Uniform[] allUniforms;
+
+		{
+			GLsizei numUniforms;
+			gl.GetProgramiv(handle, GL_ACTIVE_UNIFORMS, &numUniforms);
+			allUniforms = new Uniform[numUniforms];
+		}
+		
+		static GLchar[] nameBuffer;
+		{
+			GLint maxNameLength;
+			gl.GetProgramiv(handle, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxNameLength);
+			nameBuffer.assumeSafeAppend;
+			nameBuffer.length = maxNameLength;
+		}
+
+		ptrdiff_t offset = 0;
+		foreach(i, ref uniform; allUniforms)
+		{
+			GLsizei nameLength;
+			
+			gl.GetActiveUniform(
+				handle,
+				i,
+				nameBuffer.length,
+				&nameLength,
+				&uniform.size,
+				&uniform.type,
+				nameBuffer.ptr
+			);
+
+			uniform.name = nameBuffer[0..nameLength].idup;
+			uniform.offset = offset;
+			uniform.byteSize = GLTypeSize[uniform.type] * uniform.size;
+
+			offset += uniform.byteSize;
+		}
+
+		import std.exception : assumeUnique;
+		this._uniforms = Uniforms(allUniforms.assumeUnique);
 	}
 
 	@property string name() const
