@@ -18,7 +18,7 @@ final abstract class Time
 	public
 	{
 		float scale = 1;
-		float maxDelta = float.infinity;
+		float maxDelta = .1f;
 	}
 
 	package
