@@ -65,8 +65,8 @@ final class MeshRenderer : Component
 	{
 		if
 		(	
-			mesh.vertexAttributes		!= this._mesh.vertexAttributes || 
-			program.attributes			!= this.shader.program.attributes
+			mesh.vbo.attributes	!= this._mesh.vbo.attributes || 
+			program.attributes	!= this.shader.program.attributes
 		)
 		{
 			_vao = vao(mesh, program);
@@ -78,7 +78,7 @@ final class MeshRenderer : Component
 		_vao.bind();
 		_renderState.apply();
 		import kratos.graphics.gl;
-		gl.DrawElements(GL_TRIANGLES, _mesh.ibo.byteLength / GLuint.sizeof, GL_UNSIGNED_INT, null);
+		gl.DrawElements(GL_TRIANGLES, _mesh.ibo.numIndices, _mesh.ibo.indexType, null);
 	}
 
 	private static ref RenderState defaultRenderState()

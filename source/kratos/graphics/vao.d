@@ -17,21 +17,21 @@ VAO vao(const Mesh mesh, const Program program)
 	auto vao = initialized!VAO;
 	gl.GenVertexArrays(1, &vao.handle);
 	info("Created VAO ", vao.handle);
-	tracef("Created VAO for IBO, VBO, VBO Attribs, Program attribs:\n%s\n%s\n%s\n%s", mesh.ibo, mesh.vbo, mesh.vertexAttributes, program.attributes);
+	tracef("Created VAO for IBO, VBO, Program attribs:\n%s\n%s\n%s", mesh.ibo, mesh.vbo, program.attributes);
 
 	vao.bind();
 	mesh.ibo.bind();
 	mesh.vbo.bind();
 
-	const stride = mesh.vertexAttributes.totalByteSize;
+	const stride = mesh.vbo.attributes.totalByteSize;
 	
 	foreach(programIndex, programAttribute; program.attributes)
 	{
 		import std.algorithm : countUntil;
 		
-		const vboIndex = mesh.vertexAttributes[].countUntil!q{a.name == b.name}(programAttribute);
-		fatalc(vboIndex < 0, "VBO does not contain variable '", programAttribute.name, "': ", mesh.vertexAttributes.text);
-		const vboAttribute = mesh.vertexAttributes[vboIndex];
+		const vboIndex = mesh.vbo.attributes[].countUntil!q{a.name == b.name}(programAttribute);
+		fatalc(vboIndex < 0, "VBO does not contain variable '", programAttribute.name, "': ", mesh.vbo.attributes.text);
+		const vboAttribute = mesh.vbo.attributes[vboIndex];
 		
 		gl.EnableVertexAttribArray(programIndex);
 		gl.VertexAttribPointer(
@@ -40,7 +40,7 @@ VAO vao(const Mesh mesh, const Program program)
 			vboAttribute.basicType,
 			false,
 			stride,
-			cast(GLvoid*)mesh.vertexAttributes[0..vboIndex].totalByteSize
+			cast(GLvoid*)mesh.vbo.attributes[0..vboIndex].totalByteSize
 		);
 	}
 	

@@ -25,7 +25,7 @@ void main(string[] args)
 	import kratos.resource.loader;
 	import std.typecons;
 
-	auto indices = ibo([
+	auto indices = IBO([
 		0, 2, 1,
 		1, 2, 3
 	]);
@@ -36,17 +36,14 @@ void main(string[] args)
 		vec2 texCoord;
 	}
 
-	auto vertices = vbo([
+	auto vertices = VBO([
 		P3T2(vec3(-.5f,  .5f, 0), vec2(0, 0)),
 		P3T2(vec3( .5f,  .5f, 0), vec2(1, 0)),
 		P3T2(vec3(-.5f, -.5f, 0), vec2(0, 1)),
 		P3T2(vec3( .5f, -.5f, 0), vec2(1, 1))
 	]);
 
-	auto quad = mesh(indices, vertices, toVertexAttributes!P3T2);
-
-	auto prog = ProgramCache.get(["Shaders/Test.vert", "Shaders/Test.frag"]);
-
+	auto quad = Mesh(indices, vertices);
 	scope renderer = new MeshRenderer(quad, RenderStateCache.get("RenderStates/Test.renderstate"));
 
 	Time.reset();

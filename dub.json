@@ -37,7 +37,7 @@
 
 	"postBuildCommands":
 	[
-		"dub run kratosassetpacker -- ../Kratos/assets ../Kratos/build/Kratos.assetpack"
+		"dub run -q kratosassetpacker -- ../Kratos/assets ../Kratos/build/Kratos.assetpack"
 	],
 
 	"dependencies":
