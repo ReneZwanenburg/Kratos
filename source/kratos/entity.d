@@ -27,7 +27,8 @@ final class Entity
 	auto getComponents(T, AllowDerived derived = AllowDerived.no)()
 	{
 		import std.algorithm : filter, map;
-		static if(derived)
+		import std.traits : isFinalClass;
+		static if(derived && !isFinalClass!T)
 		{
 			return _components[].map!(a => cast(T)a).filter!(a => a !is null);
 		}
@@ -69,6 +70,12 @@ abstract class Component
 }
 
 alias AllowDerived = Flag!"AllowDerived";
+
+
+auto dependency(AllowDerived allowDerived = AllowDerived.yes)
+{
+	return Dependency(allowDerived);
+}
 
 // Used for Components depending on another Component on the same Entity
 struct Dependency
