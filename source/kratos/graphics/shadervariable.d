@@ -302,8 +302,8 @@ struct Uniforms
 	}
 }
 
-/// TypeTuple of all types which can be used as shader uniforms and attributes
-alias ShaderParameterTypes = TypeTuple!(
+/// TypeTuple of all types which can be used as shader uniforms
+alias UniformTypes = TypeTuple!(
 	float,
 	vec2,
 	vec3,
@@ -327,7 +327,7 @@ private alias UniformSetter = void function(GLint location, ref const UniformRef
 private immutable UniformSetter[GLenum] uniformSetter;
 static this()
 {
-	foreach(T; ShaderParameterTypes)
+	foreach(T; UniformTypes)
 	{
 		enum type = GLType!T;
 
@@ -370,7 +370,7 @@ static this()
 private void[][GLenum] defaultUniformValue;
 static this()
 {
-	foreach(T; ShaderParameterTypes)
+	foreach(T; UniformTypes)
 	{
 		enum type = GLType!T;
 
