@@ -32,7 +32,9 @@ VAO vao(const Mesh mesh, const Program program)
 		const vboIndex = mesh.vbo.attributes[].countUntil!q{a.name == b.name}(programAttribute);
 		fatalc(vboIndex < 0, "VBO does not contain variable '", programAttribute.name, "': ", mesh.vbo.attributes.text);
 		const vboAttribute = mesh.vbo.attributes[vboIndex];
-		
+
+		auto offset = mesh.vbo.attributes[0..vboIndex].totalByteSize;
+
 		gl.EnableVertexAttribArray(programIndex);
 		gl.VertexAttribPointer(
 			programIndex,
@@ -40,11 +42,16 @@ VAO vao(const Mesh mesh, const Program program)
 			vboAttribute.basicType,
 			false,
 			stride,
-			cast(GLvoid*)mesh.vbo.attributes[0..vboIndex].totalByteSize
+			cast(void*)offset
 		);
 	}
 	
 	return vao;
+}
+
+void* offsetToVoidPtr(GLsizei offset)
+{
+	return cast(void*) offset;
 }
 
 private struct VAO_Impl

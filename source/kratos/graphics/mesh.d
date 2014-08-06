@@ -22,8 +22,6 @@ Mesh emptyMesh()
 
 struct Mesh
 {
-	@disable this();
-
 	this(IBO ibo, VBO vbo)
 	{
 		_ibo = ibo;

@@ -1,23 +1,4 @@
 {
-	"Blend":
-	{
-		"equation":		"Add",
-		"srcFunction":	"SrcAlpha",
-		"dstFunction":	"OneMinusSrcAlpha"
-	},
-	
-	"Cull":
-	{
-		"enabled": false
-	},
-	
-	"DepthTest":
-	{
-		"func":		"LessOrEqual",
-		"read":		true,
-		"write":	true
-	},
-	
 	"Shader":
 	{
 		"modules":
@@ -28,7 +9,6 @@
 		
 		"uniforms":
 		{
-			"color":	[1, 1, 1],
 			"texture":	"Textures/sci_fi_metal_floor.png"
 		}
 	}

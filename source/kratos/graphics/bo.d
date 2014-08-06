@@ -17,8 +17,6 @@ struct VBO
 
 	alias buffer this;
 
-	@disable this();
-
 	this(T)(T[] data, bool dynamic = false)
 	{
 		this(data, toVertexAttributes!T, dynamic);
@@ -77,8 +75,6 @@ struct IBO
 	private const	IndexType	_indexType;
 
 	alias buffer this;
-
-	@disable this();
 
 	this(int[] data, bool dynamic = false)
 	{
