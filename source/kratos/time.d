@@ -1,7 +1,7 @@
 ﻿module kratos.time;
 
 import core.time;
-import gl3n.math;
+import std.algorithm : min;
 
 final abstract class Time
 {

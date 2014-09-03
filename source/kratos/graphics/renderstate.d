@@ -2,7 +2,7 @@
 
 import std.logger;
 import kratos.graphics.gl;
-import gl3n.linalg;
+import kgl3n.vector;
 
 import vibe.data.serialization;
 

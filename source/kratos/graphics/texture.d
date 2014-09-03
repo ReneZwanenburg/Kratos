@@ -2,7 +2,7 @@
 
 import kratos.resource.resource;
 import kratos.graphics.gl;
-import gl3n.linalg;
+import kgl3n.vector;
 import std.logger;
 
 public import kratos.graphics.textureunit;

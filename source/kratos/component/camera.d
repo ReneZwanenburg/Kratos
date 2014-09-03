@@ -3,7 +3,7 @@
 import kratos.entity;
 import kratos.component.transform;
 
-import gl3n.linalg;
+import kgl3n.matrix;
 
 final class Camera : Component
 {
@@ -14,7 +14,7 @@ final class Camera : Component
 	this()
 	{
 		import kratos.window;
-		projectionMatrix = mat4.perspective(Window.activeProperties.width, Window.activeProperties.height, 100, .1f, 1000);
+		projectionMatrix = perspectiveProjection(Window.activeProperties.width, Window.activeProperties.height, 100, .1f, 1000);
 	}
 
 	~this()

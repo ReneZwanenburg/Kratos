@@ -16,7 +16,7 @@ package Texture loadTexture(string name)
 	scope(exit) ilDeleteImage(handle);
 	ilBindImage(handle);
 
-	import gl3n.linalg : vec2i;
+	import kgl3n.vector : vec2i;
 
 	auto buffer = activeFileSystem.get(name);
 	ilLoadL(imageExtensionFormat[name.lowerCaseExtension], buffer.ptr, buffer.length);
@@ -128,75 +128,81 @@ alias RenderStateCache = Cache!(RenderState, string, loadRenderState);
 package RenderState loadRenderState(string name)
 {
 	RenderState renderState;
-	auto json = parseJsonString(activeFileSystem.get!char(name));
-
-	foreach(ref field; renderState.tupleof)
+	version(none)
 	{
-		alias T = typeof(field);
-		auto stateJson = json[T.stringof];
-		if(stateJson.type == Json.Type.Undefined) continue;
+		auto json = parseJsonString(activeFileSystem.get!char(name));
 
-		static if(is(T == Shader))
+		foreach(ref field; renderState.tupleof)
 		{
-			auto modules = deserializeJson!(string[])(stateJson["modules"]);
-			import std.algorithm : sort;
-			modules.sort();
+			alias T = typeof(field);
+			auto stateJson = json[T.stringof];
+			if(stateJson.type == Json.Type.Undefined) continue;
 
-			renderState.shader = Shader(ProgramCache.get(modules));
-
-			auto uniforms = stateJson["uniforms"];
-			if(uniforms.type != Json.Type.Undefined)
+			static if(is(T == Shader))
 			{
-				foreach(string name, value; uniforms)
+				auto modules = deserializeJson!(string[])(stateJson["modules"]);
+				import std.algorithm : sort;
+				modules.sort();
+
+				renderState.shader = Shader(ProgramCache.get(modules));
+
+				auto uniforms = stateJson["uniforms"];
+				if(uniforms.type != Json.Type.Undefined)
 				{
-					if(value.type == Json.Type.String)
+					foreach(string name, value; uniforms)
 					{
-						renderState.shader[name] = TextureCache.get(value.get!string);
-					}
-					else
-					{
-						auto uniform = renderState.shader[name];
-
-						import kratos.graphics.gl;
-						foreach(TypeBinding; GLTypes)
+						if(value.type == Json.Type.String)
 						{
-							alias UT = TypeBinding.nativeType;
-							if(TypeBinding.glType == uniform.type)
+							renderState.shader[name] = TextureCache.get(value.get!string);
+						}
+						else
+						{
+							auto uniform = renderState.shader[name];
+
+							import kratos.graphics.gl;
+							foreach(TypeBinding; GLTypes)
 							{
-								//TODO: Add support for uniform arrays and matrices
-								import std.traits;
-								import gl3n.linalg;
+								alias UT = TypeBinding.nativeType;
+								if(TypeBinding.glType == uniform.type)
+								{
+									//TODO: Add support for uniform arrays and matrices
+									import std.traits;
+									import kgl3n.matrix;
+									import kgl3n.vector;
 
-								static if(is(UT == TextureUnit))
-								{
+									static if(is(UT == TextureUnit))
+									{
 
-								}
-								else static if(isInstanceOf!(Vector, UT))
-								{
-									assert(value.type == Json.Type.Array);
-									UT ut;
-									ut.vector = deserializeJson!(typeof(ut.vector))(value);
-									uniform = ut;
-								}
-								else static if(isInstanceOf!(Matrix, UT))
-								{
-									UT ut;
-									ut.matrix = deserializeJson!(typeof(ut.matrix))(value);
-									uniform = ut;
-								}
-								else
-								{
-									uniform = deserializeJson!(UT)(value);
+									}
+									/*
+									else static if(isInstanceOf!(Vector, UT))
+									{
+										assert(value.type == Json.Type.Array);
+										UT ut;
+										ut.vector = deserializeJson!(typeof(ut.vector))(value);
+										uniform = ut;
+									}
+									else static if(isInstanceOf!(Matrix, UT))
+									{
+										UT ut;
+										ut.matrix = deserializeJson!(typeof(ut.matrix))(value);
+										uniform = ut;
+									}
+									*/
+									else
+									{
+										uniform = deserializeJson!(UT)(value);
+									}
 								}
 							}
 						}
 					}
 				}
 			}
-		}
-		else
-		{
-			field = deserializeJson!T(stateJson);
+			else
+			{
+				field = deserializeJson!T(stateJson);
+			}
 		}
 	}
 
@@ -254,7 +260,8 @@ else
 	{
 		import std.string;
 		import std.exception;
-		import gl3n.linalg;
+		import kgl3n.vector;
+		import kgl3n.matrix;
 		import std.array;
 
 		auto scene = aiImportFileFromMemory(

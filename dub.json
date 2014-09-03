@@ -43,7 +43,7 @@
 	"dependencies":
 	{
 		"kratosassetpacker": { "version": "~master", "path": "../KratosAssetPacker" },
-		"gl3n": { "version": "~master", "path": "../gl3n" },
+		"kgl3n": { "version": "~master", "path": "../kgl3n" },
 		"derelict-gl3": "~>1.0",
 		"derelict-glfw3": "~>1.0",
 		"derelict-assimp3": "~>1.0",

@@ -1,20 +1,22 @@
 ﻿module kratos.component.transform;
 
 import kratos.entity;
-import gl3n.linalg;
+import kgl3n.vector;
+import kgl3n.quaternion;
+import kgl3n.matrix;
 
 
 final class Transform : Component
 {
-	private Transform	_parent		= null;
-	private vec3		_position	= vec3(0);
-	private quat		_rotation	= quat.identity;
+	private Transform	_parent = null;
+	private vec3		_position;
+	private quat		_rotation;
 	//TODO: Decide if non-uniform scaling should be supported
-	private float		_scale		= 1;
+	private float		_scale = 1;
 
-	private	mat4		_localMatrix	= mat4.identity;
-	private	mat4		_worldMatrix	= mat4.identity;
-	private	bool		_dirty			= false;
+	private	mat4		_localMatrix;
+	private	mat4		_worldMatrix;
+	private	bool		_dirty = false;
 
 	@property
 	{
@@ -38,7 +40,7 @@ final class Transform : Component
 
 		mat4 localMatrixInv() const
 		{
-			return buildMatrix(-_position, _rotation.inverse, 1 / _scale);
+			return buildMatrix(-_position, _rotation.inverted, 1 / _scale);
 		}
 
 		inout(Transform) parent() inout
@@ -104,10 +106,7 @@ final class Transform : Component
 
 	private static mat4 buildMatrix(vec3 translation, quat rotation, float scale)
 	{
-		auto mat = rotation.to_matrix!(4,4) * mat4.scaling(scale, scale, scale);
-		mat.matrix[0][3] = translation.x;
-		mat.matrix[1][3] = translation.y;
-		mat.matrix[2][3] = translation.z;
+		auto mat = rotation.toMatrix!(4) * mat4.scaling(vec3(scale)) * mat4.translation(translation);
 		return mat;
 	}
 }

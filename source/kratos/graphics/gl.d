@@ -8,7 +8,8 @@ public
 }
 
 import derelict.opengl3.gl3;
-import gl3n.linalg;
+import kgl3n.vector;
+import kgl3n.matrix;
 
 import std.algorithm : joiner;
 import std.conv : text;

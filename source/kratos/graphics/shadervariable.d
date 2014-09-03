@@ -5,7 +5,8 @@ import kratos.graphics.texture;
 import kratos.component.meshrenderer;
 
 import std.variant;
-import gl3n.linalg;
+import kgl3n.vector;
+import kgl3n.matrix;
 
 import std.conv : text;
 import std.typetuple : TypeTuple, staticIndexOf;
@@ -411,14 +412,6 @@ static this()
 		static if(is(T == float))
 		{
 			defaultUniformValue[type] = [0f];
-		}
-		else static if(is(T == Vector!(float, P), P...))
-		{
-			defaultUniformValue[type] = [T(0)];
-		}
-		else static if(is(T == Matrix!(float, P), P...))
-		{
-			defaultUniformValue[type] = [T.identity];
 		}
 		else
 		{
