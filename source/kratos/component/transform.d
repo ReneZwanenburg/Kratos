@@ -40,7 +40,7 @@ final class Transform : Component
 
 		mat4 localMatrixInv() const
 		{
-			return buildMatrix(-_position, _rotation.inverted, 1 / _scale);
+			return mat4.scaling(vec3(1 / _scale)) * _rotation.inverted.toMatrix!(4) * mat4.translation(-_position);
 		}
 
 		inout(Transform) parent() inout
@@ -92,7 +92,7 @@ final class Transform : Component
 	{
 		if(_dirty)
 		{
-			_localMatrix = buildMatrix(_position, _rotation, _scale);
+			_localMatrix = mat4.translation(position) * rotation.toMatrix!(4) * mat4.scaling(vec3(scale));
 			_worldMatrix = _parent is null ? _localMatrix : _localMatrix * _parent.worldMatrix;
 
 			_dirty = false;
@@ -102,11 +102,5 @@ final class Transform : Component
 	private void mark()
 	{
 		_dirty = true;
-	}
-
-	private static mat4 buildMatrix(vec3 translation, quat rotation, float scale)
-	{
-		auto mat = rotation.toMatrix!(4) * mat4.scaling(vec3(scale)) * mat4.translation(translation);
-		return mat;
 	}
 }
