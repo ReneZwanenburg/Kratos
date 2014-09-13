@@ -48,7 +48,7 @@
 		"derelict-glfw3": "~>1.0",
 		"derelict-assimp3": "~>1.0",
 		"derelict-il": "~master",
-		"logger": "~>0.2",
-		"vibe-d": "0.7.20"
+		"logger": "==0.2.0",
+		"vibe-d": { "version": "~master", "path": "../vibe.d" }
 	}
 }
