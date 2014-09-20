@@ -12,14 +12,18 @@ void main(string[] args)
 	auto window = Window(windowProperties);
 	//glfwSetKeyCallback(window, &glfwKeyCallback);
 
-	import gl3n.linalg;
+	import kgl3n.vector;
 	import kratos.graphics.gl;
 	import kratos.resource.loader;
 	import kratos.entity;
 	import kratos.component.camera;
 	import kratos.component.transform;
 	import kratos.component.meshrenderer;
+	import kratos.component.simplemovement;
+	import kratos.input;
 	import std.stdio;
+
+	mouse.setGrabbed(true);
 
 	auto quadEntity = new Entity("quad");
 	auto renderer = quadEntity.addComponent!MeshRenderer;
@@ -29,6 +33,7 @@ void main(string[] args)
 	auto cameraEntity = new Entity("Camera");
 	Camera camera = cameraEntity.addComponent!Camera;
 	auto cameraTransform = cameraEntity.getComponent!Transform;
+	auto movement = cameraEntity.addComponent!SimpleMovement;
 	cameraTransform.position = vec3(0, 3, 4);
 	camera.makeCurrent();
 
@@ -36,6 +41,8 @@ void main(string[] args)
 	while(!window.closeRequested)
 	{
 		window.updateInput();
+
+		movement.update();
 
 		import kratos.graphics.gl;
 		gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

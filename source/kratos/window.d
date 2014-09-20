@@ -2,6 +2,7 @@
 
 import derelict.glfw3.glfw3;
 import std.exception : enforce, assumeWontThrow;
+import kratos.input;
 
 enum WindowProperties unittestWindowProperties = { visible: false, debugContext: true };
 
@@ -12,7 +13,6 @@ struct WindowProperties
 	string	title			= "Kratos Application";
 	bool	fullScreen		= false;
 
-	bool	resizable		= false;
 	bool	visible			= true;
 	bool	decorated		= true;
 
@@ -31,7 +31,7 @@ struct Window
 	@disable this(this);
 
 	const	WindowProperties	properties;
-	private	GLFWwindow*			handle;
+	private	GLFWwindow*			_handle;
 
 	this(WindowProperties properties)
 	{
@@ -42,7 +42,7 @@ struct Window
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-			glfwWindowHint(GLFW_RESIZABLE,				resizable);
+			glfwWindowHint(GLFW_RESIZABLE,				false);
 			glfwWindowHint(GLFW_VISIBLE,				visible);
 			glfwWindowHint(GLFW_DECORATED,				decorated);
 			glfwWindowHint(GLFW_SAMPLES,				msaa);
@@ -50,48 +50,55 @@ struct Window
 			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT,	debugContext);
 			glfwWindowHint(GLFW_REFRESH_RATE,			refreshRate);
 
-			this.handle = glfwCreateWindow(
+			this._handle = glfwCreateWindow(
 				width, height,
 				title.ptr,
 				fullScreen ? glfwGetPrimaryMonitor() : null,
 				null
 			);
-			enforce(this.handle, "Window creation failed");
+			enforce(this._handle, "Window creation failed");
 		}
 
-		glfwMakeContextCurrent(handle);
+		glfwMakeContextCurrent(_handle);
 		import derelict.opengl3.gl3 : DerelictGL3;
 		DerelictGL3.reload();
 
-		//TODO: hmm, do we really want to do that here?
-		import kratos.graphics.gl;
-		glfwSetFramebufferSizeCallback(handle, (_, width, height) => assumeWontThrow(gl.Viewport(0, 0, width, height)));
+		glfwSetFramebufferSizeCallback(_handle, (_1, _2, _3) { assert(false, "Window resizing not supported"); });
 
 		glfwSwapInterval(properties.vSync);
 
 		_activeProperties = properties;
+
+		mouse = new Mouse(this);
 	}
 
 	~this()
 	{
-		glfwDestroyWindow(handle);
+		mouse = null;
+		glfwDestroyWindow(_handle);
 	}
 
 	void updateInput()
 	{
 		glfwPollEvents();
+		mouse.update();
 	}
 
 	void swapBuffers()
 	{
-		glfwSwapBuffers(handle);
+		glfwSwapBuffers(_handle);
 	}
 
 	@property
 	{
 		bool closeRequested()
 		{
-			return !!glfwWindowShouldClose(handle);
+			return !!glfwWindowShouldClose(_handle);
+		}
+
+		package GLFWwindow* handle()
+		{
+			return _handle;
 		}
 	}
 
