@@ -14,6 +14,14 @@ final class Entity
 		this.name = name;
 	}
 
+	~this()
+	{
+		foreach(component; _components)
+		{
+			component.destroy();
+		}
+	}
+
 	T addComponent(T)() if(is(T : Component))
 	{
 		info("Adding ", T.stringof, " to ", name);
@@ -67,6 +75,13 @@ final class Entity
 abstract class Component
 {
 	private Entity _owner;
+
+	private alias DestroyFunction = void function(Component);
+	private DestroyFunction _destroy;
+	private void destroy()
+	{
+		_destroy(this);
+	}
 }
 
 alias AllowDerived = Flag!"AllowDerived";
@@ -85,12 +100,22 @@ struct Dependency
 enum isDependency(T) = is(T == Dependency);
 
 
+template RegisterComponent(T) if(is(T : Component))
+{
+	private alias Helper = ComponentFactory!T;
+}
+
 private template ComponentFactory(T) if(is(T : Component))
 {
+	private:
+	T[] liveComponents;
+
 	T build(Entity owner)
 	{
 		//TODO: Don´t use GC
 		auto component = new T;
+		component._destroy = &destroy;
+		liveComponents ~= component;
 
 		foreach(i, FT; typeof(T.tupleof))
 		{
@@ -105,4 +130,36 @@ private template ComponentFactory(T) if(is(T : Component))
 
 		return component;
 	}
+
+	void destroy(Component component)
+	{
+		assert(component.classinfo == T.classinfo);
+
+		import std.algorithm : countUntil;
+		liveComponents[liveComponents.countUntil!"a is b"(component)] = liveComponents[$-1];
+		liveComponents.length--;
+	}
+
+	static this()
+	{
+		import std.traits : isCallable;
+		import std.algorithm : among;
+
+		static if("frameUpdate".among(__traits(derivedMembers, T)))
+		{
+			static if(isCallable!(T.frameUpdate))
+			{
+				frameUpdateDispatchers ~= {
+					foreach(component; liveComponents) component.frameUpdate();
+				};
+			}
+		}
+	}
+}
+
+private alias FrameUpdateDispatch = void function();
+private FrameUpdateDispatch[] frameUpdateDispatchers;
+package void dispatchFrameUpdate()
+{
+	foreach(dispatcher; frameUpdateDispatchers) dispatcher();
 }

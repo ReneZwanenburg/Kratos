@@ -42,7 +42,7 @@ void main(string[] args)
 	{
 		window.updateInput();
 
-		movement.update();
+		dispatchFrameUpdate();
 
 		import kratos.graphics.gl;
 		gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

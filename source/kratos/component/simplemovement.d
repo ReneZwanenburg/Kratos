@@ -14,7 +14,7 @@ final class SimpleMovement : Component
 
 	private vec3 ypr;
 
-	override void update()
+	void frameUpdate()
 	{
 		ypr.x += -mouse.xAxis.value * sensitivity;
 		ypr.y += -mouse.yAxis.value * sensitivity;
