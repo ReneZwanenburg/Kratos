@@ -10,7 +10,6 @@ void main(string[] args)
 
 	WindowProperties windowProperties = { };
 	auto window = Window(windowProperties);
-	//glfwSetKeyCallback(window, &glfwKeyCallback);
 
 	import kgl3n.vector;
 	import kratos.graphics.gl;
@@ -53,13 +52,3 @@ void main(string[] args)
 		Time.update();
 	}
 }
-
-/*
-private extern(C) nothrow
-{
-	void glfwKeyCallback(GLFWwindow* window, int key, int scanCode, int action, int modifiers)
-	{
-
-	}
-}
-*/

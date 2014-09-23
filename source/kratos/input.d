@@ -142,3 +142,63 @@ class Mouse
 		}
 	}
 }
+
+
+private Keyboard _keyboard;
+
+public @property Keyboard keyboard()
+{
+	return _keyboard;
+}
+
+package @property void keyboard(Keyboard keyboard)
+{
+	_keyboard = keyboard;
+}
+
+class Keyboard
+{
+	private ButtonMapping[] buttons;
+	private size_t[string] mapping;
+
+	private GLFWwindow* windowHandle;
+
+	package this(ref Window window)
+	{
+		this.windowHandle = window.handle;
+
+		foreach(member; __traits(allMembers, derelict.glfw3.glfw3))
+		{
+			import std.algorithm : startsWith, splitter, joiner, map;
+			import std.conv;
+			import std.string : capitalize;
+
+			enum keyPrefix = "GLFW_KEY_";
+			static if(member.startsWith(keyPrefix) && member != "GLFW_KEY_UNKNOWN")
+			{
+				auto keyName = member[keyPrefix.length .. $].splitter('_').map!capitalize.joiner(" ").to!string;
+				mapping[keyName] = buttons.length;
+				buttons ~= ButtonMapping(Button(keyName), mixin(member));
+			}
+		}
+	}
+
+	package void update()
+	{
+		foreach(ref b; buttons)
+		{
+			b.button.update(glfwGetKey(windowHandle, b.keyCode) == GLFW_PRESS);
+		}
+	}
+
+	ref const(Button) opIndex(string keyName) const
+	{
+		return buttons[mapping[keyName]].button;
+	}
+
+	private static struct ButtonMapping
+	{
+		private Button button;
+		private int keyCode;
+	}
+}

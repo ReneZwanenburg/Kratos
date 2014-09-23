@@ -64,16 +64,17 @@ struct Window
 		DerelictGL3.reload();
 
 		glfwSetFramebufferSizeCallback(_handle, (_1, _2, _3) { assert(false, "Window resizing not supported"); });
-
 		glfwSwapInterval(properties.vSync);
 
 		_activeProperties = properties;
 
 		mouse = new Mouse(this);
+		keyboard = new Keyboard(this);
 	}
 
 	~this()
 	{
+		keyboard = null;
 		mouse = null;
 		glfwDestroyWindow(_handle);
 	}
@@ -82,6 +83,7 @@ struct Window
 	{
 		glfwPollEvents();
 		mouse.update();
+		keyboard.update();
 	}
 
 	void swapBuffers()
