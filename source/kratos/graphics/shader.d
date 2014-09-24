@@ -4,6 +4,7 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
 import kratos.graphics.texture;
+import kratos.util : backInserter;
 
 import std.algorithm : copy, find, map;
 import std.array : array;
@@ -391,21 +392,4 @@ unittest
 	assert(shader.hasErrors);
 	assert(shader.errorLog.length);
 
-}
-
-
-//TODO move to a more appropriate place
-private auto backInserter(T)(ref Array!T array)
-{
-	static struct Inserter
-	{
-		private Array!T* array;
-		
-		void put()(auto ref T elem)
-		{
-			array.insertBack(elem);
-		}
-	}
-	
-	return Inserter(&array);
 }
