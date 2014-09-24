@@ -5,6 +5,7 @@ import std.typecons : Flag;
 import std.logger;
 
 import vibe.data.json;
+import vibe.data.serialization;
 
 final class Entity
 {
@@ -27,11 +28,7 @@ final class Entity
 	T addComponent(T)() if(is(T : Component))
 	{
 		info("Adding ", T.stringof, " to ", name);
-
-		auto component = ComponentFactory!T.build(this);
-		component._owner = this;
-		_components.insertBack(component);
-		return component;
+		return ComponentFactory!T.build(this);
 	}
 
 	auto getComponents(T, AllowDerived derived = AllowDerived.no)()
@@ -78,6 +75,8 @@ final class Entity
 		import std.algorithm : map;
 		import std.array : array;
 
+		info("Serializing Entity ", name);
+
 		auto rep = Json.emptyObject;
 		rep["name"] = _name;
 		rep["components"] = _components[].map!(a => componentSerializer[a.classinfo](a)).array;
@@ -87,12 +86,16 @@ final class Entity
 
 	static Entity fromRepresentation(Json json)
 	{
-		import std.algorithm : map, copy;
-		import kratos.util : backInserter;
-
 		auto entity = new Entity();
 		entity._name = json["name"].get!string;
-		json["components"].get!(Json[]).map!(a => componentDeserializer[TypeInfo_Class.find(a["type"].get!string)](a["representation"])).copy(entity._components.backInserter);
+
+		info("Deserializing Entity ", entity.name);
+
+		foreach(description; json["components"].get!(Json[]))
+		{
+			auto deserializer = componentDeserializer[TypeInfo_Class.find(description["type"].get!string)];
+			deserializer(entity, description["representation"]);
+		}
 
 		return entity;
 	}
@@ -100,7 +103,13 @@ final class Entity
 
 abstract class Component
 {
+	@ignore
 	private Entity _owner;
+
+	@property inout(Entity) owner() inout
+	{
+		return _owner;
+	}
 }
 
 alias AllowDerived = Flag!"AllowDerived";
@@ -132,9 +141,15 @@ private template ComponentFactory(T) if(is(T : Component))
 	T build(Entity owner)
 	{
 		//TODO: Don´t use GC
-		auto component = new T;
-		liveComponents ~= component;
+		return onComponentCreation(new T, owner);
+	}
 
+	T onComponentCreation(T component, Entity owner)
+	{
+		component._owner = owner;
+		owner._components.insertBack(component);
+		liveComponents ~= component;
+		
 		foreach(i, FT; typeof(T.tupleof))
 		{
 			import vibe.internal.meta.uda;
@@ -145,7 +160,7 @@ private template ComponentFactory(T) if(is(T : Component))
 				component.tupleof[i] = owner.getOrAddComponent!(FT, __traits(getAttributes, T.tupleof[i])[uda.index].allowDerived);
 			}
 		}
-
+		
 		return component;
 	}
 
@@ -153,19 +168,25 @@ private template ComponentFactory(T) if(is(T : Component))
 	{
 		assert(component.classinfo == T.classinfo);
 
+		info("Destroying Component ", T.stringof, " of ", component.owner.name);
+
 		import std.algorithm : countUntil;
 		liveComponents[liveComponents.countUntil!"a is b"(component)] = liveComponents[$-1];
 		liveComponents.length--;
 	}
 
-	T deserialize(Json json)
+	T deserialize(Entity owner, Json json)
 	{
-		//TODO needs to go through build-equivalent process
-		return deserializeJson!T(json);
+		info("Deserializing Component ", T.stringof, " of ", owner.name);
+
+		//TODO: Don´t use GC
+		return onComponentCreation(json.deserializeJson!T, owner);
 	}
 
 	Json serialize(T component)
 	{
+		info("Serializing Component ", T.stringof, " of ", component.owner.name);
+
 		Json rep = Json.emptyObject;
 		rep["type"] = T.classinfo.name;
 		rep["representation"] = serializeToJson(component);
@@ -196,7 +217,7 @@ private template ComponentFactory(T) if(is(T : Component))
 private alias ComponentDestroyFunction = void function(Component);
 private ComponentDestroyFunction[const TypeInfo_Class] componentDestroyer;
 
-private alias ComponentDeserializeFunction = Component function(Json);
+private alias ComponentDeserializeFunction = Component function(Entity, Json);
 private ComponentDeserializeFunction[const TypeInfo_Class] componentDeserializer;
 
 private alias ComponentSerializeFunction = Json function(Component);
