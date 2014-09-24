@@ -4,6 +4,8 @@ import std.container : Array;
 import std.typecons : Flag;
 import std.logger;
 
+import vibe.data.json;
+
 final class Entity
 {
 	private	string			_name;
@@ -18,7 +20,7 @@ final class Entity
 	{
 		foreach(component; _components)
 		{
-			component.destroy();
+			componentDestroyer[component.classinfo](component);
 		}
 	}
 
@@ -70,18 +72,35 @@ final class Entity
 			this._name = name;
 		}
 	}
+
+	Json toRepresentation()
+	{
+		import std.algorithm : map;
+		import std.array : array;
+
+		auto rep = Json.emptyObject;
+		rep["name"] = _name;
+		rep["components"] = _components[].map!(a => componentSerializer[a.classinfo](a)).array;
+
+		return rep;
+	}
+
+	static Entity fromRepresentation(Json json)
+	{
+		import std.algorithm : map, copy;
+		import kratos.util : backInserter;
+
+		auto entity = new Entity();
+		entity._name = json["name"].get!string;
+		json["components"].get!(Json[]).map!(a => componentDeserializer[TypeInfo_Class.find(a["type"].get!string)](a["representation"])).copy(entity._components.backInserter);
+
+		return entity;
+	}
 }
 
 abstract class Component
 {
 	private Entity _owner;
-
-	private alias DestroyFunction = void function(Component);
-	private DestroyFunction _destroy;
-	private void destroy()
-	{
-		_destroy(this);
-	}
 }
 
 alias AllowDerived = Flag!"AllowDerived";
@@ -114,7 +133,6 @@ private template ComponentFactory(T) if(is(T : Component))
 	{
 		//TODO: Don´t use GC
 		auto component = new T;
-		component._destroy = &destroy;
 		liveComponents ~= component;
 
 		foreach(i, FT; typeof(T.tupleof))
@@ -140,10 +158,28 @@ private template ComponentFactory(T) if(is(T : Component))
 		liveComponents.length--;
 	}
 
+	T deserialize(Json json)
+	{
+		//TODO needs to go through build-equivalent process
+		return deserializeJson!T(json);
+	}
+
+	Json serialize(T component)
+	{
+		Json rep = Json.emptyObject;
+		rep["type"] = T.classinfo.name;
+		rep["representation"] = serializeToJson(component);
+		return rep;
+	}
+
 	static this()
 	{
 		import std.traits : isCallable;
 		import std.algorithm : among;
+
+		componentDestroyer		[T.classinfo] = &destroy;
+		componentDeserializer	[T.classinfo] = &deserialize;
+		componentSerializer		[T.classinfo] = cast(ComponentSerializeFunction)&serialize;
 
 		static if("frameUpdate".among(__traits(derivedMembers, T)))
 		{
@@ -156,6 +192,16 @@ private template ComponentFactory(T) if(is(T : Component))
 		}
 	}
 }
+
+private alias ComponentDestroyFunction = void function(Component);
+private ComponentDestroyFunction[const TypeInfo_Class] componentDestroyer;
+
+private alias ComponentDeserializeFunction = Component function(Json);
+private ComponentDeserializeFunction[const TypeInfo_Class] componentDeserializer;
+
+private alias ComponentSerializeFunction = Json function(Component);
+private ComponentSerializeFunction[const TypeInfo_Class] componentSerializer;
+
 
 private alias FrameUpdateDispatch = void function();
 private FrameUpdateDispatch[] frameUpdateDispatchers;
