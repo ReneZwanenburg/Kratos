@@ -1,0 +1,12 @@
+{
+	"name": "Test Entity",
+	"components": [
+		{
+			"type": "kratos.component.meshrenderer.MeshRenderer",
+			"representation": {
+				"mesh": "Meshes/Box.obj",
+				"renderState": "RenderStates/Test.renderstate"
+			}
+		}
+	]
+}

@@ -19,11 +19,6 @@ template Cache(T, I, alias loader)
 	// TODO use hash map. Builtins are buggy, dcollections HashMap doesn't provide deterministic destruction.
 	private Array!Element resources;
 
-	static this()
-	{
-
-	}
-
 	private size_t hashId(Identifier id)
 	{
 		return typeid(Identifier).getHash(&id);

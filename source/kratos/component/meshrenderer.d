@@ -6,6 +6,9 @@ import kratos.graphics.shader;
 import kratos.graphics.vao;
 import kratos.graphics.renderstate;
 import kratos.component.transform;
+import vibe.data.serialization : ignore;
+
+private alias registration = RegisterComponent!MeshRenderer;
 
 final class MeshRenderer : Component
 {
@@ -14,15 +17,19 @@ final class MeshRenderer : Component
 	private RenderState	_renderState;
 	private VAO			_vao;
 
-	@dependency
-	Transform transform;
+	private @dependency Transform _transform;
 
 	alias renderState this;
 
 	this()
 	{
-		this._mesh = emptyMesh;
-		this._renderState = defaultRenderState;
+		this(emptyMesh, defaultRenderState);
+	}
+
+	private this(Mesh mesh, RenderState renderState)
+	{
+		this._mesh = mesh;
+		this._renderState = renderState;
 		_vao = vao(_mesh, _renderState.shader.program);
 	}
 
@@ -41,12 +48,14 @@ final class MeshRenderer : Component
 			this._mesh = mesh;
 		}
 
+		@ignore
 		void shader()(auto ref Shader shader)
 		{
 			updateVao(_mesh, shader.program);
 			renderState.shader = shader;
 		}
 
+		@ignore
 		ref Shader shader()
 		{
 			return renderState.shader;
@@ -60,6 +69,12 @@ final class MeshRenderer : Component
 		void renderState(RenderState renderState)
 		{
 			this._renderState = renderState;
+		}
+
+		// Should be package(kratos)
+		ref Transform transform()
+		{
+			return _transform;
 		}
 	}
 
@@ -95,5 +110,19 @@ final class MeshRenderer : Component
 			initialized = true;
 		}
 		return state;
+	}
+
+	string[string] toRepresentation()
+	{
+		return null;
+		//assert(false, "Not implemented yet");
+	}
+
+	static MeshRenderer fromRepresentation(string[string] representation)
+	{
+		import kratos.resource.loader;
+		return new MeshRenderer(
+			MeshCache.get(representation["mesh"]),
+			RenderStateCache.get(representation["renderState"]));
 	}
 }

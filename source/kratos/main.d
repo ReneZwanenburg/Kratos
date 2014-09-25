@@ -24,10 +24,7 @@ void main(string[] args)
 
 	mouse.setGrabbed(true);
 
-	auto quadEntity = new Entity("quad");
-	auto renderer = quadEntity.addComponent!MeshRenderer;
-	auto quadTransform = quadEntity.getComponent!Transform;
-	renderer.set(MeshCache.get("Meshes/Box.obj"), RenderStateCache.get("RenderStates/Test.renderstate"));
+	auto quadEntity = loadEntity("Entities/Test.entity");
 
 	auto cameraEntity = new Entity("Camera");
 	Camera camera = cameraEntity.addComponent!Camera;
@@ -46,7 +43,7 @@ void main(string[] args)
 		import kratos.graphics.gl;
 		gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		renderer.draw();
+		quadEntity.getComponent!MeshRenderer.draw();
 
 		window.swapBuffers();
 		Time.update();

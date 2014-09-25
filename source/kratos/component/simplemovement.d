@@ -7,12 +7,14 @@ import kgl3n.vector;
 import kgl3n.quaternion;
 import kgl3n.math;
 
+private alias registration = RegisterComponent!SimpleMovement;
+
 final class SimpleMovement : Component
 {
 	float sensitivity = .002f;
 	private @dependency Transform transform;
 
-	private vec3 ypr;
+	vec3 ypr;
 
 	void frameUpdate()
 	{

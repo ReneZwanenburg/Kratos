@@ -5,6 +5,8 @@ import kratos.component.transform;
 
 import kgl3n.matrix;
 
+private alias registration = RegisterComponent!Camera;
+
 final class Camera : Component
 {
 	private @dependency Transform transform;

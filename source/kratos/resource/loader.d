@@ -188,7 +188,7 @@ import kratos.graphics.mesh;
 
 alias MeshCache = Cache!(Mesh, string, loadMesh);
 
-Mesh loadMesh(string name)
+package Mesh loadMesh(string name)
 {
 	auto extension = name.lowerCaseExtension;
 	auto data = activeFileSystem.get(name);
@@ -306,6 +306,15 @@ else
 			return Mesh(IBO(indices.data), VBO(vertices.data));
 		}
 	}
+}
+
+
+import kratos.entity;
+
+public Entity loadEntity(string name)
+{
+	auto json = parseJsonString(activeFileSystem.get!char(name));
+	return json.deserializeJson!Entity;
 }
 
 
