@@ -2,7 +2,6 @@
 
 import kratos.graphics.gl;
 import kratos.graphics.texture;
-import kratos.component.meshrenderer;
 
 import std.variant;
 import kgl3n.vector;
@@ -119,7 +118,8 @@ struct Uniform
 	
 	bool isBuiltin() const
 	{
-		return !!(name in builtinUniformUpdaters);
+		import std.algorithm : canFind;
+		return BuiltinUniformName.canFind(name);
 	}
 	
 	bool isUser() const
@@ -193,13 +193,6 @@ struct Uniforms
 			.array
 			.assumeUnique;
 
-		_builtinUpdaters =
-			allUniforms
-			.filter!(a => a.isBuiltin)
-			.map!(a => builtinUniformUpdaters[a.name])
-			.array
-			.assumeUnique;
-
 		auto samplerUniforms =
 			indexedUniforms
 			.filter!(a => a[0].isSampler);
@@ -247,7 +240,6 @@ struct Uniforms
 	private immutable uint[string]				_userUniforms;
 	private immutable uint[string]				_textureIndices;
 	private immutable UniformSetter[]			_setters;
-	private immutable BuiltinUniformUpdater[]	_builtinUpdaters;
 
 	void opIndexAssign(ref Texture texture, string name)
 	{
@@ -268,14 +260,6 @@ struct Uniforms
 	UniformRef opIndex(string name)
 	{
 		return toRef(_allUniforms[_userUniforms[name]]);
-	}
-
-	void updateBuiltins(MeshRenderer renderer)
-	{
-		foreach(i, ui; _builtinUniforms)
-		{
-			_builtinUpdaters[i](toRef(_allUniforms[ui]), renderer);
-		}
 	}
 
 	package void apply(ref Uniforms newValues, ref Array!Sampler samplers)
@@ -317,6 +301,35 @@ struct Uniforms
 			uniform.size,
 			_uniformData[uniform.offset .. uniform.offset + uniform.byteSize]
 		);
+	}
+
+	// Should be package(kratos)
+	auto builtinUniforms()
+	{
+		static struct BuiltinUniformRange
+		{
+			private Uniforms* backingUniforms;
+			private int index;
+
+			@property bool empty()
+			{
+				return index >= backingUniforms._builtinUniforms.length;
+			}
+
+			void popFront()
+			{
+				++index;
+			}
+
+			auto front()
+			{
+				import std.typecons;
+				auto uniform = backingUniforms._allUniforms[backingUniforms._builtinUniforms[index]];
+				return tuple(uniform.name, backingUniforms.toRef(uniform));
+			}
+		}
+
+		return BuiltinUniformRange(&this);
 	}
 }
 
@@ -384,22 +397,15 @@ static this()
 	}
 }
 
-
-private alias BuiltinUniformUpdater = void function(UniformRef uniform, MeshRenderer renderer);
-private immutable BuiltinUniformUpdater[string] builtinUniformUpdaters;
-static this()
-{
-	import kratos.component.camera;
-
-	builtinUniformUpdaters = [
-		"W"		: (uniform, renderer) { uniform = renderer.transform.worldMatrix; },
-		"V"		: (uniform, renderer) { uniform = Camera.current.viewMatrix; },
-		"P"		: (uniform, renderer) { uniform = Camera.current.projectionMatrix; },
-		"WV"	: (uniform, renderer) { uniform = Camera.current.viewMatrix * renderer.transform.worldMatrix; },
-		"VP"	: (uniform, renderer) { uniform = Camera.current.viewProjectionMatrix; },
-		"WVP"	: (uniform, renderer) { uniform = Camera.current.viewProjectionMatrix * renderer.transform.worldMatrix; },
-	];
-}
+immutable string[] BuiltinUniformName =
+[
+	"W",
+	"V",
+	"P",
+	"WV",
+	"VP",
+	"WVP",
+];
 
 
 private void[][GLenum] defaultUniformValue;
