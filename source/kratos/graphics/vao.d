@@ -7,7 +7,7 @@ import kratos.graphics.mesh;
 import kratos.graphics.shadervariable;
 
 import std.conv : to;
-import std.logger;
+import std.experimental.logger;
 
 
 alias VAO = Handle!VAO_Impl;
@@ -30,7 +30,7 @@ VAO vao(const Mesh mesh, const Program program)
 		import std.algorithm : countUntil;
 		
 		const vboIndex = mesh.vbo.attributes[].countUntil!q{a.name == b.name}(programAttribute);
-		fatalc(vboIndex < 0, "VBO does not contain variable '", programAttribute.name, "': ", mesh.vbo.attributes.text);
+		fatal(vboIndex < 0, "VBO does not contain variable '", programAttribute.name, "': ", mesh.vbo.attributes.text);
 		const vboAttribute = mesh.vbo.attributes[vboIndex];
 
 		auto offset = mesh.vbo.attributes[0..vboIndex].totalByteSize;

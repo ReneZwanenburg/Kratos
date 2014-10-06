@@ -4,7 +4,7 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
 
-import std.logger;
+import std.experimental.logger;
 
 
 struct VBO

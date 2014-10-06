@@ -3,7 +3,7 @@
 import kratos.resource.resource;
 import kratos.graphics.gl;
 import kgl3n.vector;
-import std.logger;
+import std.experimental.logger;
 
 public import kratos.graphics.textureunit;
 

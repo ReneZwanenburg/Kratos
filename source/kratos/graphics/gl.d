@@ -13,7 +13,7 @@ import kgl3n.matrix;
 
 import std.algorithm : joiner;
 import std.conv : text;
-import std.logger;
+import std.experimental.logger;
 
 /// Thin OpenGL wrapper. Performs glGetError() error checking in debug mode.
 final abstract class gl

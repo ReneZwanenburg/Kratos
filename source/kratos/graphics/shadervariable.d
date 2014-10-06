@@ -10,7 +10,7 @@ import kgl3n.matrix;
 import std.conv : text;
 import std.typetuple : TypeTuple, staticIndexOf;
 import std.container : Array;
-import std.logger;
+import std.experimental.logger;
 
 
 immutable VertexAttributes toVertexAttributes(T) = toVertexAttributesImpl!T;

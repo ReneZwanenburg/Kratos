@@ -1,6 +1,6 @@
 ﻿module kratos.graphics.renderstate;
 
-import std.logger;
+import std.experimental.logger;
 import kratos.graphics.gl;
 import kgl3n.vector;
 

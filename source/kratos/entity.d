@@ -2,7 +2,7 @@
 
 import std.container : Array;
 import std.typecons : Flag;
-import std.logger;
+import std.experimental.logger;
 
 import vibe.data.json;
 

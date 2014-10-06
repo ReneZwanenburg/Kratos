@@ -11,7 +11,7 @@ import std.array : array;
 import std.container : Array;
 import std.conv : to;
 import std.range : isInputRange, take, repeat;
-import std.logger;
+import std.experimental.logger;
 
 
 alias Program = Handle!Program_Impl;
