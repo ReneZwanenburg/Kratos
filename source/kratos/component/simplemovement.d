@@ -11,6 +11,7 @@ private alias registration = RegisterComponent!SimpleMovement;
 
 final class SimpleMovement : Component
 {
+	@optional:
 	float sensitivity = .002f;
 	private @dependency Transform transform;
 

@@ -13,3 +13,5 @@ auto initialized(T)() if(is(T == RefCounted!S, S...))
 	refCounted.refCountedStore.ensureInitialized();
 	return refCounted;
 }
+
+alias ResourceIdentifier = string;

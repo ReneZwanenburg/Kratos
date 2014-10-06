@@ -2,6 +2,13 @@
 	"name": "Test Entity",
 	"components": [
 		{
+			"type": "kratos.component.transform.Transform",
+			"representation": {
+				"position": [0, 1, 0]
+			}
+		},
+	
+		{
 			"type": "kratos.component.meshrenderer.MeshRenderer",
 			"representation": {
 				"mesh": "Meshes/Box.obj",

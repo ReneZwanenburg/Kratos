@@ -9,6 +9,7 @@ private alias registration = RegisterComponent!Camera;
 
 final class Camera : Component
 {
+	@optional:
 	private @dependency Transform transform;
 
 	public mat4 projectionMatrix;
@@ -17,11 +18,16 @@ final class Camera : Component
 	{
 		import kratos.window;
 		projectionMatrix = perspectiveProjection(Window.activeProperties.width, Window.activeProperties.height, 80, .1f, 1000);
+
+		if(current is null)
+		{
+			makeCurrent();
+		}
 	}
 
 	~this()
 	{
-		if(_current == this)
+		if(_current is this)
 		{
 			_current = null;
 		}

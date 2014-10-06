@@ -1,6 +1,7 @@
 ﻿module kratos.resource.filesystem;
 
 import std.exception : assumeUnique;
+import kratos.resource.resource : ResourceIdentifier;
 
 private FileSystem _activeFileSystem;
 
@@ -22,19 +23,19 @@ private FileSystem _activeFileSystem;
 
 interface FileSystem
 {
-	bool				has(string name);
+	bool				has(ResourceIdentifier name);
 
 	protected
-	immutable(void[])	getImpl(string name);
+	immutable(void[])	getImpl(ResourceIdentifier name);
 
 	final
-	immutable(void[])	get(string name)
+	immutable(void[])	get(ResourceIdentifier name)
 	{
 		assert(has(name), "File " ~ name ~ " does not exist");
 		return getImpl(name);
 	}
 
-	immutable(T[])		get(T)(string name)
+	immutable(T[])		get(T)(ResourceIdentifier name)
 	{
 		return cast(immutable T[])get(name);
 	}
@@ -44,13 +45,13 @@ class MultiFileSystem : FileSystem
 {
 	private FileSystem[] _fileSystems;
 
-	override bool has(string name)
+	override bool has(ResourceIdentifier name)
 	{
 		import std.algorithm : any;
 		return _fileSystems.any!(a => a.has(name));
 	}
 
-	override immutable(void[]) getImpl(string name)
+	override immutable(void[]) getImpl(ResourceIdentifier name)
 	{
 		import std.algorithm : find;
 		import std.array : front;
@@ -76,17 +77,17 @@ class NormalFileSystem : FileSystem
 		this._basePath = basePath;
 	}
 
-	override bool has(string name)
+	override bool has(ResourceIdentifier name)
 	{
 		return buildPath(name).isFile();
 	}
 
-	override immutable(void[]) getImpl(string name)
+	override immutable(void[]) getImpl(ResourceIdentifier name)
 	{
 		return buildPath(name).read().assumeUnique;
 	}
 
-	private const(char[]) buildPath(string name)
+	private const(char[]) buildPath(ResourceIdentifier name)
 	{
 		_pathBuilder.clear();
 		_pathBuilder ~= _basePath;
@@ -130,12 +131,12 @@ class PackFileSystem : FileSystem
 		}
 	}
 
-	override bool has(string name)
+	override bool has(ResourceIdentifier name)
 	{
 		return !!(md5Of(name) in _fileMap);
 	}
 	
-	override immutable(void[]) getImpl(string name)
+	override immutable(void[]) getImpl(ResourceIdentifier name)
 	{
 		auto offset = _fileMap[md5Of(name)];
 		return _pack[offset.startOffset .. offset.endOffset].assumeUnique;

@@ -5,7 +5,8 @@ import std.typecons : Flag;
 import std.logger;
 
 import vibe.data.json;
-import vibe.data.serialization;
+
+public import vibe.data.serialization;
 
 final class Entity
 {

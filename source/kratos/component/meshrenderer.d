@@ -7,7 +7,6 @@ import kratos.graphics.vao;
 import kratos.graphics.renderstate;
 import kratos.graphics.shadervariable : UniformRef, BuiltinUniformName;
 import kratos.component.transform;
-import vibe.data.serialization : ignore;
 
 private alias registration = RegisterComponent!MeshRenderer;
 

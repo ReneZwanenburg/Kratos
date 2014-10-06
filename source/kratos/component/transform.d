@@ -9,6 +9,7 @@ private alias registration = RegisterComponent!Transform;
 
 final class Transform : Component
 {
+	@optional:
 	private Transform	_parent = null;
 	private vec3		_position;
 	private quat		_rotation;

@@ -25,13 +25,7 @@ void main(string[] args)
 	mouse.setGrabbed(true);
 
 	auto quadEntity = loadEntity("Entities/Test.entity");
-
-	auto cameraEntity = new Entity("Camera");
-	Camera camera = cameraEntity.addComponent!Camera;
-	auto cameraTransform = cameraEntity.getComponent!Transform;
-	auto movement = cameraEntity.addComponent!SimpleMovement;
-	cameraTransform.position = vec3(0, 3, 4);
-	camera.makeCurrent();
+	auto cameraEntity = loadEntity("Entities/Camera.entity");
 
 	Time.reset();
 	while(!window.closeRequested)

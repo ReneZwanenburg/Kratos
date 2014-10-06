@@ -2,15 +2,16 @@
 
 import kratos.resource.cache;
 import kratos.resource.filesystem : activeFileSystem;
+import kratos.resource.resource : ResourceIdentifier;
 
 import vibe.data.json;
 
 import kratos.graphics.texture;
 import derelict.devil.il;
 
-alias TextureCache = Cache!(Texture, string, loadTexture);
+alias TextureCache = Cache!(Texture, ResourceIdentifier, loadTexture);
 
-package Texture loadTexture(string name)
+package Texture loadTexture(ResourceIdentifier name)
 {
 	auto handle = ilGenImage();
 	scope(exit) ilDeleteImage(handle);
@@ -91,9 +92,9 @@ static this()
 
 import kratos.graphics.shader;
 
-alias ShaderModuleCache = Cache!(ShaderModule, string, loadShaderModule);
+alias ShaderModuleCache = Cache!(ShaderModule, ResourceIdentifier, loadShaderModule);
 
-package ShaderModule loadShaderModule(string name)
+package ShaderModule loadShaderModule(ResourceIdentifier name)
 {
 	auto buffer = activeFileSystem.get!char(name);
 	return shaderModule(shaderExtensionType[name.lowerCaseExtension], buffer, name);
@@ -111,9 +112,9 @@ static this()
 }
 
 
-alias ProgramCache = Cache!(Program, string[], loadProgram);
+alias ProgramCache = Cache!(Program, ResourceIdentifier[], loadProgram);
 
-package Program loadProgram(string[] modules)
+package Program loadProgram(ResourceIdentifier[] modules)
 {
 	import std.algorithm : map;
 	import std.conv : text;
@@ -123,9 +124,9 @@ package Program loadProgram(string[] modules)
 
 import kratos.graphics.renderstate;
 
-alias RenderStateCache = Cache!(RenderState, string, loadRenderState);
+alias RenderStateCache = Cache!(RenderState, ResourceIdentifier, loadRenderState);
 
-package RenderState loadRenderState(string name)
+package RenderState loadRenderState(ResourceIdentifier name)
 {
 	RenderState renderState;
 	auto json = parseJsonString(activeFileSystem.get!char(name));
@@ -186,9 +187,9 @@ package RenderState loadRenderState(string name)
 
 import kratos.graphics.mesh;
 
-alias MeshCache = Cache!(Mesh, string, loadMesh);
+alias MeshCache = Cache!(Mesh, ResourceIdentifier, loadMesh);
 
-package Mesh loadMesh(string name)
+package Mesh loadMesh(ResourceIdentifier name)
 {
 	auto extension = name.lowerCaseExtension;
 	auto data = activeFileSystem.get(name);
@@ -311,7 +312,7 @@ else
 
 import kratos.entity;
 
-public Entity loadEntity(string name)
+public Entity loadEntity(ResourceIdentifier name)
 {
 	auto json = parseJsonString(activeFileSystem.get!char(name));
 	return json.deserializeJson!Entity;

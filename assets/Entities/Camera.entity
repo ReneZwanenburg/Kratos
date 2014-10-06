@@ -1,0 +1,23 @@
+{
+	"name": "Main Camera",
+	"components": [
+		{
+			"type": "kratos.component.transform.Transform",
+			"representation": {
+				"position": [0, 3, 4]
+			}
+		},
+		
+		{
+			"type": "kratos.component.camera.Camera",
+			"representation": { }
+		},
+		
+		{
+			"type": "kratos.component.simplemovement.SimpleMovement",
+			"representation": {
+				"sensitivity": 0.002
+			}
+		}
+	]
+}
