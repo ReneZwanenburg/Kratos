@@ -319,6 +319,32 @@ public Entity loadEntity(ResourceIdentifier name)
 }
 
 
+import kratos.scene;
+
+public Scene loadScene(ResourceIdentifier name)
+{
+	auto json = parseJsonString(activeFileSystem.get!char(name));
+	auto scene = new Scene(json["name"].get!string);
+
+	foreach(entity; json["entities"])
+	{
+		if(entity.type == Json.Type.string)
+		{
+			scene.entities ~= loadEntity(entity.get!string);
+		}
+		else if(entity.type == Json.Type.object)
+		{
+			scene.entities ~= entity.deserializeJson!Entity;
+		}
+		else
+		{
+			assert(false, "Not an Entity, invalid JSON type");
+		}
+	}
+
+	return scene;
+}
+
 private @property auto lowerCaseExtension(string path)
 {
 	import std.path : extension;
