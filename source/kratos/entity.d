@@ -180,8 +180,15 @@ private template ComponentFactory(T) if(is(T : Component))
 	{
 		info("Deserializing Component ", T.stringof, " of ", owner.name);
 
-		//TODO: Don´t use GC
-		return onComponentCreation(json.deserializeJson!T, owner);
+		if(json.type == Json.Type.undefined) // If 'representation' is missing
+		{
+			return build(owner);
+		}
+		else
+		{
+			//TODO: Don´t use GC
+			return onComponentCreation(json.deserializeJson!T, owner);
+		}
 	}
 
 	Json serialize(T component)

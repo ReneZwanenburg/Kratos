@@ -9,15 +9,11 @@
 		},
 		
 		{
-			"type": "kratos.component.camera.Camera",
-			"representation": { }
+			"type": "kratos.component.camera.Camera"
 		},
 		
 		{
-			"type": "kratos.component.simplemovement.SimpleMovement",
-			"representation": {
-				"sensitivity": 0.002
-			}
+			"type": "kratos.component.simplemovement.SimpleMovement"
 		}
 	]
 }
