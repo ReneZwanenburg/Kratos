@@ -9,7 +9,16 @@ private FileSystem _activeFileSystem;
 {
 	if(_activeFileSystem is null)
 	{
-		_activeFileSystem = new NormalFileSystem("assets/");
+		auto mfs = new MultiFileSystem();
+		_activeFileSystem = mfs;
+
+		import std.file;
+		foreach(file; dirEntries("./", "*.assetpack", SpanMode.breadth))
+		{
+			mfs.push(new PackFileSystem(file.name));
+		}
+
+		mfs.push(new NormalFileSystem("assets/"));
 	}
 
 	return _activeFileSystem;
