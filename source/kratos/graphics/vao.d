@@ -17,7 +17,7 @@ VAO vao(const Mesh mesh, const Program program)
 	auto vao = initialized!VAO;
 	gl.GenVertexArrays(1, &vao.handle);
 	info("Created VAO ", vao.handle);
-	tracef("Created VAO for IBO, VBO, Program attribs:\n%s\n%s\n%s", mesh.ibo, mesh.vbo, program.attributes);
+	tracef("VAO linking VBO, Program attribs:\n%s\n%s", mesh.vbo.attributes, program.attributes);
 
 	vao.bind();
 	mesh.ibo.bind();
