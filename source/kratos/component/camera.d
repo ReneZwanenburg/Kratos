@@ -17,7 +17,7 @@ final class Camera : Component
 	this()
 	{
 		import kratos.window;
-		projectionMatrix = perspectiveProjection(Window.activeProperties.width, Window.activeProperties.height, 80, .1f, 1000);
+		projectionMatrix = perspectiveProjection(Window.activeProperties.width, Window.activeProperties.height, 60, .1f, 2000);
 
 		if(current is null)
 		{

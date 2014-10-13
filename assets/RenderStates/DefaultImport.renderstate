@@ -1,0 +1,10 @@
+{
+	"Shader":
+	{
+		"modules":
+		[
+			"Shaders/DefaultImport.vert",
+			"Shaders/DefaultImport.frag"
+		]
+	}
+}

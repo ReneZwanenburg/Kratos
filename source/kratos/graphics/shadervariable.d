@@ -54,6 +54,17 @@ struct VertexAttribute
 		}
 	}
 
+	string toString() const
+	{
+		string aggregateTypeName;
+		foreach(T; GLTypes)
+		{
+			if(T.glType == aggregateType) aggregateTypeName = T.nativeType.stringof;
+		}
+
+		return aggregateTypeName ~ " " ~ name;
+	}
+
 	static {
 		VertexAttribute fromAggregateType(T)(string name)
 		{
@@ -111,6 +122,12 @@ struct VertexAttributes
 	@property GLsizei totalByteSize() const
 	{
 		return this[].totalByteSize;
+	}
+
+	string toString() const
+	{
+		import std.string;
+		return format("%s", this[]);
 	}
 }
 

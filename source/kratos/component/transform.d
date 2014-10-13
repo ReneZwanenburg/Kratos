@@ -34,6 +34,13 @@ final class Transform : Component
 			return _localMatrix;
 		}
 
+		void setLocalMatrix(mat4 matrix)
+		{
+			position = matrix.translation.xyz;
+			rotation = quat.fromMatrix(mat3(matrix));
+			scale = matrix.scale.x;
+		}
+
 		mat4 worldMatrixInv() const
 		{
 			auto mat = localMatrixInv;

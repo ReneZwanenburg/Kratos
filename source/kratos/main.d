@@ -14,6 +14,8 @@ void main(string[] args)
 	import kratos.resource.loader;
 	auto scene = loadScene("Scenes/Test.scene");
 
+	import std.experimental.logger;
+	globalLogLevel = LogLevel.info;
 	Time.reset();
 	while(!window.closeRequested)
 	{

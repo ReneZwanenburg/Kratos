@@ -76,11 +76,6 @@ struct IBO
 
 	alias buffer this;
 
-	this(int[] data, bool dynamic = false)
-	{
-		this(data, IndexType.UInt, dynamic);
-	}
-
 	this(uint[] data, bool dynamic = false)
 	{
 		this(data, IndexType.UInt, dynamic);
