@@ -20,7 +20,8 @@ final class Entity
 
 	~this()
 	{
-		foreach(component; _components)
+		import std.range : retro;
+		foreach(component; _components[].retro)
 		{
 			componentDestroyer[component.classinfo](component);
 		}
