@@ -7,6 +7,7 @@ import kratos.graphics.renderstate;
 import vibe.data.json;
 import kratos.resource.loader.shaderloader;
 import kratos.resource.loader.textureloader;
+import kratos.graphics.textureunit;
 
 alias RenderStateCache = Cache!(RenderState, ResourceIdentifier, id => loadRenderState(id));
 

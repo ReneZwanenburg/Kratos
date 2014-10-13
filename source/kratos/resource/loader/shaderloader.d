@@ -22,3 +22,15 @@ private Program loadProgram(ResourceIdentifier[] modules)
 	import std.conv : text;
 	return program(modules.map!(a => ShaderModuleCache.get(a)), modules.text);
 }
+
+
+private immutable ShaderModule.Type[string] shaderExtensionType;
+
+shared static this()
+{
+	shaderExtensionType = [
+		".vert": ShaderModule.Type.Vertex,
+		".geom": ShaderModule.Type.Geometry,
+		".frag": ShaderModule.Type.Fragment
+	];
+}

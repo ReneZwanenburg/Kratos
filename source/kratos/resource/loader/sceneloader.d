@@ -7,6 +7,7 @@ import kratos.scene;
 import kratos.entity;
 import kratos.graphics.mesh;
 import vibe.data.json;
+import derelict.assimp3.assimp;
 
 public Scene loadScene(ResourceIdentifier name, Scene scene = null)
 {
@@ -195,4 +196,14 @@ else
 		
 		return scene;
 	}
+}
+
+shared static this()
+{
+	DerelictASSIMP3.load();
+}
+
+shared static ~this()
+{
+	DerelictASSIMP3.unload();
 }
