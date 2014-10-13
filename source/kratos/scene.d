@@ -13,10 +13,16 @@ class Scene
 		this.name = name;
 	}
 
-	void merge(Scene scene)
+	Entity createEntity(string name = null)
 	{
-		entities ~= scene.entities;
-		scene.entities.clear();
+		auto entity = new Entity(name);
+		entities ~= entity;
+		return entity;
+	}
+
+	void addEntity(Entity entity)
+	{
+		entities ~= entity;
 	}
 
 	Entity find(string name)

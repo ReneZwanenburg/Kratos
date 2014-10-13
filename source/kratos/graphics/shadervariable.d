@@ -53,6 +53,18 @@ struct VertexAttribute
 			return GLTypeSize[aggregateType];
 		}
 	}
+
+	static {
+		VertexAttribute fromAggregateType(T)(string name)
+		{
+			return VertexAttribute(GLType!T, name);
+		}
+
+		VertexAttribute fromBasicType(T)(size_t count, string name)
+		{
+			return VertexAttribute(attributeAggregateType[GLType!T][count], name);
+		}
+	}
 }
 
 struct VertexAttributes
@@ -64,6 +76,7 @@ struct VertexAttributes
 
 	this(GLsizei count)
 	{
+		assert(count <= Max);
 		this.count = count;
 	}
 
@@ -87,6 +100,12 @@ struct VertexAttributes
 	void opIndexAssign(VertexAttribute attribute, size_t index)
 	{
 		this[][index] = attribute;
+	}
+
+	void add(VertexAttribute attribute)
+	{
+		assert(count < Max);
+		attributes[count++] = attribute;
 	}
 
 	@property GLsizei totalByteSize() const
@@ -426,8 +445,9 @@ static this()
 	}
 }
 
-private immutable GLenum[GLenum]	attributeBasicType;
-private immutable GLint[GLenum]		attributeTypeSize;
+private immutable GLenum[GLenum]			attributeBasicType;
+private immutable GLint[GLenum]				attributeTypeSize;
+private immutable GLenum[size_t][GLenum]	attributeAggregateType;
 
 static this()
 {
@@ -457,5 +477,25 @@ static this()
 		GL_INT_VEC4: 4,
 		
 		GL_BOOL: 1,
+	];
+
+	attributeAggregateType = [
+		GL_FLOAT: [
+			1: GL_FLOAT,
+			2: GL_FLOAT_VEC2,
+			3: GL_FLOAT_VEC3,
+			4: GL_FLOAT_VEC4
+		],
+
+		GL_INT: [
+			1: GL_INT,
+			2: GL_INT_VEC2,
+			3: GL_INT_VEC3,
+			4: GL_INT_VEC4
+		],
+
+		GL_BOOL: [
+			1: GL_BOOL
+		]
 	];
 }
