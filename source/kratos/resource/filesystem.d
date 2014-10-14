@@ -12,13 +12,13 @@ private FileSystem _activeFileSystem;
 		auto mfs = new MultiFileSystem();
 		_activeFileSystem = mfs;
 
+		mfs.push(new NormalFileSystem("assets/"));
+
 		import std.file;
 		foreach(file; dirEntries("./", "*.assetpack", SpanMode.breadth))
 		{
 			mfs.push(new PackFileSystem(file.name));
 		}
-
-		mfs.push(new NormalFileSystem("assets/"));
 	}
 
 	return _activeFileSystem;
@@ -88,7 +88,8 @@ class NormalFileSystem : FileSystem
 
 	override bool has(ResourceIdentifier name)
 	{
-		return buildPath(name).isFile();
+		auto path = buildPath(name);
+		return path.exists && path.isFile;
 	}
 
 	override immutable(void[]) getImpl(ResourceIdentifier name)
