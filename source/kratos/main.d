@@ -12,7 +12,12 @@ void main(string[] args)
 	mouse.setGrabbed(true);
 
 	import kratos.resource.loader;
-	auto scene = loadScene("Scenes/Test.scene");
+	import kratos.resource.exporter.sceneexporter;
+	import std.typecons : scoped;
+	import kratos.scene;
+	auto scene = scoped!Scene;
+	loadScene("Scenes/Test.scene", scene);
+	exportScene(scene, "Scenes/SerializedScene.scene");
 
 	import std.experimental.logger;
 	globalLogLevel = LogLevel.info;

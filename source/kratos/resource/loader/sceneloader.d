@@ -13,13 +13,13 @@ import kratos.resource.loader.renderstateloader;
 import kgl3n.vector;
 import std.experimental.logger;
 
-public Scene loadScene(ResourceIdentifier name, Scene scene = null)
+public Scene loadScene(ResourceIdentifier name, Scene scene = null, bool loadRecursive = true)
 {
 	auto extension = name.lowerCaseExtension;
 	import std.algorithm : among;
 	if(extension.among(".scene", ".entity"))
 	{
-		return loadSceneKratos(name, scene);
+		return loadSceneKratos(name, scene, loadRecursive);
 	}
 	else
 	{
@@ -27,7 +27,7 @@ public Scene loadScene(ResourceIdentifier name, Scene scene = null)
 	}
 }
 
-private Scene loadSceneKratos(ResourceIdentifier name, Scene scene)
+private Scene loadSceneKratos(ResourceIdentifier name, Scene scene, bool loadRecursive)
 {
 	auto json = parseJsonString(activeFileSystem.get!char(name));
 	
@@ -36,11 +36,11 @@ private Scene loadSceneKratos(ResourceIdentifier name, Scene scene)
 		scene = new Scene(json["name"].get!string);
 	}
 	
-	loadSceneKratos(json, scene);
+	loadSceneKratos(json, scene, loadRecursive);
 	return scene;
 }
 
-private void loadSceneKratos(Json json, Scene scene)
+private void loadSceneKratos(Json json, Scene scene, bool loadRecursive)
 {
 	if(json["entities"].type == Json.Type.array)
 	{
@@ -48,11 +48,14 @@ private void loadSceneKratos(Json json, Scene scene)
 		{
 			if(entity.type == Json.Type.string)
 			{
-				loadSceneKratos(entity.get!ResourceIdentifier, scene);
+				if(loadRecursive)
+				{
+					loadScene(entity.get!ResourceIdentifier, scene, loadRecursive);
+				}
 			}
 			else if(entity.type == Json.Type.object)
 			{
-				loadSceneKratos(entity, scene);
+				loadSceneKratos(entity, scene, loadRecursive);
 			}
 			else
 			{
