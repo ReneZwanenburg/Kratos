@@ -1,6 +1,7 @@
 ﻿module kratos.graphics.mesh;
 
 import kratos.graphics.bo;
+import kratos.resource.resource : ResourceIdentifier;
 
 Mesh emptyMesh()
 {
@@ -22,6 +23,8 @@ Mesh emptyMesh()
 
 struct Mesh
 {
+	ResourceIdentifier id;
+
 	this(IBO ibo, VBO vbo)
 	{
 		_ibo = ibo;

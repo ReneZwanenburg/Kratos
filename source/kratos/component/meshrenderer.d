@@ -120,8 +120,10 @@ final class MeshRenderer : Component
 
 	string[string] toRepresentation()
 	{
-		return null;
-		//assert(false, "Not implemented yet");
+		return [
+			"mesh": _mesh.id,
+			"renderState": _renderState.id
+		];
 	}
 
 	static MeshRenderer fromRepresentation(string[string] representation)

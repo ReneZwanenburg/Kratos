@@ -17,7 +17,6 @@ void main(string[] args)
 	import kratos.scene;
 	auto scene = scoped!Scene;
 	loadScene("Scenes/Test.scene", scene);
-	exportScene(scene, "Scenes/SerializedScene.scene");
 
 	import std.experimental.logger;
 	globalLogLevel = LogLevel.info;
@@ -40,4 +39,6 @@ void main(string[] args)
 		window.swapBuffers();
 		Time.update();
 	}
+
+	exportScene(scene, "assets/Scenes/Test.scene");
 }

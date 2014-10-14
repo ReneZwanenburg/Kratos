@@ -13,10 +13,10 @@ alias RenderStateCache = Cache!(RenderState, ResourceIdentifier, id => loadRende
 
 private RenderState loadRenderState(ResourceIdentifier name)
 {
-	RenderState renderState;
+	auto renderState = RenderState(name);
 	auto json = parseJsonString(activeFileSystem.get!char(name));
-	
-	foreach(ref field; renderState.tupleof)
+
+	foreach(ref field; renderState.content.tupleof)
 	{
 		alias T = typeof(field);
 		auto stateJson = json[T.stringof];
@@ -27,8 +27,8 @@ private RenderState loadRenderState(ResourceIdentifier name)
 			auto modules = deserializeJson!(string[])(stateJson["modules"]);
 			import std.algorithm : sort;
 			modules.sort();
-			
-			renderState.shader = Shader(ProgramCache.get(modules));
+
+			field = Shader(ProgramCache.get(modules));
 			
 			auto uniforms = stateJson["uniforms"];
 			if(uniforms.type != Json.Type.Undefined)

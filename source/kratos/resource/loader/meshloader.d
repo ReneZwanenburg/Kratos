@@ -12,7 +12,9 @@ private Mesh loadMesh(ResourceIdentifier name)
 	auto extension = name.lowerCaseExtension;
 	auto data = activeFileSystem.get(name);
 
-	return loadMeshAssimp(data, extension);
+	auto mesh = loadMeshAssimp(data, extension);
+	mesh.id = name;
+	return mesh;
 	//assert(false, "Not implemented yet");
 }
 

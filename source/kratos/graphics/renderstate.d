@@ -3,10 +3,18 @@
 import std.experimental.logger;
 import kratos.graphics.gl;
 import kgl3n.vector;
+import kratos.resource.resource : ResourceIdentifier;
 
 import vibe.data.serialization;
 
 struct RenderState
+{
+	ResourceIdentifier id;
+	RenderStateContent content;
+	alias content this;
+}
+
+private struct RenderStateContent
 {
 	Cull		cull;
 	Blend		blend;
