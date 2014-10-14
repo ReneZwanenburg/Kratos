@@ -48,11 +48,16 @@ interface FileSystem
 	{
 		return cast(immutable T[])get(name);
 	}
+
+	void				write(ResourceIdentifier name, const void[] data);
+
+	@property bool 		writable() const;
 }
 
 class MultiFileSystem : FileSystem
 {
 	private FileSystem[] _fileSystems;
+	private FileSystem _writableFileSystem;
 
 	override bool has(ResourceIdentifier name)
 	{
@@ -70,6 +75,21 @@ class MultiFileSystem : FileSystem
 	void push(FileSystem system)
 	{
 		_fileSystems ~= system;
+
+		if(!writable && system.writable)
+		{
+			_writableFileSystem = system;
+		}
+	}
+
+	@property override bool writable() const {
+		return _writableFileSystem !is null;
+	}
+
+	override void write(ResourceIdentifier name, const void[] data)
+	{
+		assert(writable);
+		_writableFileSystem.write(name, data);
 	}
 }
 
@@ -77,6 +97,7 @@ class NormalFileSystem : FileSystem
 {
 	import std.file;
 	import std.array;
+	import std.path : dirName;
 
 	private string _basePath;
 	private Appender!(char[]) _pathBuilder;
@@ -104,6 +125,18 @@ class NormalFileSystem : FileSystem
 		_pathBuilder ~= name;
 		return _pathBuilder.data;
 	}
+
+	@property override bool writable() const
+	{
+		return true;
+	}
+
+	override void write(ResourceIdentifier name, const void[] data) {
+		auto path = buildPath(name);
+		mkdirRecurse(dirName(path));
+		std.file.write(path, data);
+	}
+
 }
 
 class PackFileSystem : FileSystem
@@ -150,5 +183,15 @@ class PackFileSystem : FileSystem
 	{
 		auto offset = _fileMap[md5Of(name)];
 		return _pack[offset.startOffset .. offset.endOffset].assumeUnique;
+	}
+
+	@property override bool writable() const
+	{
+		return false;
+	}
+
+	override void write(ResourceIdentifier name, const void[] data)
+	{
+		assert(false);
 	}
 }
