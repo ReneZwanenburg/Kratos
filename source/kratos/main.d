@@ -12,7 +12,7 @@ void main(string[] args)
 	mouse.setGrabbed(true);
 
 	import kratos.resource.loader;
-	import kratos.resource.exporter.sceneexporter;
+	import vibe.data.json;
 	import std.typecons : scoped;
 	import kratos.scene;
 	auto scene = scoped!Scene;
@@ -40,5 +40,5 @@ void main(string[] args)
 		Time.update();
 	}
 
-	exportScene(scene, "assets/Scenes/Test.scene");
+	activeFileSystem.write("Scenes/Test.scene", scene.Scoped_payload.serializeToJson().toPrettyString);
 }

@@ -1,12 +1,12 @@
 ﻿module kratos.scene;
 
 import kratos.entity;
-import std.container : Array;
+import kratos.util : SerializableArray;
 
 class Scene
 {
 	string name;
-	Array!Entity entities;
+	SerializableArray!Entity entities;
 
 	this(string name = null)
 	{
