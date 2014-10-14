@@ -17,3 +17,32 @@ auto backInserter(T)(ref Array!T array)
 	
 	return Inserter(&array);
 }
+
+struct SerializableArray(T)
+{
+	Array!T backingArray;
+	alias backingArray this;
+
+	import vibe.data.json;
+	Json toRepresentation()
+	{
+		auto json = Json.emptyArray;
+		foreach(ref element; backingArray)
+		{
+			json.appendArrayElement(serializeToJson(element));
+		}
+		return json;
+	}
+
+	static SerializableArray!T fromRepresentation(Json json)
+	{
+		assert(json.type == Json.Type.array);
+		SerializableArray!T array;
+		array.reserve(json.length);
+		import std.algorithm : map;
+		import std.range : put;
+		auto inserter = array.backingArray.backInserter;
+		put(inserter, json[].map!(a => a.deserializeJson!T));
+		return array;
+	}
+}
