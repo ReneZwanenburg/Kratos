@@ -37,7 +37,7 @@ struct SamplerAnisotropy
 	}
 
 	alias level this;
-	@property ubyte level()
+	@property ubyte level() const nothrow
 	{
 		return _level;
 	}
