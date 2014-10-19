@@ -2,11 +2,13 @@
 
 import std.exception : assumeUnique;
 import kratos.resource.resource : ResourceIdentifier;
+import std.experimental.logger;
 
-private FileSystem _activeFileSystem;
+private __gshared FileSystem _activeFileSystem;
 
 @property FileSystem activeFileSystem()
 {
+	//TODO: Make thread-safe
 	if(_activeFileSystem is null)
 	{
 		auto mfs = new MultiFileSystem();
@@ -35,18 +37,24 @@ interface FileSystem
 	bool				has(ResourceIdentifier name);
 
 	protected
-	immutable(void[])	getImpl(ResourceIdentifier name);
+	immutable(void)[]	getImpl(ResourceIdentifier name);
 
 	final
-	immutable(void[])	get(ResourceIdentifier name)
+	immutable(void)[]	get(ResourceIdentifier name)
 	{
 		assert(has(name), "File " ~ name ~ " does not exist");
 		return getImpl(name);
 	}
 
-	immutable(T[])		get(T)(ResourceIdentifier name)
+	immutable(T)[]		get(T)(ResourceIdentifier name)
 	{
-		return cast(immutable T[])get(name);
+		return cast(immutable (T)[])get(name);
+	}
+
+	final
+	auto				getText(ResourceIdentifier name)
+	{
+		return get!char(name);
 	}
 
 	void				write(ResourceIdentifier name, const void[] data);
@@ -113,9 +121,11 @@ class NormalFileSystem : FileSystem
 		return path.exists && path.isFile;
 	}
 
-	override immutable(void[]) getImpl(ResourceIdentifier name)
+	override immutable(void)[] getImpl(ResourceIdentifier name)
 	{
-		return buildPath(name).read().assumeUnique;
+		auto path = buildPath(name);
+		info("Reading ", path);
+		return path.read().assumeUnique;
 	}
 
 	private const(char[]) buildPath(ResourceIdentifier name)
@@ -160,9 +170,11 @@ class PackFileSystem : FileSystem
 
 	private MmFile					_pack;
 	private FileOffset[FileHash]	_fileMap;
+	private string					_fileName;
 
 	this(string packFile)
 	{
+		_fileName = packFile;
 		_pack = new MmFile(packFile);
 
 		import std.bitmanip;
@@ -179,8 +191,9 @@ class PackFileSystem : FileSystem
 		return !!(md5Of(name) in _fileMap);
 	}
 	
-	override immutable(void[]) getImpl(ResourceIdentifier name)
+	override immutable(void)[] getImpl(ResourceIdentifier name)
 	{
+		info("Reading ", _fileName, " : ", name);
 		auto offset = _fileMap[md5Of(name)];
 		return _pack[offset.startOffset .. offset.endOffset].assumeUnique;
 	}
