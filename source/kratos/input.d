@@ -158,14 +158,14 @@ package @property void keyboard(Keyboard keyboard)
 
 class Keyboard
 {
-	private ButtonMapping[] buttons;
-	private size_t[string] mapping;
+	private ButtonMapping[] _buttons;
+	private size_t[string] _mapping;
 
-	private GLFWwindow* windowHandle;
+	private GLFWwindow* _windowHandle;
 
 	package this(ref Window window)
 	{
-		this.windowHandle = window.handle;
+		this._windowHandle = window.handle;
 
 		foreach(member; __traits(allMembers, derelict.glfw3.glfw3))
 		{
@@ -177,28 +177,34 @@ class Keyboard
 			static if(member.startsWith(keyPrefix) && member != "GLFW_KEY_UNKNOWN")
 			{
 				auto keyName = member[keyPrefix.length .. $].splitter('_').map!capitalize.joiner(" ").to!string;
-				mapping[keyName] = buttons.length;
-				buttons ~= ButtonMapping(Button(keyName), mixin(member));
+				_mapping[keyName] = buttons.length;
+				_buttons ~= ButtonMapping(Button(keyName), mixin(member));
 			}
 		}
 	}
 
 	package void update()
 	{
-		foreach(ref b; buttons)
+		foreach(ref b; _buttons)
 		{
-			b.button.update(glfwGetKey(windowHandle, b.keyCode) == GLFW_PRESS);
+			b.button.update(glfwGetKey(_windowHandle, b.keyCode) == GLFW_PRESS);
 		}
 	}
 
 	ref const(Button) opIndex(string keyName) const
 	{
-		return buttons[mapping[keyName]].button;
+		return _buttons[_mapping[keyName]].button;
 	}
 
 	private static struct ButtonMapping
 	{
 		private Button button;
 		private int keyCode;
+	}
+
+	public auto buttons()
+	{
+		import std.algorithm : map;
+		return _buttons.map!(a => a.button);
 	}
 }
