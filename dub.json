@@ -6,8 +6,9 @@
 		"René Zwanenburg"
 	],
 
-	"targetType": "executable",
+	"targetType": "library",
 	"targetPath": "build",
+	"mainSourceFile": "source/kratos/main.d",
 
 	"buildTypes":
 	{
