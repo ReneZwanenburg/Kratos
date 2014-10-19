@@ -5,7 +5,7 @@ import kgl3n.vector;
 import kgl3n.quaternion;
 import kgl3n.matrix;
 
-private alias registration = RegisterComponent!Transform;
+mixin RegisterComponent!Transform;
 
 final class Transform : Component
 {

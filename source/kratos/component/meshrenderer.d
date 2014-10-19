@@ -8,7 +8,7 @@ import kratos.graphics.renderstate;
 import kratos.graphics.shadervariable : UniformRef, BuiltinUniformName;
 import kratos.component.transform;
 
-private alias registration = RegisterComponent!MeshRenderer;
+mixin RegisterComponent!MeshRenderer;
 
 final class MeshRenderer : Component
 {

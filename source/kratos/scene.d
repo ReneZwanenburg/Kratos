@@ -3,7 +3,7 @@
 import kratos.entity;
 import kratos.util : SerializableArray;
 
-class Scene
+final class Scene
 {
 	string name;
 	SerializableArray!Entity entities;
@@ -15,13 +15,14 @@ class Scene
 
 	Entity createEntity(string name = null)
 	{
-		auto entity = new Entity(name);
+		auto entity = new Entity(name, this);
 		entities ~= entity;
 		return entity;
 	}
 
 	void addEntity(Entity entity)
 	{
+		assert(entity.scene is this);
 		entities ~= entity;
 	}
 
@@ -38,3 +39,6 @@ class Scene
 		return entities[].map!(a => a.getComponents!(T, derived)).joiner;
 	}
 }
+
+/// Nastiness. Vibe's deserializer allocations currently can't be controlled. This is used to pass the owning scene to an entity during deserialization.
+public Scene KratosInternalCurrentDeserializingScene = null;

@@ -3,19 +3,30 @@
 import std.container : Array;
 import std.typecons : Flag;
 import std.experimental.logger;
+import kratos.scene;
 
 import vibe.data.json;
 
 public import vibe.data.serialization;
+public import kratos.component;
 
 final class Entity
 {
 	private	string			_name;
+	private Scene			_scene;
 	private	Array!Component	_components;
 
+	// Should be package(kratos)
 	this(string name = null)
 	{
+		this(name, KratosInternalCurrentDeserializingScene);
+	}
+
+	package this(string name, Scene scene)
+	{
+		assert(scene !is null);
 		this.name = name;
+		this._scene = scene;
 	}
 
 	~this()
@@ -70,6 +81,11 @@ final class Entity
 		{
 			this._name = name;
 		}
+
+		inout(Scene) scene() inout
+		{
+			return _scene;
+		}
 	}
 
 	Json toRepresentation()
@@ -108,9 +124,16 @@ abstract class Component
 	@ignore
 	private Entity _owner;
 
-	@property inout(Entity) owner() inout
-	{
-		return _owner;
+	final @property {
+		inout(Entity) owner() inout
+		{
+			return _owner;
+		}
+
+		inout(Scene) scene() inout
+		{
+			return owner.scene;
+		}
 	}
 }
 
@@ -130,12 +153,18 @@ struct Dependency
 enum isDependency(T) = is(T == Dependency);
 
 
-template RegisterComponent(T) if(is(T : Component))
+mixin template RegisterComponent(T) if(is(T : Component))
 {
-	private alias Helper = ComponentFactory!T;
+	private void KratosComponentRegistrationHelper()
+	{
+		alias factory = ComponentFactory!T;
+		factory.instantiationHelper();
+	}
 }
 
-private template ComponentFactory(T) if(is(T : Component))
+
+
+template ComponentFactory(T) if(is(T : Component))
 {
 	private:
 	T[] liveComponents;
@@ -162,6 +191,8 @@ private template ComponentFactory(T) if(is(T : Component))
 				component.tupleof[i] = owner.getOrAddComponent!(FT, __traits(getAttributes, T.tupleof[i])[uda.index].allowDerived);
 			}
 		}
+
+		component.callOptional!"initialize"();
 		
 		return component;
 	}
@@ -202,10 +233,26 @@ private template ComponentFactory(T) if(is(T : Component))
 		return rep;
 	}
 
+	void callOptional(string name)(T component)
+	{
+		import std.traits : isCallable;
+		import std.algorithm : among;
+
+		static if(name.among(__traits(derivedMembers, T)))
+		{
+			static if(mixin("isCallable!(T."~name~")"))
+			{
+				mixin("component."~name~"();");
+			}
+		}
+	}
+
 	static this()
 	{
 		import std.traits : isCallable;
 		import std.algorithm : among;
+
+		info("Registering Component ", T.stringof);
 
 		componentDestroyer		[T.classinfo] = &destroy;
 		componentDeserializer	[T.classinfo] = &deserialize;
@@ -220,6 +267,11 @@ private template ComponentFactory(T) if(is(T : Component))
 				};
 			}
 		}
+	}
+
+	public void instantiationHelper()
+	{
+
 	}
 }
 

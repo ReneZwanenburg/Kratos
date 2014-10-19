@@ -35,6 +35,11 @@ private Scene loadSceneKratos(ResourceIdentifier name, Scene scene, bool loadRec
 	{
 		scene = new Scene(json["name"].get!string);
 	}
+
+	// Nastiness.. See KratosInternalCurrentDeserializingScene comment.
+	auto previousDeserializingScene = KratosInternalCurrentDeserializingScene;
+	KratosInternalCurrentDeserializingScene = scene;
+	scope(exit) KratosInternalCurrentDeserializingScene = previousDeserializingScene;
 	
 	loadSceneKratos(json, scene, loadRecursive);
 	return scene;
@@ -89,6 +94,11 @@ else
 		{
 			scene = new Scene(name.baseName);
 		}
+		
+		// Nastiness.. See KratosInternalCurrentDeserializingScene comment.
+		auto previousDeserializingScene = KratosInternalCurrentDeserializingScene;
+		KratosInternalCurrentDeserializingScene = scene;
+		scope(exit) KratosInternalCurrentDeserializingScene = previousDeserializingScene;
 		
 		auto data = activeFileSystem.get(name);
 		

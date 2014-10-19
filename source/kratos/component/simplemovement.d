@@ -7,7 +7,7 @@ import kgl3n.vector;
 import kgl3n.quaternion;
 import kgl3n.math;
 
-private alias registration = RegisterComponent!SimpleMovement;
+mixin RegisterComponent!SimpleMovement;
 
 final class SimpleMovement : Component
 {
