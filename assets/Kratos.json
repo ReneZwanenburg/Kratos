@@ -1,0 +1,9 @@
+{
+	"startupScene": "Scenes/Test.scene",
+	"defaultWindowProperties": {
+		"width": 800,
+		"height": 600,
+		"fullScreen": false,
+		"refreshRate": 60
+	}
+}

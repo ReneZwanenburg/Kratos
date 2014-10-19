@@ -6,7 +6,9 @@ import kratos.resource.filesystem;
 
 void main(string[] args)
 {
-	WindowProperties windowProperties = { };
+	import kratos.configuration;
+
+	WindowProperties windowProperties = Configuration.defaultWindowProperties;
 	auto window = Window(windowProperties);
 	import kratos.input : mouse;
 	mouse.setGrabbed(true);
@@ -16,7 +18,7 @@ void main(string[] args)
 	import std.typecons : scoped;
 	import kratos.scene;
 	auto scene = scoped!Scene;
-	loadScene("Scenes/Test.scene", scene);
+	loadScene(Configuration.startupScene, scene);
 
 	import std.experimental.logger;
 	globalLogLevel = LogLevel.info;
