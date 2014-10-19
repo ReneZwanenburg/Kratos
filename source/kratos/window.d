@@ -3,11 +3,13 @@
 import derelict.glfw3.glfw3;
 import std.exception : enforce, assumeWontThrow;
 import kratos.input;
+import vibe.data.serialization : optional;
 
 enum WindowProperties unittestWindowProperties = { visible: false, debugContext: true };
 
 struct WindowProperties
 {
+	@optional:
 	int		width			= 800;
 	int		height			= 600;
 	string	title			= "Kratos Application";
