@@ -17,7 +17,9 @@ private __gshared FileSystem _activeFileSystem;
 		mfs.push(new NormalFileSystem("assets/"));
 
 		import std.file;
-		foreach(file; dirEntries("./", "*.assetpack", SpanMode.breadth))
+		import std.array : array;
+		import std.algorithm : sort;
+		foreach(file; dirEntries("./", "*.assetpack", SpanMode.breadth).array.sort!((a, b) => a.timeLastModified > b.timeLastModified))
 		{
 			mfs.push(new PackFileSystem(file.name));
 		}
