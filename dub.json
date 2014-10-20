@@ -36,14 +36,8 @@
 		"lib/windows/x86_64/DevIL.dll"
 	],
 
-	"postBuildCommands":
-	[
-		"dub run -q kratosassetpacker -- ../Kratos/assets ../Kratos/build/Kratos.assetpack"
-	],
-
 	"dependencies":
 	{
-		"kratosassetpacker": { "version": "~master", "path": "../KratosAssetPacker" },
 		"kgl3n": { "version": "~master", "path": "../kgl3n" },
 		"derelict-gl3": "~>1.0",
 		"derelict-glfw3": "~>1.0",
