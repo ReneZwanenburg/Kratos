@@ -11,17 +11,36 @@ private __gshared FileSystem _activeFileSystem;
 	//TODO: Make thread-safe
 	if(_activeFileSystem is null)
 	{
-		auto mfs = new MultiFileSystem();
-		_activeFileSystem = mfs;
-
-		mfs.push(new NormalFileSystem("assets/"));
-
 		import std.file;
-		import std.array : array;
-		import std.algorithm : sort;
-		foreach(file; dirEntries("./", "*.assetpack", SpanMode.breadth).array.sort!((a, b) => a.timeLastModified > b.timeLastModified))
+		if(exists("LoadOrder.json"))
 		{
-			mfs.push(new PackFileSystem(file.name));
+			import vibe.data.json;
+			auto json = parseJsonString(readText("LoadOrder.json"));
+
+			auto mfs = new MultiFileSystem();
+			_activeFileSystem = mfs;
+
+			foreach(element; json)
+			{
+				auto name = element.get!string;
+				import std.path;
+				if(name.extension == ".assetpack")
+				{
+					mfs.push(new PackFileSystem(name));
+				}
+				else if(name.exists && name.isDir)
+				{
+					mfs.push(new NormalFileSystem(name));
+				}
+				else
+				{
+					assert(false);
+				}
+			}
+		}
+		else
+		{
+			_activeFileSystem = new NormalFileSystem("assets/");
 		}
 	}
 
