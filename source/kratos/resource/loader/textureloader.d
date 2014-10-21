@@ -21,6 +21,8 @@ private Texture loadTexture(ResourceIdentifier name)
 	
 	auto dataPtr = ilGetData();
 	auto resolution = vec2i(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
+	import std.stdio;
+	writeln(ilGetInteger(IL_IMAGE_FORMAT));
 	auto format = ilTextureFormat[ilGetInteger(IL_IMAGE_FORMAT)];
 	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL) == bytesPerPixel[format]);
 	assert(ilGetInteger(IL_IMAGE_TYPE) == IL_UNSIGNED_BYTE);
@@ -32,6 +34,9 @@ shared static this()
 {
 	DerelictIL.load();
 	ilInit();
+
+	ilEnable(IL_ORIGIN_SET);
+	ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
 }
 
 shared static ~this()
