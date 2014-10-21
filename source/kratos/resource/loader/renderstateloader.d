@@ -13,58 +13,72 @@ alias RenderStateCache = Cache!(RenderState, ResourceIdentifier, id => loadRende
 
 private RenderState loadRenderState(ResourceIdentifier name)
 {
-	auto renderState = RenderState(name);
 	auto json = parseJsonString(activeFileSystem.get!char(name));
 
-	foreach(ref field; renderState.content.tupleof)
+	if(json["parent"].type == Json.Type.undefined)
 	{
-		alias T = typeof(field);
-		auto stateJson = json[T.stringof];
-		if(stateJson.type == Json.Type.Undefined) continue;
-		
-		static if(is(T == Shader))
-		{
-			auto modules = deserializeJson!(string[])(stateJson["modules"]);
-			import std.algorithm : sort;
-			modules.sort();
+		auto renderState = RenderState(name);
 
-			field = Shader(ProgramCache.get(modules));
+		foreach(ref field; renderState.content.tupleof)
+		{
+			alias T = typeof(field);
+			auto stateJson = json[T.stringof];
+			if(stateJson.type == Json.Type.Undefined) continue;
 			
-			auto uniforms = stateJson["uniforms"];
-			if(uniforms.type != Json.Type.Undefined)
+			static if(is(T == Shader))
 			{
-				foreach(string name, value; uniforms)
+				auto modules = deserializeJson!(string[])(stateJson["modules"]);
+				import std.algorithm : sort;
+				modules.sort();
+				
+				field = Shader(ProgramCache.get(modules));
+				
+				loadUniforms(renderState, stateJson["uniforms"]);
+			}
+			else
+			{
+				field = deserializeJson!T(stateJson);
+			}
+		}
+
+		return renderState;
+	}
+	else
+	{
+		auto renderState = RenderStateCache.get(json["parent"].get!ResourceIdentifier);
+		loadUniforms(renderState, json["uniforms"]);
+		return renderState;
+	}
+}
+
+private void loadUniforms(ref RenderState renderState, Json uniforms)
+{
+	if(uniforms.type != Json.Type.Undefined)
+	{
+		foreach(string name, value; uniforms)
+		{
+			if(value.type == Json.Type.String)
+			{
+				renderState.shader[name] = TextureCache.get(value.get!string);
+			}
+			else
+			{
+				auto uniform = renderState.shader[name];
+				
+				import kratos.graphics.gl;
+				foreach(TypeBinding; GLTypes)
 				{
-					if(value.type == Json.Type.String)
+					alias UT = TypeBinding.nativeType;
+					if(TypeBinding.glType == uniform.type)
 					{
-						renderState.shader[name] = TextureCache.get(value.get!string);
-					}
-					else
-					{
-						auto uniform = renderState.shader[name];
-						
-						import kratos.graphics.gl;
-						foreach(TypeBinding; GLTypes)
+						//TODO: Add support for uniform arrays and matrices
+						static if(!is(UT == TextureUnit))
 						{
-							alias UT = TypeBinding.nativeType;
-							if(TypeBinding.glType == uniform.type)
-							{
-								//TODO: Add support for uniform arrays and matrices
-								static if(!is(UT == TextureUnit))
-								{
-									uniform = deserializeJson!(UT)(value);
-								}
-							}
+							uniform = deserializeJson!(UT)(value);
 						}
 					}
 				}
 			}
 		}
-		else
-		{
-			field = deserializeJson!T(stateJson);
-		}
 	}
-	
-	return renderState;
 }
