@@ -23,6 +23,7 @@ struct SerializableArray(T)
 	Array!T backingArray;
 	alias backingArray this;
 
+	//TODO: No need to go through Json. Serialize to and from dynamic array, works with Bson etc. too
 	import vibe.data.json;
 	Json toRepresentation()
 	{
@@ -44,5 +45,39 @@ struct SerializableArray(T)
 		auto inserter = array.backingArray.backInserter;
 		put(inserter, json[].map!(a => a.deserializeJson!T));
 		return array;
+	}
+}
+
+struct StaticString
+{
+	enum MaxLength = 63;
+
+	// Total size is 64 bytes, fits nicely in a cache line.
+	private ubyte _length;
+	char[MaxLength] data;
+
+	inout(char)[] opSlice() inout
+	{
+		return data[0 .. length];
+	}
+
+	string toString() const
+	{
+		return this[].idup;
+	}
+
+	void opAssign(string str)
+	{
+		assert(str.length <= MaxLength);
+		_length = cast(typeof(_length))str.length;
+		this[][] = str[];
+	}
+
+	@property
+	{
+		ubyte length() const
+		{
+			return length;
+		}
 	}
 }
