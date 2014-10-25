@@ -42,5 +42,5 @@ void main(string[] args)
 		Time.update();
 	}
 
-	activeFileSystem.write("Scenes/Test.scene", scene.Scoped_payload.serializeToJson().toPrettyString);
+	//activeFileSystem.write(Configuration.startupScene, scene.Scoped_payload.serializeToJson().toPrettyString);
 }
