@@ -279,7 +279,14 @@ struct Uniforms
 
 	void opIndexAssign(ref Texture texture, string name)
 	{
-		_textures[_textureIndices[name]] = texture;
+		if(auto indexPtr = name in _textureIndices)
+		{
+			_textures[*indexPtr] = texture;
+		}
+		else
+		{
+			assert(false, "No such texture: " ~ name);
+		}
 	}
 
 	void opIndexAssign(Texture texture, string name)
