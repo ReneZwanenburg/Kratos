@@ -120,7 +120,6 @@ else
 			aiProcess_JoinIdenticalVertices	|
 			aiProcess_Triangulate			|
 			aiProcess_GenSmoothNormals		|
-			//aiProcess_PreTransformVertices	|
 			aiProcess_ImproveCacheLocality	|
 			aiProcess_FindInvalidData		|
 			aiProcess_GenUVCoords			|
@@ -143,7 +142,7 @@ else
 			auto entity = scene.createEntity(node.mName.data[0 .. node.mName.length].idup);
 			info("Importing Node ", entity.name);
 			auto transform = entity.addComponent!Transform;
-			transform.parent = parent;
+			//transform.parent = parent;
 			transform.setLocalMatrix(*(cast(mat4*)&node.mTransformation));
 			
 			foreach(meshIndex; 0..node.mNumMeshes)
@@ -231,9 +230,45 @@ private Mesh loadMesh(const aiMesh* mesh)
 private RenderState loadMaterial(const aiMaterial* material)
 {
 	import kratos.resource.loader.textureloader;
-	RenderState renderState = RenderStateCache.get("RenderStates/Test.renderstate");
+	RenderState renderState = RenderStateCache.get("RenderStates/DefaultImport.renderstate");
 
-	//renderState.shader["diffuseTexture"] = aigem
+	static struct TextureProperties
+	{
+		string uniformName;
+		aiTextureType textureType;
+		string defaultTexture = "Textures/White.png";
+	}
+
+	foreach(properties; [
+		TextureProperties("diffuseTexture", aiTextureType_DIFFUSE),
+		TextureProperties("specularTexture", aiTextureType_SPECULAR),
+		TextureProperties("emissiveTexture", aiTextureType_EMISSIVE, "Textures/Black.png")
+	])
+	{
+		aiString path;
+		if(aiGetMaterialTexture(material, properties.textureType, 0, &path) == aiReturn_SUCCESS)
+		{
+			renderState.shader[properties.uniformName] = TextureCache.get(path.data[0..path.length].idup);
+		}
+		else
+		{
+			renderState.shader[properties.uniformName] = TextureCache.get(properties.defaultTexture);
+		}
+	}
+
+	auto ambientColor = vec4(1, 1, 1, 1);
+	aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, 0, 0, cast(aiColor4D*)&ambientColor);
+	auto diffuseColor = vec4(1, 1, 1, 1);
+	aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, 0, 0, cast(aiColor4D*)&diffuseColor);
+	auto specularColor = vec4(1, 1, 1, 1);
+	aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, 0, 0, cast(aiColor4D*)&specularColor);
+	auto emissiveColor = vec4(0, 0, 0, 0);
+	aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, 0, 0, cast(aiColor4D*)&emissiveColor);
+
+	renderState.shader["ambientColor"] = ambientColor.rgb;
+	renderState.shader["diffuseColor"] = diffuseColor;
+	renderState.shader["specularColor"] = specularColor;
+	renderState.shader["emissiveColor"] = emissiveColor.rgb;
 
 	return renderState;
 }
