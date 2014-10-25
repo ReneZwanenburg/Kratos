@@ -26,13 +26,13 @@
 	"copyFiles-windows-x86":
 	[
 		"lib/windows/x86/glfw3.dll",
-		"lib/windows/x86/Assimp32.dll",
+		"lib/windows/x86/assimp.dll",
 		"lib/windows/x86/DevIL.dll"
 	],
 	"copyFiles-windows-x86_64":
 	[
 		"lib/windows/x86_64/glfw3.dll",
-		"lib/windows/x86_64/Assimp64.dll",
+		"lib/windows/x86_64/assimp.dll",
 		"lib/windows/x86_64/DevIL.dll"
 	],
 
