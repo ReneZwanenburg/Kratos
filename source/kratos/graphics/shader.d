@@ -4,7 +4,7 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
 import kratos.graphics.texture;
-import kratos.util : backInserter;
+import kratos.util : backInserter, StaticString;
 
 import std.algorithm : copy, find, map;
 import std.array : array;
@@ -164,14 +164,6 @@ private struct Program_Impl
 
 		gl.GetProgramiv(handle, GL_ACTIVE_ATTRIBUTES, &attributes.count);
 
-		static GLchar[] nameBuffer;
-		{
-			GLint maxNameLength;
-			gl.GetProgramiv(handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH, &maxNameLength);
-			nameBuffer.assumeSafeAppend;
-			nameBuffer.length = maxNameLength;
-		}
-
 		foreach(i, ref attribute; attributes[])
 		{
 			GLsizei nameLength;
@@ -180,15 +172,15 @@ private struct Program_Impl
 			gl.GetActiveAttrib(
 				handle,
 				i,
-				nameBuffer.length,
+				StaticString.MaxLength,
 				&nameLength,
 				&size,
 				&attribute.aggregateType,
-				nameBuffer.ptr
+				attribute.name.data.ptr
 			);
 
 			assert(size == 1, "Attribute arrays not supported yet");
-			attribute.name = nameBuffer[0..nameLength].idup;
+			attribute.name.length = cast(typeof(attribute.name.length))nameLength;
 		}
 
 		this._attributes = attributes;

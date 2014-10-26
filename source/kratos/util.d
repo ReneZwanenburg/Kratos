@@ -53,10 +53,15 @@ struct StaticString
 	enum MaxLength = 63;
 
 	// Total size is 64 bytes, fits nicely in a cache line.
-	private ubyte _length;
+	ubyte length;
 	char[MaxLength] data;
 
-	inout(char)[] opSlice() inout
+	this(string str)
+	{
+		this = str;
+	}
+
+	inout(char)[] opSlice() inout nothrow
 	{
 		return data[0 .. length];
 	}
@@ -69,15 +74,18 @@ struct StaticString
 	void opAssign(string str)
 	{
 		assert(str.length <= MaxLength);
-		_length = cast(typeof(_length))str.length;
+		length = cast(typeof(length))str.length;
 		this[][] = str[];
 	}
 
-	@property
+	bool opEquals(const ref StaticString other) const
 	{
-		ubyte length() const
-		{
-			return length;
-		}
+		return this[] == other[];
+	}
+
+	hash_t toHash() const nothrow @trusted
+	{
+		auto slice = this[];
+		return typeid(slice).getHash(&slice);
 	}
 }

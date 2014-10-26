@@ -2,6 +2,7 @@
 
 import kratos.graphics.gl;
 import kratos.graphics.texture;
+import kratos.util : StaticString;
 
 import std.variant;
 import kgl3n.vector;
@@ -22,7 +23,7 @@ private auto toVertexAttributesImpl(T)()
 	foreach(i, FT; typeof(T.tupleof))
 	{
 		//TODO: Add support for static arrays
-		attributes[][i] = VertexAttribute(GLType!FT, T.tupleof[i].stringof);
+		attributes[][i] = VertexAttribute(GLType!FT, StaticString(T.tupleof[i].stringof));
 	}
 
 	return attributes;
@@ -31,8 +32,8 @@ private auto toVertexAttributesImpl(T)()
 struct VertexAttribute
 {
 	// Type of this vertex attribute as returned by get active attrib. For example, GL_FLOAT_VEC3
-	GLenum	aggregateType;
-	string	name;
+	GLenum			aggregateType;
+	StaticString	name;
 
 	@property const
 	{
@@ -62,18 +63,19 @@ struct VertexAttribute
 			if(T.glType == aggregateType) aggregateTypeName = T.nativeType.stringof;
 		}
 
-		return aggregateTypeName ~ " " ~ name;
+		//TODO: This idup should not be necessary. Probably fixed in 2.066
+		return (aggregateTypeName ~ " " ~ name[]).idup;
 	}
 
 	static {
 		VertexAttribute fromAggregateType(T)(string name)
 		{
-			return VertexAttribute(GLType!T, name);
+			return VertexAttribute(GLType!T, StaticString(name));
 		}
 
 		VertexAttribute fromBasicType(T)(size_t count, string name)
 		{
-			return VertexAttribute(attributeAggregateType[GLType!T][count], name);
+			return VertexAttribute(attributeAggregateType[GLType!T][count], StaticString(name));
 		}
 	}
 }
