@@ -142,7 +142,7 @@ else
 			auto entity = scene.createEntity(node.mName.data[0 .. node.mName.length].idup);
 			info("Importing Node ", entity.name);
 			auto transform = entity.addComponent!Transform;
-			//transform.parent = parent;
+			transform.parent = parent;
 			transform.setLocalMatrix(*(cast(mat4*)&node.mTransformation));
 			
 			foreach(meshIndex; 0..node.mNumMeshes)
