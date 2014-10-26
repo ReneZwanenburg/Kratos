@@ -10,6 +10,7 @@ mixin RegisterComponent!Transform;
 final class Transform : Component
 {
 	@optional:
+	private ulong		_id;
 	private Transform	_parent = null;
 	private vec3		_position;
 	private quat		_rotation;
@@ -52,11 +53,13 @@ final class Transform : Component
 			return mat4.scaling(vec3(1 / _scale)) * _rotation.inverted.toMatrix!(4) * mat4.translation(-_position);
 		}
 
+		@ignore
 		inout(Transform) parent() inout
 		{
 			return _parent;
 		}
 
+		@ignore
 		void parent(Transform parent)
 		{
 			_parent = parent;
@@ -94,6 +97,30 @@ final class Transform : Component
 		{
 			_scale = scale;
 			mark();
+		}
+
+		ulong id() const
+		{
+			return _id ? _id : cast(ulong)cast(void*)this;
+		}
+
+		void id(ulong id)
+		{
+			this._id = id;
+		}
+
+		ulong parentId() const
+		{
+			return parent !is null ? parent.id : 0;
+		}
+
+		void parentId(ulong id)
+		{
+			if(id)
+			{
+				import std.algorithm : find;
+				parent = scene.getComponents!Transform.find!(a => a.id == id).front;
+			}
 		}
 	}
 
