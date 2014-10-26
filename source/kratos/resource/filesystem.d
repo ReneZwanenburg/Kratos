@@ -28,13 +28,9 @@ private __gshared FileSystem _activeFileSystem;
 				{
 					mfs.push(new PackFileSystem(name));
 				}
-				else if(name.exists && name.isDir)
-				{
-					mfs.push(new NormalFileSystem(name));
-				}
 				else
 				{
-					assert(false);
+					mfs.push(new NormalFileSystem(name));
 				}
 			}
 		}
