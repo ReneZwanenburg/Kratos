@@ -121,7 +121,15 @@ final class Entity
 
 abstract class Component
 {
-	@ignore
+	// Somewhat nasty, but ensures owner is available during subclass construction AND disallows instantiation of components in the wild.
+	private static Entity constructingEntity;
+
+	protected this()
+	{
+		assert(constructingEntity !is null);
+		_owner = constructingEntity;
+	}
+
 	private Entity _owner;
 
 	final @property {
@@ -172,12 +180,13 @@ template ComponentFactory(T) if(is(T : Component))
 	T build(Entity owner)
 	{
 		//TODO: Don´t use GC
+		Component.constructingEntity = owner;
+		scope(exit) Component.constructingEntity = null;
 		return onComponentCreation(new T, owner);
 	}
 
 	T onComponentCreation(T component, Entity owner)
 	{
-		component._owner = owner;
 		owner._components.insertBack(component);
 		liveComponents ~= component;
 		
@@ -218,6 +227,8 @@ template ComponentFactory(T) if(is(T : Component))
 		}
 		else
 		{
+			Component.constructingEntity = owner;
+			scope(exit) Component.constructingEntity = null;
 			//TODO: Don´t use GC
 			return onComponentCreation(json.deserializeJson!T, owner);
 		}
