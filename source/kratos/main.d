@@ -4,43 +4,47 @@ import kratos.time;
 import kratos.window;
 import kratos.resource.filesystem;
 
-void main(string[] args)
+version(KratosCustomMain) { }
+else
 {
-	import kratos.configuration;
-
-	WindowProperties windowProperties = Configuration.defaultWindowProperties;
-	auto window = Window(windowProperties);
-	import kratos.input : mouse;
-	mouse.setGrabbed(true);
-
-	import kratos.resource.loader;
-	import vibe.data.json;
-	import std.typecons : scoped;
-	import kratos.scene;
-	auto scene = scoped!Scene;
-	loadScene(Configuration.startupScene, scene);
-
-	import std.experimental.logger;
-	globalLogLevel = LogLevel.info;
-	Time.reset();
-	while(!window.closeRequested)
+	void main(string[] args)
 	{
-		window.updateInput();
-		import kratos.entity : dispatchFrameUpdate;
-		dispatchFrameUpdate();
+		import kratos.configuration;
 
-		import kratos.graphics.gl;
-		gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		WindowProperties windowProperties = Configuration.defaultWindowProperties;
+		auto window = Window(windowProperties);
+		import kratos.input : mouse;
+		mouse.setGrabbed(true);
 
-		import kratos.component.meshrenderer;
-		foreach(renderer; scene.getComponents!MeshRenderer)
+		import kratos.resource.loader;
+		import vibe.data.json;
+		import std.typecons : scoped;
+		import kratos.scene;
+		auto scene = scoped!Scene;
+		loadScene(Configuration.startupScene, scene);
+
+		import std.experimental.logger;
+		globalLogLevel = LogLevel.info;
+		Time.reset();
+		while(!window.closeRequested)
 		{
-			renderer.draw();
+			window.updateInput();
+			import kratos.entity : dispatchFrameUpdate;
+			dispatchFrameUpdate();
+
+			import kratos.graphics.gl;
+			gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			import kratos.component.meshrenderer;
+			foreach(renderer; scene.getComponents!MeshRenderer)
+			{
+				renderer.draw();
+			}
+
+			window.swapBuffers();
+			Time.update();
 		}
 
-		window.swapBuffers();
-		Time.update();
+		//activeFileSystem.write(Configuration.startupScene, scene.Scoped_payload.serializeToJson().toPrettyString);
 	}
-
-	//activeFileSystem.write(Configuration.startupScene, scene.Scoped_payload.serializeToJson().toPrettyString);
 }
