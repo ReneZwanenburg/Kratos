@@ -122,6 +122,12 @@ final class Transform : Component
 				parent = scene.getComponents!Transform.find!(a => a.id == id).front;
 			}
 		}
+
+		string path() const
+		{
+			auto path = owner.name;
+			return _parent !is null ? parent.path ~ "/" ~ path : path;
+		}
 	}
 
 	private void update()

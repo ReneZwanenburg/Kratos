@@ -26,11 +26,15 @@ final class MeshRenderer : Component
 		this(emptyMesh, defaultRenderState);
 	}
 
-	private this(Mesh mesh, RenderState renderState)
+	this(Mesh mesh, RenderState renderState)
 	{
 		this._mesh = mesh;
 		this._renderState = renderState;
-		_vao = vao(_mesh, _renderState.shader.program);
+		//TODO: Hack to support scene creation without GL context, fix nicely.
+		if(_mesh.vbo.refCountedStore.isInitialized)
+		{
+			_vao = vao(_mesh, _renderState.shader.program);
+		}
 	}
 
 	void set(Mesh mesh, RenderState renderState)
@@ -48,17 +52,20 @@ final class MeshRenderer : Component
 			this._mesh = mesh;
 		}
 
-		@ignore
 		void shader()(auto ref Shader shader)
 		{
 			updateVao(_mesh, shader.program);
 			renderState.shader = shader;
 		}
 
-		@ignore
 		ref Shader shader()
 		{
 			return renderState.shader;
+		}
+
+		Mesh mesh()
+		{
+			return _mesh;
 		}
 
 		ref RenderState renderState()

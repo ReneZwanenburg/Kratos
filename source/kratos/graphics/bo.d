@@ -31,7 +31,10 @@ struct VBO
 
 	const(T[]) get(T)() const
 	{
-		assert(toVertexAttributes!T == attributes);
+		static if(!is(T == void))
+		{
+			static assert(toVertexAttributes!T == attributes);
+		}
 		return cast(T[])data;
 	}
 
@@ -103,7 +106,7 @@ struct IBO
 		{
 			assert(_indexType == IndexType.UShort);
 		}
-		else static assert(false);
+		else static assert(is(T == void));
 
 		return cast(T[])data;
 	}

@@ -38,10 +38,10 @@ final class Entity
 		}
 	}
 
-	T addComponent(T)() if(is(T : Component))
+	T addComponent(T, Args...)(Args args) if(is(T : Component))
 	{
 		info("Adding ", T.stringof, " to ", name);
-		return ComponentFactory!T.build(this);
+		return ComponentFactory!T.build(this, args);
 	}
 
 	auto getComponents(T, AllowDerived derived = AllowDerived.no)()
@@ -177,12 +177,12 @@ template ComponentFactory(T) if(is(T : Component))
 	private:
 	T[] liveComponents;
 
-	T build(Entity owner)
+	T build(Args...)(Entity owner, Args args)
 	{
 		//TODO: Don´t use GC
 		Component.constructingEntity = owner;
 		scope(exit) Component.constructingEntity = null;
-		return onComponentCreation(new T, owner);
+		return onComponentCreation(new T(args), owner);
 	}
 
 	T onComponentCreation(T component, Entity owner)

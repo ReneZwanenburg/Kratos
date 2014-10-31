@@ -1,5 +1,6 @@
 ﻿module kratos;
 
+public import kratos.scene;
 public import kratos.entity;
 public import kratos.time;
 public import kratos.input;
