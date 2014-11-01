@@ -4,6 +4,7 @@ import kratos.resource.loader.internal;
 import kratos.resource.cache;
 import kratos.resource.resource;
 import kratos.graphics.mesh;
+import kratos.util : readFront;
 
 alias MeshCache = Cache!(Mesh, ResourceIdentifier, id => loadMesh(id));
 
@@ -12,16 +13,43 @@ private Mesh loadMesh(ResourceIdentifier name)
 	auto extension = name.lowerCaseExtension;
 	auto data = activeFileSystem.get(name);
 
-	auto mesh = loadMeshAssimp(data, extension);
-	mesh.id = name;
-	return mesh;
-	//assert(false, "Not implemented yet");
+	if(extension == ".ksm")
+	{
+		auto mesh = loadMeshKratos(data);
+		mesh.id = name;
+		return mesh;
+	}
+	else
+	{
+		auto mesh = loadMeshAssimp(data, extension);
+		mesh.id = name;
+		return mesh;
+	}
 }
 
+private Mesh loadMeshKratos(immutable (void)[] data)
+{
+	import kratos.graphics.shadervariable : VertexAttributes;
+	import kratos.graphics.bo;
 
+	auto vertexAttributes = data.readFront!VertexAttributes;
+	auto vertexBufferByteLength = data.readFront!size_t;
+	auto indexType = data.readFront!IndexType;
+	auto indexBufferByteLength = data.readFront!size_t;
+	return Mesh(
+		IBO(data[vertexBufferByteLength .. $], indexType),
+		VBO(data[0 .. vertexBufferByteLength], vertexAttributes)
+	);
+}
 
 /////////
-version(KratosDisableAssimp) {}
+version(KratosDisableAssimp)
+{
+	private Mesh loadMeshAssimp(immutable void[] data, string extension)
+	{
+		assert(false, "Assimp mesh loading has been disabled. Build Kratos with Assimp support to load non-ksm meshes");
+	}
+}
 else
 {
 	import derelict.assimp3.assimp;

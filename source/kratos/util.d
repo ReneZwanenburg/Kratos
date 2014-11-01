@@ -89,3 +89,11 @@ struct StaticString
 		return typeid(slice).getHash(&slice);
 	}
 }
+
+T readFront(T)(ref inout(void)[] buffer)
+{
+	assert(buffer.length >= T.sizeof);
+	auto value = (cast(const(T)[])buffer[0 .. T.sizeof])[0];
+	buffer = buffer[T.sizeof .. $];
+	return value;
+}

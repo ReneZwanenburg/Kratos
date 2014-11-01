@@ -203,7 +203,7 @@ private Mesh loadMesh(const aiMesh* mesh)
 	}
 	
 	import kratos.graphics.bo;
-	auto vbo = VBO(buffer, attributes);
+	auto vbo = VBO(cast(void[])buffer, attributes);
 	
 	IBO createIndices(T)()
 	{

@@ -22,6 +22,11 @@ struct VBO
 		this(data, toVertexAttributes!T, dynamic);
 	}
 
+	this(const(void)[] data, VertexAttributes attributes)
+	{
+		this(cast(void[])data, attributes, false);
+	}
+
 	this(void[] data, VertexAttributes attributes, bool dynamic = false)
 	{
 		_buffer = bo!GL_ARRAY_BUFFER(data, dynamic);
@@ -40,6 +45,7 @@ struct VBO
 
 	T[] getDynamic(T)()
 	{
+		assert(dynamic, "Can't call getDynamic on non-dynamic buffers");
 		assert(toVertexAttributes!T == attributes);
 		return cast(T[])data;
 	}
@@ -89,6 +95,11 @@ struct IBO
 		this(data, IndexType.UShort, dynamic);
 	}
 
+	this(const(void)[] data, IndexType indexType)
+	{
+		this(cast(void[])data, indexType, false);
+	}
+
 	this(void[] data, IndexType type, bool dynamic = false)
 	{
 		_buffer = bo!GL_ELEMENT_ARRAY_BUFFER(data, dynamic);
@@ -113,6 +124,7 @@ struct IBO
 	
 	T[] getDynamic(T)()
 	{
+		assert(dynamic, "Can't call getDynamic on non-dynamic buffers");
 		static if(is(T == uint))
 		{
 			assert(_indexType == IndexType.UInt);
