@@ -59,7 +59,7 @@ interface FileSystem
 	final
 	immutable(void)[]	get(ResourceIdentifier name)
 	{
-		assert(has(name), "File " ~ name ~ " does not exist");
+		assert(has(name), "File '" ~ name ~ "' does not exist");
 		return getImpl(name);
 	}
 
