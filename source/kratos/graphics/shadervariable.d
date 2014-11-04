@@ -287,7 +287,7 @@ struct Uniforms
 		}
 		else
 		{
-			assert(false, "No such texture: " ~ name);
+			warning("No such texture: " ~ name);
 		}
 	}
 
@@ -376,6 +376,19 @@ struct Uniforms
 
 		return BuiltinUniformRange(&this);
 	}
+
+	package void initializeSamplerIndices()
+	{
+		import std.algorithm : filter;
+		foreach(i, uniform; allUniforms)
+		{
+			if(uniform.isSampler)
+			{
+				auto uniformRef = toRef(uniform);
+				_setters[i](i, uniformRef);
+			}
+		}
+	}
 }
 
 /// TypeTuple of all types which can be used as shader uniforms
@@ -436,7 +449,13 @@ static this()
 			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.size, true, cast(float*)uniform.ptr);
 
 		else static if(is(T == TextureUnit))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
+		{
+			uniformSetter[type] = (location, ref uniform) 
+			{
+				info("Assigning Texture Unit", location, " - ", cast(int*)uniform.ptr);
+				gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
+			};
+		}
 
 		else static assert(false, "No uniform setter implemented for " ~ T.stringof);
 	}

@@ -121,6 +121,9 @@ private struct Program_Impl
 		updateUniforms();
 		_samplers = typeof(_samplers)(defaultSampler.repeat(_uniforms.textureCount));
 
+		use();
+		_uniforms.initializeSamplerIndices();
+
 		//TODO: Update Shaders using this Program
 	}
 
