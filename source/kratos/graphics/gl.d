@@ -5,6 +5,7 @@ public
 	import derelict.opengl3.constants;
 	import derelict.opengl3.types;
 	import derelict.opengl3.ext : GL_TEXTURE_MAX_ANISOTROPY_EXT;
+	import derelict.opengl3.arb : GL_FRAMEBUFFER;
 }
 
 import derelict.opengl3.gl3;

@@ -33,7 +33,7 @@ final class MeshRenderer : Component
 		//TODO: Hack to support scene creation without GL context, fix nicely.
 		if(_mesh.vbo.refCountedStore.isInitialized)
 		{
-			_vao = vao(_mesh, _renderState.shader.program);
+			_vao = .vao(_mesh, _renderState.shader.program);
 		}
 	}
 
@@ -83,6 +83,11 @@ final class MeshRenderer : Component
 		{
 			return _transform;
 		}
+
+		package ref VAO vao()
+		{
+			return _vao;
+		}
 	}
 
 	private void updateVao(const Mesh mesh, const Program program)
@@ -93,23 +98,8 @@ final class MeshRenderer : Component
 			program.attributes	!= this.shader.program.attributes
 		)
 		{
-			_vao = vao(mesh, program);
+			_vao = .vao(mesh, program);
 		}
-	}
-
-	void draw()
-	{
-		_vao.bind();
-
-		//TODO: Maybe this needs some optimization
-		foreach(builtinUniform; _renderState.shader.uniforms.builtinUniforms)
-		{
-			builtinUniformSetters[builtinUniform[0]](this, builtinUniform[1]);
-		}
-
-		_renderState.apply();
-		import kratos.graphics.gl;
-		gl.DrawElements(GL_TRIANGLES, _mesh.ibo.numIndices, _mesh.ibo.indexType, null);
 	}
 
 	private static ref RenderState defaultRenderState()
@@ -139,33 +129,5 @@ final class MeshRenderer : Component
 		return new MeshRenderer(
 			MeshCache.get(representation["mesh"]),
 			RenderStateCache.get(representation["renderState"]));
-	}
-}
-
-private alias BuiltinUniformSetter = void function(MeshRenderer, UniformRef);
-private immutable BuiltinUniformSetter[string] builtinUniformSetters;
-static this()
-{
-	import kratos.component.camera : Camera;
-
-	foreach(name; BuiltinUniformName)
-	{
-		switch(name)
-		{
-			case "W":	builtinUniformSetters[name] = (renderer, uniform)
-				{ uniform = renderer.transform.worldMatrix; }; 											break;
-			case "V":	builtinUniformSetters[name] = (renderer, uniform)
-				{ uniform = Camera.current.viewMatrix; };												break;
-			case "P":	builtinUniformSetters[name] = (renderer, uniform)
-				{ uniform = Camera.current.projectionMatrix; };											break;
-			case "WV":	builtinUniformSetters[name] = (renderer, uniform)
-				{ uniform = Camera.current.viewMatrix * renderer.transform.worldMatrix; };				break;
-			case "VP":	builtinUniformSetters[name] = (renderer, uniform)
-				{ uniform = Camera.current.viewProjectionMatrix; };										break;
-			case "WVP":	builtinUniformSetters[name] = (renderer, uniform)
-				{ uniform = Camera.current.viewProjectionMatrix * renderer.transform.worldMatrix; };	break;
-
-			default:	assert(false, "No setter implemented for Uniform " ~ name);
-		}
 	}
 }

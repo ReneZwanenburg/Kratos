@@ -13,6 +13,7 @@ final class SimpleMovement : Component
 {
 	@optional:
 	float sensitivity = .002f;
+	float speed = 1;
 	private @dependency Transform transform;
 
 	vec3 ypr;
@@ -24,5 +25,16 @@ final class SimpleMovement : Component
 		ypr.y = ypr.y.clamp(-PI / 2.5, PI / 2.5);
 
 		transform.rotation = quat.eulerRotation(ypr);
+
+		auto forward = transform.worldMatrix[2].xyz;
+
+		if(keyboard["Up"].pressed)
+		{
+			transform.position = transform.position + forward * speed;
+		}
+		if(keyboard["Down"].pressed)
+		{
+			transform.position = transform.position - forward * speed;
+		}
 	}
 }

@@ -4,6 +4,8 @@ import derelict.glfw3.glfw3;
 import std.exception : enforce, assumeWontThrow;
 import kratos.input;
 import vibe.data.serialization : optional;
+import kratos.graphics.rendertarget;
+import kgl3n.vector : vec2i; 
 
 enum WindowProperties unittestWindowProperties = { visible: false, debugContext: true };
 
@@ -34,12 +36,18 @@ struct Window
 
 	const	WindowProperties	properties;
 	private	GLFWwindow*			_handle;
+	private FrameBuffer			_frameBuffer;
 
 	this(WindowProperties properties)
 	{
+		assert(_currentWindow is null);
+		_currentWindow = &this;
+
 		this.properties = properties;
 		with(properties)
 		{
+			_frameBuffer = FrameBuffer.createScreenFrameBuffer(width, height);
+
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -65,7 +73,7 @@ struct Window
 		import derelict.opengl3.gl3 : DerelictGL3;
 		DerelictGL3.reload();
 
-		glfwSetFramebufferSizeCallback(_handle, (_1, _2, _3) { assert(false, "Window resizing not supported"); });
+		glfwSetFramebufferSizeCallback(_handle, (window, width, height) { _currentWindow._frameBuffer.size = vec2i(width, height); });
 		glfwSwapInterval(properties.vSync);
 
 		_activeProperties = properties;
@@ -79,6 +87,7 @@ struct Window
 		keyboard = null;
 		mouse = null;
 		glfwDestroyWindow(_handle);
+		_currentWindow = null;
 	}
 
 	void updateInput()
@@ -104,6 +113,12 @@ struct Window
 		{
 			return _handle;
 		}
+
+		// Should be package(kratos)
+		FrameBuffer frameBuffer()
+		{
+			return _frameBuffer;
+		}
 	}
 
 	static
@@ -113,6 +128,15 @@ struct Window
 		{
 			return _activeProperties;
 		}
+	}
+}
+
+private Window* _currentWindow;
+@property
+{
+	Window* currentWindow()
+	{
+		return _currentWindow;
 	}
 }
 

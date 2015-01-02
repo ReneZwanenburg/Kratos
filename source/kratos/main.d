@@ -32,13 +32,10 @@ else
 			import kratos.entity : dispatchFrameUpdate;
 			dispatchFrameUpdate();
 
-			import kratos.graphics.gl;
-			gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			import kratos.component.meshrenderer;
-			foreach(renderer; scene.getComponents!MeshRenderer)
+			import kratos.component.camera;
+			foreach(camera; scene.getComponents!Camera)
 			{
-				renderer.draw();
+				camera.render();
 			}
 
 			window.swapBuffers();

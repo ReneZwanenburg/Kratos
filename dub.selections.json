@@ -1,0 +1,14 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"logger": "0.2.9",
+		"derelict-assimp3": "1.0.0",
+		"derelict-util": "1.9.0",
+		"libevent": "~master",
+		"openssl": "~master",
+		"libev": "~master",
+		"derelict-glfw3": "1.0.2",
+		"derelict-il": "~master",
+		"derelict-gl3": "1.0.11"
+	}
+}
