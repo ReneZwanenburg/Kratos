@@ -111,8 +111,23 @@ final class Entity
 
 		foreach(description; json["components"].get!(Json[]))
 		{
-			auto deserializer = componentDeserializer[TypeInfo_Class.find(description["type"].get!string)];
-			deserializer(entity, description["representation"]);
+			auto componentFullName = description["type"].get!string;
+
+			if(auto typeInfo = TypeInfo_Class.find(componentFullName))
+			{
+				if(auto deserializer = typeInfo in componentDeserializer)
+				{
+					(*deserializer)(entity, description["representation"]);
+				}
+				else
+				{
+					assert(false, "No deserializer registered for " ~ componentFullName ~ ". Use RegisterComponent if only used from data files");
+				}
+			}
+			else
+			{
+				assert(false, "No typeinfo found for Component " ~ componentFullName);
+			}
 		}
 
 		return entity;
@@ -174,6 +189,8 @@ mixin template RegisterComponent(T) if(is(T : Component))
 
 template ComponentFactory(T) if(is(T : Component))
 {
+	pragma(msg, "ComponentFactory instantiated for " ~ T.stringof);
+
 	private:
 	T[] liveComponents;
 
