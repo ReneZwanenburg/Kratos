@@ -6,22 +6,26 @@ import std.typecons : Flag;
 import vibe.data.json;
 import std.experimental.logger;
 
+public import vibe.data.serialization;
+
 
 alias AllowDerived = Flag!"AllowDerived";
 private alias DefaultAllowDerived = AllowDerived.yes;
 
 public final class Entity
 {
-	mixin Composite!Component;
-
+	private EntityComponentContainer components;
 	private Scene _scene;
 	private string _name;
+
+	alias componentContainer this;
 
 	private this(Scene scene, string name)
 	{
 		assert(scene !is null);
 		this.name = name;
 		this._scene = scene;
+		this.components = EntityComponentContainer(this);
 	}
 
 	public @property
@@ -40,67 +44,58 @@ public final class Entity
 		{
 			return _name;
 		}
+
+		ref EntityComponentContainer componentContainer()
+		{
+			return components;
+		}
 	}
 	
 	Json toRepresentation()
 	{
-		import std.algorithm : map;
-		import std.array : array;
-		
 		info("Serializing Entity ", name);
 		
 		auto rep = Json.emptyObject;
 		rep["name"] = name;
-		rep["components"] = components[].map!(a => componentSerializer[a.classinfo](a)).array;
+		rep["components"] = serializeToJson(components);
 		
 		return rep;
 	}
-
+	
 	// Nastiness
-	private static Scene deserializingScene;
+	private static Entity currentlyDeserializing;
 
 	static Entity fromRepresentation(Json json)
 	{
-		assert(deserializingScene !is null);
-		auto entity = deserializingScene.createEntity(json["name"].get!string);
-		
+		assert(Scene.currentlyDeserializing !is null);
+		auto entity = Scene.currentlyDeserializing.createEntity(json["name"].get!string);
 		info("Deserializing Entity ", entity.name);
-		
-		foreach(description; json["components"].get!(Json[]))
-		{
-			auto componentFullName = description["type"].get!string;
-			
-			if(auto typeInfo = TypeInfo_Class.find(componentFullName))
-			{
-				if(auto deserializer = typeInfo in componentDeserializer)
-				{
-					(*deserializer)(entity, description["representation"]);
-				}
-				else
-				{
-					assert(false, "No deserializer registered for " ~ componentFullName ~ ". Use RegisterComponent if only used from data files");
-				}
-			}
-			else
-			{
-				assert(false, "No typeinfo found for Component " ~ componentFullName);
-			}
-		}
-		
+
+		entity.components = deserializeJson!(typeof(entity.components))(json["components"]);
+
 		return entity;
+	}
+
+	//Workaround for opCast forwarding to alias this
+	public void* opCast(T)() if(is(T == void*))
+	{
+		return *cast(void**)(&this);
 	}
 }
 
 public final class Scene
 {
-	mixin Composite!SceneComponent;
+	private SceneComponentContainer components;
 
 	private string _name;
 	private SerializableArray!Entity _entities;
 
+	alias componentContainer this;
+
 	public this(string name = null)
 	{
 		this.name = name;
+		this.components = SceneComponentContainer(this);
 	}
 
 	public Entity createEntity(string name = null)
@@ -122,6 +117,16 @@ public final class Scene
 		{
 			return _name;
 		}
+
+		ref SceneComponentContainer componentContainer()
+		{
+			return components;
+		}
+
+		auto entities()
+		{
+			return _entities[];
+		}
 	}
 
 	Json toRepresentation()
@@ -130,26 +135,44 @@ public final class Scene
 		import std.array : array;
 		
 		info("Serializing Scene ", name);
-		
+
 		auto rep = Json.emptyObject;
 		rep["name"] = name;
 		rep["entities"] = serializeToJson(_entities);
+		rep["components"] = serializeToJson(components);
 		
 		return rep;
 	}
+	
+	// Nastiness
+	private static Scene currentlyDeserializing;
 	
 	static Scene fromRepresentation(Json json)
 	{
 		auto scene = new Scene(json["name"].get!string);
 		info("Deserializing Scene ", scene.name, " entities");
 
-		assert(Entity.deserializingScene is null);
-		Entity.deserializingScene = scene;
-		scope(exit) Entity.deserializingScene = null;
+		assert(currentlyDeserializing is null);
+		currentlyDeserializing = scene;
+		scope(exit) currentlyDeserializing = null;
 
-		scene._entities = deserializeJson!(typeof(scene._entities))(json["entities"]);
+		//TODO: Handle Entity component <-> Scene component interdependencies
+		scene.components = deserializeJson!(typeof(scene.components))(json["components"]);
+
+		foreach(entityJson; json["entities"])
+		{
+			// Added through Entity.fromRepresentation() -> currentlyDeserializing -> createEntity
+			// Yeah yeah, the horror, I know..
+			deserializeJson!(Entity)(entityJson);
+		}
 
 		return scene;
+	}
+	
+	//Workaround for opCast forwarding to alias this
+	public void* opCast(T)() if(is(T == void*))
+	{
+		return *cast(void**)(&this);
 	}
 }
 
@@ -167,6 +190,11 @@ private mixin template BaseComponent(OwnerType)
 	public final @property
 	{
 		OwnerType owner()
+		{
+			return owner;
+		}
+
+		const(OwnerType) owner() const
 		{
 			return owner;
 		}
@@ -191,24 +219,52 @@ public abstract class SceneComponent
 	mixin BaseComponent!Scene;
 }
 
-mixin template Composite(CT) if(is(CT == Component) || is(CT == SceneComponent))
+auto @property dependency(AllowDerived allowDerived = AllowDerived.yes)
 {
+	return Dependency(allowDerived);
+}
+
+struct Dependency
+{
+	AllowDerived allowDerived = AllowDerived.yes;
+};
+enum isDependency(T) = is(T == Dependency);
+
+private alias EntityComponentContainer = ComponentContainer!(Component, Entity);
+private alias SceneComponentContainer = ComponentContainer!(SceneComponent, Scene);
+
+private struct ComponentContainer(CT, OT) if(is(CT == Component) || is(CT == SceneComponent))
+{
+	private alias ComponentRT = ComponentRuntime!(OT, CT);
 	private Array!CT components;
+	private OT owner;
+	@disable this();
+
+	private this(OT owner)
+	{
+		assert(owner !is null);
+		this.owner = owner;
+	}
 	
 	~this()
 	{
 		import std.range : retro;
 		foreach(component; components[].retro)
 		{
-			componentDestroyer[component.classinfo](component);
+			ComponentRT.componentDestroyer[component.classinfo](component);
 		}
 	}
 
+	
+	// Can be non-copyable b/c serializercopies structs around
+	//TODO: Make sure noone else can copy this struct, maybe only provide access through wrapper?
+	//@disable this(this);
+
 	T addComponent(T, Args...)(Args args) if(is(T : CT))
 	{
-		info("Adding ", T.stringof, " to ", name);
+		info("Adding ", T.stringof, " to ", owner.name);
 		//TODO: Instantiate on both CT and T
-		return ComponentFactory!T.build(this, args);
+		return ComponentFactory!(T).build(owner, args);
 	}
 	
 	auto getComponents(T, AllowDerived derived = DefaultAllowDerived)()
@@ -218,11 +274,11 @@ mixin template Composite(CT) if(is(CT == Component) || is(CT == SceneComponent))
 
 		static if(derived && !isFinalClass!T)
 		{
-			return _components[].map!(a => cast(T)a).filter!(a => a !is null);
+			return components[].map!(a => cast(T)a).filter!(a => a !is null);
 		}
 		else
 		{
-			return _components[].filter!(a => a.classinfo == typeid(T)).map!(a => cast(T)(cast(void*)a));
+			return components[].filter!(a => a.classinfo == typeid(T)).map!(a => cast(T)(cast(void*)a));
 		}
 	}
 	
@@ -231,20 +287,77 @@ mixin template Composite(CT) if(is(CT == Component) || is(CT == SceneComponent))
 		auto range = getComponents!(T, derived);
 		return range.empty ? null : range.front;
 	}
-	
+
 	T getOrAddComponent(T, AllowDerived derived = DefaultAllowDerived)()
 	{
 		auto component = getComponent!(T, derived);
 		return component is null ? addComponent!T : component;
 	}
+
+	Json[] toRepresentation()
+	{
+		import std.algorithm : map;
+		import std.array : array;
+		return components[].map!(a => ComponentRT.componentSerializer[a.classinfo](a)).array;
+	}
+
+	static ComponentContainer fromRepresentation(Json[] json)
+	{
+		auto container = ComponentContainer(OT.currentlyDeserializing);
+		
+		foreach(description; json)
+		{
+			auto componentFullName = description["type"].get!string;
+			
+			if(auto typeInfo = TypeInfo_Class.find(componentFullName))
+			{
+				if(auto deserializer = typeInfo in ComponentRT.componentDeserializer)
+				{
+					(*deserializer)(container.owner, description["representation"]);
+				}
+				else
+				{
+					assert(false, "No deserializer registered for " ~ componentFullName ~ ". Use RegisterComponent if only used from data files");
+				}
+			}
+			else
+			{
+				assert(false, "No typeinfo found for Component " ~ componentFullName);
+			}
+		}
+
+		return container;
+	}
 }
 
-template ComponentFactory(OwnerType, ComponentBaseType, T) if(is(T : ComponentBaseType))
+mixin template RegisterComponent()
 {
-	pragma(msg, "ComponentFactory instantiated for " ~ T.stringof);
+	private void KratosComponentRegistrationHelper()
+	{
+		alias factory = ComponentFactory!(typeof(this));
+		factory.instantiationHelper();
+	}
+}
 
-
+template ComponentFactory(T)
+{
 private:
+	pragma(msg, "ComponentFactory instantiated for " ~ T.stringof);
+	
+	static if(is(T : Component))
+	{
+		alias ComponentBaseType = Component;
+		alias OwnerType = Entity;
+	}
+	else static if(is(T : SceneComponent))
+	{
+		alias ComponentBaseType = SceneComponent;
+		alias OwnerType = Scene;
+	}
+	else static assert(false, T.stringof ~ " is not a component type");
+
+	alias ComponentRT = ComponentRuntime!(OwnerType, ComponentBaseType);
+
 	//TODO: Kill
 	T[] liveComponents;
 
@@ -258,7 +371,7 @@ private:
 	
 	T onComponentCreation(T component, OwnerType owner)
 	{
-		owner.components.insertBack(component);
+		owner.components.components.insertBack(component);
 		liveComponents ~= component;
 		
 		foreach(i, FT; typeof(T.tupleof))
@@ -337,9 +450,9 @@ private:
 		
 		info("Registering Component ", T.stringof);
 		
-		componentDestroyer		[T.classinfo] = &destroy;
-		componentDeserializer	[T.classinfo] = &deserialize;
-		componentSerializer		[T.classinfo] = cast(ComponentSerializeFunction)&serialize;
+		ComponentRT.componentDestroyer		[T.classinfo] = &destroy;
+		ComponentRT.componentDeserializer	[T.classinfo] = &deserialize;
+		ComponentRT.componentSerializer		[T.classinfo] = cast(ComponentRT.ComponentSerializeFunction)&serialize;
 		
 		static if("frameUpdate".among(__traits(derivedMembers, T)))
 		{
@@ -368,7 +481,7 @@ private CT resolveDependency(CT, AllowDerived allowDerived, OT)(OT owner)
 		}
 		else if(is(CT : SceneComponent))
 		{
-			return owner.GetOrAddComponent!(CT, allowDerived);
+			return owner.getOrAddComponent!(CT, allowDerived);
 		}
 		else static assert(false, "Invalid Component Type: " ~ CT.stringof);
 	}
@@ -376,24 +489,27 @@ private CT resolveDependency(CT, AllowDerived allowDerived, OT)(OT owner)
 	{
 		static if(is(CT : Component))
 		{
-			return owner.GetOrAddComponent!(CT, allowDerived);
+			return owner.getOrAddComponent!(CT, allowDerived);
 		}
 		else if(is(CT : SceneComponent))
 		{
-			return owner.scene.GetOrAddComponent!(CT, allowDerived);
+			return owner.scene.getOrAddComponent!(CT, allowDerived);
 		}
 		else static assert(false, "Invalid Component Type: " ~ CT.stringof);
 	}
 	else static assert(false, "Invalid owner type: " ~ OT.stringof);
 }
 
-private alias ComponentDestroyFunction = void function(Object);
-private alias ComponentDeserializeFunction = Object function(Object, Json);
-private alias ComponentSerializeFunction = Json function(Object);
-
-private ComponentDestroyFunction[const TypeInfo_Class] componentDestroyer;
-private ComponentDeserializeFunction[const TypeInfo_Class] componentDeserializer;
-private ComponentSerializeFunction[const TypeInfo_Class] componentSerializer;
+private template ComponentRuntime(OwnerType, ComponentBaseType)
+{
+	private alias ComponentDestroyFunction = void function(ComponentBaseType);
+	private alias ComponentDeserializeFunction = ComponentBaseType function(OwnerType, Json);
+	private alias ComponentSerializeFunction = Json function(ComponentBaseType);
+	
+	private ComponentDestroyFunction[const TypeInfo_Class] componentDestroyer;
+	private ComponentDeserializeFunction[const TypeInfo_Class] componentDeserializer;
+	private ComponentSerializeFunction[const TypeInfo_Class] componentSerializer;
+}
 
 private alias FrameUpdateDispatch = void function();
 private FrameUpdateDispatch[] frameUpdateDispatchers;

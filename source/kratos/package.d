@@ -1,7 +1,8 @@
 ﻿module kratos;
 
-public import kratos.scene;
-public import kratos.entity;
+public import kratos.ecs;
+public import kratos.component;
+
 public import kratos.time;
 public import kratos.input;
 

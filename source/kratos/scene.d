@@ -1,5 +1,7 @@
 ﻿module kratos.scene;
 
+version(none):
+
 import kratos.entity;
 import kratos.util : SerializableArray;
 

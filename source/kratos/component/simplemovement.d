@@ -1,16 +1,16 @@
 ﻿module kratos.component.simplemovement;
 
-import kratos.entity;
+import kratos.ecs;
 import kratos.input;
 import kratos.component.transform;
 import kgl3n.vector;
 import kgl3n.quaternion;
 import kgl3n.math;
 
-mixin RegisterComponent!SimpleMovement;
-
 final class SimpleMovement : Component
 {
+	mixin RegisterComponent;
+
 	@optional:
 	float sensitivity = .002f;
 	float speed = 1;

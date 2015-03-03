@@ -1,14 +1,14 @@
 ﻿module kratos.component.transform;
 
-import kratos.entity;
+import kratos.ecs;
 import kgl3n.vector;
 import kgl3n.quaternion;
 import kgl3n.matrix;
 
-mixin RegisterComponent!Transform;
-
 final class Transform : Component
 {
+	mixin RegisterComponent;
+
 	@optional:
 	private ulong		_id;
 	private Transform	_parent = null;

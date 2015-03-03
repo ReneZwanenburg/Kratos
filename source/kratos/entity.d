@@ -1,5 +1,7 @@
 ﻿module kratos.entity;
 
+version(none):
+
 import std.container : Array;
 import std.typecons : Flag;
 import std.experimental.logger;

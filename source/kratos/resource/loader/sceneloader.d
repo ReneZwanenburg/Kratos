@@ -3,8 +3,7 @@
 import kratos.resource.loader.internal;
 import kratos.resource.cache;
 import kratos.resource.resource;
-import kratos.scene;
-import kratos.entity;
+import kratos.ecs;
 import kratos.graphics.mesh;
 import vibe.data.json;
 import derelict.assimp3.assimp;
@@ -13,69 +12,23 @@ import kratos.resource.loader.renderstateloader;
 import kgl3n.vector;
 import std.experimental.logger;
 
-public Scene loadScene(ResourceIdentifier name, Scene scene = null, bool loadRecursive = true)
+public Scene loadScene(ResourceIdentifier name)
 {
 	auto extension = name.lowerCaseExtension;
 	import std.algorithm : among;
 	if(extension.among(".scene", ".entity"))
 	{
-		return loadSceneKratos(name, scene, loadRecursive);
+		return loadSceneKratos(name);
 	}
 	else
 	{
-		return loadSceneAssimp(name, scene);
+		return loadSceneAssimp(name);
 	}
 }
 
-private Scene loadSceneKratos(ResourceIdentifier name, Scene scene, bool loadRecursive)
+private Scene loadSceneKratos(ResourceIdentifier name)
 {
-	auto json = parseJsonString(activeFileSystem.get!char(name));
-	
-	if(scene is null)
-	{
-		scene = new Scene(json["name"].get!string);
-	}
-
-	// Nastiness.. See KratosInternalCurrentDeserializingScene comment.
-	auto previousDeserializingScene = KratosInternalCurrentDeserializingScene;
-	KratosInternalCurrentDeserializingScene = scene;
-	scope(exit) KratosInternalCurrentDeserializingScene = previousDeserializingScene;
-	
-	loadSceneKratos(json, scene, loadRecursive);
-	return scene;
-}
-
-private void loadSceneKratos(Json json, Scene scene, bool loadRecursive)
-{
-	if(json["entities"].type == Json.Type.array)
-	{
-		foreach(entity; json["entities"])
-		{
-			if(entity.type == Json.Type.string)
-			{
-				if(loadRecursive)
-				{
-					loadScene(entity.get!ResourceIdentifier, scene, loadRecursive);
-				}
-			}
-			else if(entity.type == Json.Type.object)
-			{
-				loadSceneKratos(entity, scene, loadRecursive);
-			}
-			else
-			{
-				assert(false, "Not an Entity, invalid JSON type");
-			}
-		}
-	}
-	else if(json["components"].type == Json.Type.array)
-	{
-		scene.addEntity(json.deserializeJson!Entity);
-	}
-	else
-	{
-		assert(false);
-	}
+	return parseJsonString(activeFileSystem.get!char(name)).deserializeJson!Scene;
 }
 
 version(KratosDisableAssimp)
@@ -87,19 +40,10 @@ version(KratosDisableAssimp)
 }
 else
 {
-	private Scene loadSceneAssimp(ResourceIdentifier name, Scene scene)
+	private Scene loadSceneAssimp(ResourceIdentifier name)
 	{
 		import std.path : baseName;
-		if(scene is null)
-		{
-			scene = new Scene(name.baseName);
-		}
-		
-		// Nastiness.. See KratosInternalCurrentDeserializingScene comment.
-		auto previousDeserializingScene = KratosInternalCurrentDeserializingScene;
-		KratosInternalCurrentDeserializingScene = scene;
-		scope(exit) KratosInternalCurrentDeserializingScene = previousDeserializingScene;
-		
+		auto scene = new Scene(name.baseName);
 		auto data = activeFileSystem.get(name);
 		
 		import std.string : toStringz;

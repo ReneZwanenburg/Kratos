@@ -1,13 +1,11 @@
 ﻿module kratos.component.camera;
 
-import kratos.entity;
+import kratos.ecs;
 import kratos.component.transform;
 import kratos.component.meshrenderer;
 import kratos.graphics.rendertarget;
 import kgl3n.matrix;
 import vibe.data.json;
-
-mixin RegisterComponent!Camera;
 
 struct StandardProjection
 {
@@ -20,6 +18,8 @@ struct StandardProjection
 
 final class Camera : Component
 {
+	mixin RegisterComponent;
+
 	private @dependency Transform transform;
 
 	private mat4				_projectionMatrix;

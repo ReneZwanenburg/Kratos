@@ -19,9 +19,7 @@ else
 		import kratos.resource.loader;
 		import vibe.data.json;
 		import std.typecons : scoped;
-		import kratos.scene;
-		auto scene = scoped!Scene;
-		loadScene(Configuration.startupScene, scene);
+		auto scene = loadScene(Configuration.startupScene);
 
 		import std.experimental.logger;
 		globalLogLevel = LogLevel.info;
@@ -29,7 +27,7 @@ else
 		while(!window.closeRequested)
 		{
 			window.updateInput();
-			import kratos.entity : dispatchFrameUpdate;
+			import kratos.ecs : dispatchFrameUpdate;
 			dispatchFrameUpdate();
 
 			import kratos.component.camera;
