@@ -18,7 +18,7 @@ struct StandardProjection
 
 final class Camera : Component
 {
-	mixin RegisterComponent;
+	mixin SerializationRegistration;
 
 	private @dependency Transform transform;
 

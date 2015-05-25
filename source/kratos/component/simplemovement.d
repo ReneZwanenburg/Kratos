@@ -9,7 +9,7 @@ import kgl3n.math;
 
 final class SimpleMovement : Component
 {
-	mixin RegisterComponent;
+	mixin SerializationRegistration;
 
 	@optional:
 	float sensitivity = .002f;
