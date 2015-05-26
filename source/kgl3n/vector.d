@@ -246,7 +246,7 @@ struct Vector(type, size_t dimension_)
 	
 	/// Implements dynamic swizzling.
 	/// Returns: a Vector
-	@property Vector!(vt, s.length) opDispatch(string s)() const
+	@property Vector!(vt, s.length) opDispatch(string s)() const if(isValidSwizzleString(s))
 	{
 		Vector!(vt, s.length) ret;
 		foreach(i; TupleRange!(0, s.length))
@@ -256,7 +256,7 @@ struct Vector(type, size_t dimension_)
 		return ret;
 	}
 	
-	@property void opDispatch(string s)(Vector!(vt, s.length) v)
+	@property void opDispatch(string s)(Vector!(vt, s.length) v) if(isValidSwizzleString(s))
 	{
 		foreach(i; TupleRange!(0, s.length))
 		{
@@ -393,6 +393,35 @@ struct Vector(type, size_t dimension_)
 	
 	bool opCast(T : bool)() const {
 		return isFinite;
+	}
+
+	private static bool isValidSwizzleString(string s)
+	{
+		foreach(char c; s)
+		{
+			if(!isValidSwizzleChar(c)) return false;
+		}
+
+		return true;
+	}
+
+	private static bool isValidSwizzleChar(char c)
+	{
+		import std.algorithm.comparison : among;
+
+		static if(dimension == 2)
+		{
+			return !!c.among('x', 'y', 'r', 'g', 's', 't', 'u', 'v');
+		}
+		else static if(dimension == 3)
+		{
+			return !!c.among('x', 'y', 'z', 'r', 'g', 'b', 's', 't', 'p', 'u', 'v');
+		}
+		else static if(dimension == 4)
+		{
+			return !!c.among('x', 'y', 'z', 'w', 'r', 'g', 'b', 'a', 's', 't', 'p', 'q', 'u', 'v');
+		}
+		else static assert(false);
 	}
 }
 
