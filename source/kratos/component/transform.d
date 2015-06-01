@@ -118,8 +118,10 @@ final class Transform : Component
 		{
 			if(id)
 			{
-				import std.algorithm : find;
-				parent = scene.getComponents!Transform.find!(a => a.id == id).front;
+				import std.algorithm.searching : find;
+				import std.algorithm.iteration : map, joiner;
+				//TODO: use transform container
+				parent = scene.entities.map!(a => a.components.all!Transform).joiner.find!(a => a.id == id).front;
 			}
 		}
 

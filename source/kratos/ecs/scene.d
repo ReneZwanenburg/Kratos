@@ -72,7 +72,7 @@ public final class Scene
 			return _components.getRef();
 		}
 
-		string name()
+		string name() const
 		{
 			return _name;
 		}

@@ -40,7 +40,6 @@ Program program(Range)(Range shaders, string name = null)
 
 Program errorProgram()
 {
-	import std.range : only;
 	static Program errorProgram;
 	static bool initialized = false;
 	if(!initialized)
@@ -49,10 +48,11 @@ Program errorProgram()
 		auto fragmentSource = "void main() { gl_FragData[0] = vec4(1, 0, 1, 1); }";
 
 		errorProgram = program(
-			only(
+			[
 				shaderModule(ShaderModule.Type.Vertex, vertexSource, "Error Vertex Shader"),
 				shaderModule(ShaderModule.Type.Fragment, fragmentSource, "Error Fragment Shader")
-			), "Error Program");
+			]
+			, "Error Program");
 	}
 	return errorProgram;
 }
@@ -229,8 +229,7 @@ private struct Program_Impl
 			offset += uniform.byteSize;
 		}
 
-		import std.exception : assumeUnique;
-		this._uniforms = Uniforms(allUniforms.assumeUnique);
+		this._uniforms = Uniforms(allUniforms);
 	}
 
 	@property string name() const

@@ -11,9 +11,9 @@ struct VBO
 {
 	alias Buffer = BO!GL_ARRAY_BUFFER;
 
-	private 		Buffer				_buffer;
-	private const	size_t				_numVertices;
-	private const	VertexAttributes	_attributes;
+	private Buffer				_buffer;
+	private size_t				_numVertices;
+	private VertexAttributes	_attributes;
 
 	alias buffer this;
 
@@ -79,9 +79,9 @@ struct IBO
 {
 	alias Buffer = BO!GL_ELEMENT_ARRAY_BUFFER;
 
-	private			Buffer		_buffer;
-	private const	size_t		_numIndices;
-	private const	IndexType	_indexType;
+	private	Buffer		_buffer;
+	private	size_t		_numIndices;
+	private	IndexType	_indexType;
 
 	alias buffer this;
 
@@ -185,9 +185,9 @@ BO!Target bo(GLenum Target)(void[] data, bool dynamic)
 
 private struct BO_Impl(GLenum Target)
 {
-	private			ubyte[]	data;
-	private 		GLuint	handle;
-	private	const	bool	dynamic;
+	private	ubyte[]	data;
+	private GLuint	handle;
+	private	bool	dynamic;
 	
 	@disable this(this);
 

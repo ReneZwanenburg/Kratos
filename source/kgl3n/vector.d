@@ -246,7 +246,7 @@ struct Vector(type, size_t dimension_)
 	
 	/// Implements dynamic swizzling.
 	/// Returns: a Vector
-	@property Vector!(vt, s.length) opDispatch(string s)() const if(isValidSwizzleString(s))
+	@property Vector!(vt, s.length) opDispatch(string s)() const if(s.length > 1 && IsValidSwizzleString!(dimension, s))
 	{
 		Vector!(vt, s.length) ret;
 		foreach(i; TupleRange!(0, s.length))
@@ -255,8 +255,8 @@ struct Vector(type, size_t dimension_)
 		}
 		return ret;
 	}
-	
-	@property void opDispatch(string s)(Vector!(vt, s.length) v) if(isValidSwizzleString(s))
+
+	@property void opDispatch(string s)(Vector!(vt, s.length) v) if(s.length > 1 && s.length <= dimension && IsValidSwizzleString!(dimension, s))
 	{
 		foreach(i; TupleRange!(0, s.length))
 		{
@@ -394,35 +394,26 @@ struct Vector(type, size_t dimension_)
 	bool opCast(T : bool)() const {
 		return isFinite;
 	}
+}
 
-	private static bool isValidSwizzleString(string s)
+private template IsValidSwizzleString(size_t dimension, string s)
+{
+	//import std.algorithm.comparison : among;
+	import std.algorithm;
+	
+	static if(dimension == 2)
 	{
-		foreach(char c; s)
-		{
-			if(!isValidSwizzleChar(c)) return false;
-		}
-
-		return true;
+		enum IsValidSwizzleString = s[].all!((dchar a) => a.among('x', 'y', 'r', 'g', 's', 't', 'u', 'v'));
 	}
-
-	private static bool isValidSwizzleChar(char c)
+	else static if(dimension == 3)
 	{
-		import std.algorithm.comparison : among;
-
-		static if(dimension == 2)
-		{
-			return !!c.among('x', 'y', 'r', 'g', 's', 't', 'u', 'v');
-		}
-		else static if(dimension == 3)
-		{
-			return !!c.among('x', 'y', 'z', 'r', 'g', 'b', 's', 't', 'p', 'u', 'v');
-		}
-		else static if(dimension == 4)
-		{
-			return !!c.among('x', 'y', 'z', 'w', 'r', 'g', 'b', 'a', 's', 't', 'p', 'q', 'u', 'v');
-		}
-		else static assert(false);
+		enum IsValidSwizzleString = s[].all!((dchar a) => a.among('x', 'y', 'z', 'r', 'g', 'b', 's', 't', 'p', 'u', 'v'));
 	}
+	else static if(dimension == 4)
+	{
+		enum IsValidSwizzleString = s[].all!((dchar a) => a.among('x', 'y', 'z', 'w', 'r', 'g', 'b', 'a', 's', 't', 'p', 'q', 'u', 'v'));
+	}
+	else static assert(false);
 }
 
 /// Calculates the product between two vectors.

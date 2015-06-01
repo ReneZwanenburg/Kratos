@@ -207,7 +207,7 @@ struct UniformRef
 // Set of all uniforms for use with a Program, and Textures bound to sampler Uniforms.
 struct Uniforms
 {
-	this(immutable Uniform[] allUniforms)
+	this(Uniform[] allUniforms)
 	{
 		import std.range : zip, iota, repeat, sequence;
 		import std.algorithm : map, filter, reduce;
@@ -228,21 +228,17 @@ struct Uniforms
 			indexedUniforms
 			.filter!(a => a[0].isBuiltin)
 			.map!(a => a[1])
-			.array
-			.assumeUnique;
+			.array;
 
 		auto samplerUniforms =
 			indexedUniforms
 			.filter!(a => a[0].isSampler);
 
-		{ // TODO: remove those temporaries, should not be neccesary in 2.066
-			auto tmpTextureIndices = 
-				samplerUniforms
-				.zip(iota(uint.max))
-				.map!(a => tuple(a[0][0].name, a[1]))
-				.assocArray;
-			_textureIndices = tmpTextureIndices.assumeUnique;
-		}
+		_textureIndices = 
+			samplerUniforms
+			.zip(iota(uint.max))
+			.map!(a => tuple(a[0][0].name, a[1]))
+			.assocArray;
 
 		foreach(uniform, ui, tu; zip(samplerUniforms, iota(TextureUnit.Size)))
 		{
@@ -251,14 +247,11 @@ struct Uniforms
 
 		_textures.insert(defaultTexture.repeat(_textureIndices.length));
 
-		{
-			auto tmpUserUniforms = 
-				indexedUniforms
-				.filter!(a => a[0].isUser)
-				.map!(a => tuple(a[0].name, a[1]))
-				.assocArray;
-			_userUniforms = tmpUserUniforms.assumeUnique;
-		}
+		_userUniforms = 
+			indexedUniforms
+			.filter!(a => a[0].isUser)
+			.map!(a => tuple(a[0].name, a[1]))
+			.assocArray;
 
 		_setters = _allUniforms.map!(a => uniformSetter[a.type]).array;
 	}
@@ -270,14 +263,15 @@ struct Uniforms
 		_textures		= _textures.dup;
 	}
 
-	private ubyte[]								_uniformData;
-	private Array!Texture						_textures;
+	private ubyte[]			_uniformData;
+	private Array!Texture	_textures;
 
-	private immutable Uniform[]					_allUniforms;
-	private immutable uint[]					_builtinUniforms;
-	private immutable uint[string]				_userUniforms;
-	private immutable uint[string]				_textureIndices;
-	private immutable UniformSetter[]			_setters;
+	//Shared across instances for the same program
+	private Uniform[]		_allUniforms;
+	private uint[]			_builtinUniforms;
+	private uint[string]	_userUniforms;
+	private uint[string]	_textureIndices;
+	private UniformSetter[]	_setters;
 
 	void opIndexAssign(ref Texture texture, string name)
 	{
@@ -389,6 +383,14 @@ struct Uniforms
 			}
 		}
 	}
+
+	package bool opEquals(const ref Uniforms other) const
+	{
+		import std.algorithm.comparison : equal;
+		return
+			_uniformData.equal(other._uniformData) &&
+			_allUniforms.equal(other._allUniforms);
+	}
 }
 
 /// TypeTuple of all types which can be used as shader uniforms
@@ -413,7 +415,7 @@ alias UniformTypes = TypeTuple!(
 );
 
 private alias UniformSetter = void function(GLint location, ref const UniformRef uniform);
-private immutable UniformSetter[GLenum] uniformSetter;
+private UniformSetter[GLenum] uniformSetter;
 static this()
 {
 	foreach(T; UniformTypes)

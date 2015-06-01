@@ -59,7 +59,7 @@ shared static this()
 		".jpg"	: IL_JPG,
 		".jpe"	: IL_JPG,
 		".jpeg"	: IL_JPG,
-		".lbm"	: IL_LBM,
+		".lbm"	: IL_ILBM,
 		".lif"	: IL_LIF,
 		".mdl"	: IL_MDL,
 		".mng"	: IL_MNG,

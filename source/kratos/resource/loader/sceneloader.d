@@ -85,13 +85,13 @@ else
 		{
 			auto entity = scene.createEntity(node.mName.data[0 .. node.mName.length].idup);
 			info("Importing Node ", entity.name);
-			auto transform = entity.addComponent!Transform;
+			auto transform = entity.components.add!Transform;
 			transform.parent = parent;
 			transform.setLocalMatrix(*(cast(mat4*)&node.mTransformation));
 			
 			foreach(meshIndex; 0..node.mNumMeshes)
 			{
-				auto meshRenderer = entity.addComponent!MeshRenderer;
+				auto meshRenderer = entity.components.add!MeshRenderer;
 				meshRenderer.set(loadedMeshes[node.mMeshes[meshIndex]], loadedMaterials[importedScene.mMeshes[node.mMeshes[meshIndex]].mMaterialIndex]);
 			}
 			

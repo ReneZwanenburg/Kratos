@@ -75,7 +75,7 @@ public final class Entity
 			return _components.getRef();
 		}
 
-		string name()
+		string name() const
 		{
 			return _name;
 		}

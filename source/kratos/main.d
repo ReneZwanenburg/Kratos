@@ -27,11 +27,12 @@ else
 		while(!window.closeRequested)
 		{
 			window.updateInput();
-			import kratos.ecs : dispatchFrameUpdate;
-			dispatchFrameUpdate();
+			//import kratos.ecs : dispatchFrameUpdate;
+			//dispatchFrameUpdate();
 
 			import kratos.component.camera;
-			foreach(camera; scene.getComponents!Camera)
+			import std.algorithm.iteration : map, joiner;
+			foreach(camera; scene.entities.map!(a => a.components.all!Camera).joiner)
 			{
 				camera.render();
 			}
