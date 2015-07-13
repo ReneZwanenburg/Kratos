@@ -39,9 +39,7 @@ final class Camera : Component
 		renderTarget.apply();
 		renderTarget.clear();
 
-		import std.algorithm.iteration : map, joiner;
-
-		foreach(meshRenderer; scene.entities.map!(a => a.components.all!MeshRenderer).joiner)
+		foreach(meshRenderer; scene.components.firstOrAdd!MeshRendererPartitioning().all)
 		{
 			//TODO: Maybe this needs some optimization
 			foreach(builtinUniform; meshRenderer.renderState.shader.uniforms.builtinUniforms)

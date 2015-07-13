@@ -35,6 +35,13 @@ final class MeshRenderer : Component
 		{
 			_vao = .vao(_mesh, _renderState.shader.program);
 		}
+
+		scene.components.firstOrAdd!MeshRendererPartitioning().register(this);
+	}
+
+	~this()
+	{
+		scene.components.first!MeshRendererPartitioning().deregister(this);
 	}
 
 	void set(Mesh mesh, RenderState renderState)
@@ -129,5 +136,31 @@ final class MeshRenderer : Component
 		return new MeshRenderer(
 			MeshCache.get(representation["mesh"]),
 			RenderStateCache.get(representation["renderState"]));
+	}
+}
+
+
+final class MeshRendererPartitioning : SceneComponent
+{
+	import std.container : Array;
+	private MeshRenderer[] _meshRenderers;
+
+	public auto all()
+	{
+		return _meshRenderers[];
+	}
+
+	private void register(MeshRenderer mesh)
+	{
+		_meshRenderers ~= mesh;
+	}
+
+	private void deregister(MeshRenderer mesh)
+	{
+		import std.algorithm.searching : countUntil;
+		import std.algorithm.mutation : remove, SwapStrategy;
+
+		_meshRenderers = _meshRenderers.remove!(SwapStrategy.unstable)(_meshRenderers.countUntil(mesh));
+		_meshRenderers.assumeSafeAppend();
 	}
 }
