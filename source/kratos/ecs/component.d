@@ -125,9 +125,9 @@ struct ComponentContainer(ComponentBaseType)
 		foreach(componentRepresentation; containerRepresentation[])
 		{
 			auto fullTypeName = componentRepresentation["type"].get!string;
-			auto deserializer = fullTypeName in deserializers;
-			assert(deserializer, fullTypeName ~ " has not been registered for serialization");
-			(*deserializer)(ComponentBaseType.constructingOwner, componentRepresentation); // Added to _components in deserializer
+			auto serializer = fullTypeName in Serializers!ComponentBaseType;
+			assert(serializer, fullTypeName ~ " has not been registered for serialization");
+			serializer.deserialize(ComponentBaseType.constructingOwner, componentRepresentation); // Added to _components in deserializer
 		}
 
 		ComponentBaseType.constructingOwner = null;
@@ -140,9 +140,9 @@ struct ComponentContainer(ComponentBaseType)
 		foreach(component; this.all)
 		{
 			auto fullTypeName = component.classinfo.name;
-			auto deserializer = fullTypeName in serializers;
-			assert(deserializer, fullTypeName ~ " has not been registered for serialization");
-			json ~= (*deserializer)(component);
+			auto serializer = fullTypeName in Serializers!ComponentBaseType;
+			assert(serializer, fullTypeName ~ " has not been registered for serialization");
+			json ~= serializer.serialize(component);
 		}
 
 		return json;
@@ -171,66 +171,62 @@ template ComponentInteraction(ComponentType)
 
 }
 
-mixin template SerializationRegistration()
+public void registerComponent(ComponentType)()
 {
-	private final void registrationHelper()
-	{
-		ComponentSerialization!(typeof(this)).registrationHelper();
-	}
+	auto serializer = new ComponentSerializerImpl!ComponentType();
+	Serializers!(ComponentType.ComponentBaseType)[serializer.fullTypeName] = serializer;
 }
 
-template ComponentSerialization(ComponentType)
+private abstract class ComponentSerializer(ComponentBaseType)
 {
-private:
-	immutable string fullTypeName;
-	pragma(msg, "Generating serialization routines for " ~ ComponentType.stringof);
+	private alias OwnerType = typeof(ComponentBaseType.init.owner());
 
-	Json serialize(ComponentType component)
+	abstract Json serialize(ComponentBaseType);
+	abstract void deserialize(OwnerType, Json);
+}
+
+private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(ComponentType.ComponentBaseType)
+{
+	private static immutable string fullTypeName;
+
+	static this()
 	{
-		assert(typeid(ComponentType) == typeid(component), "Component ended up in the wrong serializer");
+		fullTypeName = typeid(ComponentType).name;
+	}
 
+	override Json serialize(ComponentType.ComponentBaseType componentBase)
+	{
+		assert(typeid(ComponentType) == typeid(componentBase), "Component ended up in the wrong serializer");
+
+		import kratos.util : staticCast;
+		auto component = staticCast!ComponentType(componentBase);
+		
 		auto representation = Json.emptyObject;
 		representation["type"] = fullTypeName;
 		representation["representation"] = serializeToJson(component);
 		return representation;
 	}
 
-	void deserialize(typeof(ComponentType.init.owner) owner, Json representation)
+	override void deserialize(OwnerType owner, Json representation)
 	{
 		assert(fullTypeName == representation["type"].get!string, "Component representation ended up in the wrong deserializer");
-
+		
 		auto componentRepresentation = representation["representation"];
-
+		
 		if(componentRepresentation.type == Json.Type.undefined)
 		{
 			owner.components.add!ComponentType;
 		}
 		else
 		{
-			auto component = deserializeJson!ComponentType(representation["representation"]);
+			auto component = deserializeJson!ComponentType(componentRepresentation);
 			owner.components._components.insertBack(component);
 			ComponentInteraction!ComponentType.initialize(component);
 		}
 	}
-
-	static this()
-	{
-		fullTypeName = typeid(ComponentType).name;
-		deserializers[fullTypeName] = cast(ComponentDeserializer)&deserialize;
-		serializers[fullTypeName] = cast(ComponentSerializer)&serialize;
-	}
-
-	public void registrationHelper()
-	{
-
-	}
 }
 
-private
+private template Serializers(ComponentBaseType)
 {
-	alias ComponentDeserializer = void function(Object, Json);
-	alias ComponentSerializer = Json function(Object);
-
-	ComponentDeserializer[string] deserializers;
-	ComponentSerializer[string] serializers;
+	private ComponentSerializer!ComponentBaseType[string] Serializers;
 }

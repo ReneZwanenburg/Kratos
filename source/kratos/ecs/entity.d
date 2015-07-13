@@ -45,6 +45,8 @@ public abstract class Component
 		}
 		else static assert(false, "Invalid Dependency type: " ~ T.stringof);
 	}
+
+	package alias ComponentBaseType = Component;
 }
 
 public final class Entity

@@ -18,8 +18,6 @@ struct StandardProjection
 
 final class Camera : Component
 {
-	mixin SerializationRegistration;
-
 	private @dependency Transform transform;
 
 	private mat4				_projectionMatrix;

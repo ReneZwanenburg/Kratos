@@ -10,8 +10,6 @@ import kratos.component.transform;
 
 final class MeshRenderer : Component
 {
-	mixin SerializationRegistration;
-	
 	private Mesh		_mesh;
 	//TODO: Make Shader part of RenderState
 	private RenderState	_renderState;

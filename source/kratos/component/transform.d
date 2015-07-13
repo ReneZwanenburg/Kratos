@@ -7,8 +7,6 @@ import kgl3n.matrix;
 
 final class Transform : Component
 {
-	mixin SerializationRegistration;
-
 	@optional:
 	private ulong		_id;
 	private Transform	_parent = null;

@@ -2,6 +2,12 @@
 
 import std.container : Array;
 
+public T staticCast(T, U)(U obj) if(is(T == class) && is(U == class))
+{
+	debug return cast(T)obj;
+	else return cast(T)cast(void*)obj;
+}
+
 //TODO move to a more appropriate place
 auto backInserter(T)(ref Array!T array)
 {

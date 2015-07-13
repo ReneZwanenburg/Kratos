@@ -37,6 +37,8 @@ public abstract class SceneComponent
 		}
 		else static assert(false, "Invalid Dependency type: " ~ T.stringof);
 	}
+
+	package alias ComponentBaseType = SceneComponent;
 }
 
 public final class Scene
