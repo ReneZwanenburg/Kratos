@@ -2,6 +2,32 @@
 
 import std.container : Array;
 
+struct Event(Args...)
+{
+	@disable this(this);
+
+	alias CallbackType = void delegate(Args);
+
+	private Array!CallbackType callbacks;
+
+	void raise(Args args)
+	{
+		foreach(callback; callbacks[]) callback(args);
+	}
+	
+	void opOpAssign(string op)(CallbackType callback) if(op == "+")
+	{
+		callbacks.insertBack(callback);
+	}
+	
+	void opOpAssign(string op)(CallbackType callback) if(op == "-")
+	{
+		import std.algorithm.searching : find;
+		import std.range : take;
+		callbacks.linearRemove(callbacks[].find(callback).take(1));
+	}
+}
+
 public T staticCast(T, U)(U obj) if(is(T == class) && is(U == class))
 {
 	debug return cast(T)obj;
