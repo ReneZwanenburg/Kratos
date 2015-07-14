@@ -120,17 +120,13 @@ struct ComponentContainer(ComponentBaseType)
 	{
 		assert(containerRepresentation.type == Json.Type.array);
 
-		ComponentBaseType.constructingOwner = _owner;
-
 		foreach(componentRepresentation; containerRepresentation[])
 		{
 			auto fullTypeName = componentRepresentation["type"].get!string;
 			auto serializer = fullTypeName in Serializers!ComponentBaseType;
 			assert(serializer, fullTypeName ~ " has not been registered for serialization");
-			serializer.deserialize(ComponentBaseType.constructingOwner, componentRepresentation); // Added to _components in deserializer
+			serializer.deserialize(_owner, componentRepresentation); // Added to _components in deserializer
 		}
-
-		ComponentBaseType.constructingOwner = null;
 	}
 
 	package Json serialize()
@@ -212,6 +208,7 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 	override void deserialize(OwnerType owner, Json representation)
 	{
 		assert(fullTypeName == representation["type"].get!string, "Component representation ended up in the wrong deserializer");
+		assert(owner, "Null owner provided");
 		
 		auto componentRepresentation = representation["representation"];
 		
@@ -221,7 +218,10 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 		}
 		else
 		{
+			ComponentType.ComponentBaseType.constructingOwner = owner;
 			auto component = deserializeJson!ComponentType(componentRepresentation);
+			ComponentType.ComponentBaseType.constructingOwner = null;
+
 			owner.components._components.insertBack(component);
 			ComponentInteraction!ComponentType.initialize(component);
 		}
