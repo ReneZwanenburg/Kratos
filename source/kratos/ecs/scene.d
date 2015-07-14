@@ -4,12 +4,21 @@ import std.container.array;
 
 import kratos.ecs.component;
 import kratos.ecs.entity;
+import kratos.ecs.eventdispatcher;
 
 import vibe.data.json;
 
 public abstract class SceneComponent
 {
 	mixin ComponentBasicImpl!Scene;
+	
+	final @property
+	{
+		inout(Scene) scene() inout
+		{
+			return owner;
+		}
+	}
 
 	package static auto resolveDependency(FieldType, Dependency dependency)(Scene owner)
 	{
@@ -30,8 +39,11 @@ public final class Scene
 	private Array!Entity _entities;
 	private string _name;
 
+	private RootDispatcher _rootDispatcher;
+
 	this(string name = null)
 	{
+		_rootDispatcher = new RootDispatcher();
 		_components = Components(this);
 		this.name = name;
 	}
@@ -63,6 +75,11 @@ public final class Scene
 		void name(string newName)
 		{
 			_name = newName.length ? newName : "Anonymous Scene";
+		}
+
+		RootDispatcher rootDispatcher()
+		{
+			return _rootDispatcher;
 		}
 	}
 

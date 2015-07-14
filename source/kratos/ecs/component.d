@@ -4,6 +4,8 @@ import std.container : Array;
 import std.typecons : Flag;
 import std.traits : ReturnType, Unqual;
 
+import kratos.util : Event;
+
 import vibe.data.json;
 
 public import vibe.data.serialization : asArray, byName, ignore, name, optional;
@@ -151,11 +153,18 @@ package mixin template ComponentBasicImpl(OwnerType)
 	package static OwnerType constructingOwner;
 
 	private OwnerType _owner;
+
+	public Event!ComponentBaseType onDestruction;
 	
 	protected this()
 	{
 		assert(constructingOwner !is null);
 		this._owner = constructingOwner;
+	}
+
+	~this()
+	{
+		onDestruction.raise(this);
 	}
 	
 	final @property
@@ -177,6 +186,8 @@ template ComponentInteraction(ComponentType)
 		import std.traits;
 		import vibe.internal.meta.uda : findFirstUDA;
 
+		registerAtDispatcher(component);
+
 		foreach(i, T; typeof(ComponentType.tupleof))
 		{
 			enum uda = findFirstUDA!(Dependency, ComponentType.tupleof[i]);
@@ -185,6 +196,18 @@ template ComponentInteraction(ComponentType)
 				component.tupleof[i] = ComponentType.resolveDependency!(T, uda.value)(component.owner);
 			}
 		}
+	}
+
+	private void registerAtDispatcher(ComponentType component)
+	{
+		import std.traits : BaseClassesTuple;
+		alias ParentType = BaseClassesTuple!ComponentType[0];
+		static if(!is(ParentType == ComponentType.ComponentBaseType))
+		{
+			ComponentInteraction!ParentType.registerAtDispatcher(component);
+		}
+
+		component.scene.rootDispatcher.getDispatcher!ComponentType.add(component);
 	}
 
 }

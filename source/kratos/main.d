@@ -28,8 +28,7 @@ else
 		while(!window.closeRequested)
 		{
 			window.updateInput();
-			//import kratos.ecs : dispatchFrameUpdate;
-			//dispatchFrameUpdate();
+			scene.rootDispatcher.frameUpdate();
 
 			import kratos.component.camera;
 			import std.algorithm.iteration : map, joiner;
