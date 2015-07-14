@@ -28,7 +28,8 @@ public Scene loadScene(ResourceIdentifier name)
 
 private Scene loadSceneKratos(ResourceIdentifier name)
 {
-	return parseJsonString(activeFileSystem.get!char(name)).deserializeJson!Scene;
+	auto loadJson = (string fileName) => activeFileSystem.get!char(fileName).parseJsonString();
+	return Scene.deserialize(loadJson(name), loadJson);
 }
 
 version(KratosDisableAssimp)

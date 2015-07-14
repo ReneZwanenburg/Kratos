@@ -187,11 +187,13 @@ private abstract class ComponentSerializer(ComponentBaseType)
 
 private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(ComponentType.ComponentBaseType)
 {
-	private static immutable string fullTypeName;
+	const string fullTypeName;
 
-	static this()
+	this()
 	{
 		fullTypeName = typeid(ComponentType).name;
+		import std.experimental.logger : info;
+		info("Instantiating serializer for ", fullTypeName);
 	}
 
 	override Json serialize(ComponentType.ComponentBaseType componentBase)

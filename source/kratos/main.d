@@ -3,6 +3,7 @@
 import kratos.time;
 import kratos.window;
 import kratos.resource.filesystem;
+import kratos.component.registrations;
 
 version(KratosCustomMain) { }
 else

@@ -85,7 +85,27 @@ public final class Scene
 		}
 	}
 
-	public static Scene fromRepresentation(Json representation)
+	public void merge(Json entityRepresentation, Json function(string) loadJson)
+	{
+		if(entityRepresentation.type == Json.Type.array)
+		{
+			foreach(entity; entityRepresentation[])
+			{
+				merge(entity, loadJson);
+			}
+		}
+		else if(entityRepresentation.type == Json.Type.object)
+		{
+			Entity.deserialize(this, entityRepresentation);
+		}
+		else if(entityRepresentation.type == Json.Type.string)
+		{
+			merge(loadJson(entityRepresentation.get!string), loadJson);
+		}
+		else assert(false);
+	}
+
+	public static Scene deserialize(Json representation, Json function(string) loadJson)
 	{
 		auto scene = new Scene(representation["name"].opt!string);
 
@@ -98,18 +118,13 @@ public final class Scene
 		auto entitiesRepresentation = representation["entities"];
 		if(entitiesRepresentation.type != Json.Type.undefined)
 		{
-			assert(entitiesRepresentation.type == Json.Type.array);
-
-			foreach(entityRepresentation; entitiesRepresentation[])
-			{
-				Entity.deserialize(scene, entityRepresentation);
-			}
+			scene.merge(entitiesRepresentation, loadJson);
 		}
 
 		return scene;
 	}
 	
-	Json toRepresentation()
+	Json serialize()
 	{
 		auto json = Json.emptyObject;
 

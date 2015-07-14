@@ -5,12 +5,8 @@
 		"memutils": "0.3.6",
 		"derelict-assimp3": "1.0.1",
 		"derelict-util": "2.0.0",
-		"libevent": "~master",
-		"openssl": "~master",
-		"libev": "~master",
 		"derelict-glfw3": "1.0.2",
 		"derelict-il": "~master",
 		"derelict-gl3": "1.0.12",
-		"libasync": "0.7.3"
 	}
 }

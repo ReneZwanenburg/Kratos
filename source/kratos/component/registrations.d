@@ -9,6 +9,9 @@ import kratos.component.transform : Transform;
 
 static this()
 {
+	import std.experimental.logger : info;
+	info("Registering serializers");
+
 	registerComponent!Camera;
 	registerComponent!MeshRenderer;
 	registerComponent!MeshRendererPartitioning;
