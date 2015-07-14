@@ -7,29 +7,15 @@ import vibe.data.json;
 
 public abstract class Component
 {
-	package static Entity constructingOwner;
-
-	private Entity _owner;
-
-	protected this()
-	{
-		assert(constructingOwner !is null);
-		this._owner = constructingOwner;
-	}
+	mixin ComponentBasicImpl!Entity;
 
 	final @property
 	{
-		inout(Entity) owner() inout
-		{
-			return _owner;
-		}
-
 		inout(Scene) scene() inout
 		{
 			return owner.scene;
 		}
 	}
-
 
 	package static auto resolveDependency(FieldType, Dependency dependency)(Entity owner)
 	{
@@ -45,8 +31,6 @@ public abstract class Component
 		}
 		else static assert(false, "Invalid Dependency type: " ~ T.stringof);
 	}
-
-	package alias ComponentBaseType = Component;
 }
 
 public final class Entity

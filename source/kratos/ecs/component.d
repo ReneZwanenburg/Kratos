@@ -2,7 +2,7 @@
 
 import std.container : Array;
 import std.typecons : Flag;
-import std.traits : ReturnType;
+import std.traits : ReturnType, Unqual;
 
 import vibe.data.json;
 
@@ -146,6 +146,28 @@ struct ComponentContainer(ComponentBaseType)
 
 }
 
+package mixin template ComponentBasicImpl(OwnerType)
+{
+	package static OwnerType constructingOwner;
+
+	private OwnerType _owner;
+	
+	protected this()
+	{
+		assert(constructingOwner !is null);
+		this._owner = constructingOwner;
+	}
+	
+	final @property
+	{
+		inout(OwnerType) owner() inout
+		{
+			return _owner;
+		}
+	}
+	
+	package alias ComponentBaseType = Unqual!(typeof(this));
+}
 
 template ComponentInteraction(ComponentType)
 {

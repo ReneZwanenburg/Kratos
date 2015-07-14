@@ -9,24 +9,7 @@ import vibe.data.json;
 
 public abstract class SceneComponent
 {
-	package static Scene constructingOwner;
-
-	private Scene _owner;
-
-	protected this()
-	{
-		assert(constructingOwner !is null);
-		this._owner = constructingOwner;
-	}
-
-	final @property
-	{
-		inout(Scene) owner() inout
-		{
-			return _owner;
-		}
-	}
-
+	mixin ComponentBasicImpl!Scene;
 
 	package static auto resolveDependency(FieldType, Dependency dependency)(Scene owner)
 	{
@@ -37,8 +20,6 @@ public abstract class SceneComponent
 		}
 		else static assert(false, "Invalid Dependency type: " ~ T.stringof);
 	}
-
-	package alias ComponentBaseType = SceneComponent;
 }
 
 public final class Scene
