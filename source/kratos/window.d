@@ -80,6 +80,8 @@ struct Window
 
 		mouse = new Mouse(this);
 		keyboard = new Keyboard(this);
+
+		updateInput();
 	}
 
 	~this()
