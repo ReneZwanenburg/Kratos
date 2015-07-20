@@ -11,14 +11,6 @@ import vibe.data.json;
 public abstract class SceneComponent
 {
 	mixin ComponentBasicImpl!Scene;
-	
-	final @property
-	{
-		inout(Scene) scene() inout
-		{
-			return owner;
-		}
-	}
 
 	package static auto resolveDependency(FieldType, Dependency dependency)(Scene owner)
 	{
