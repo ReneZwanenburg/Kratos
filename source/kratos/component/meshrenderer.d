@@ -5,7 +5,6 @@ import kratos.graphics.mesh;
 import kratos.graphics.shader;
 import kratos.graphics.vao;
 import kratos.graphics.renderstate;
-import kratos.graphics.shadervariable : UniformRef, BuiltinUniformName;
 import kratos.component.transform;
 
 final class MeshRenderer : Component

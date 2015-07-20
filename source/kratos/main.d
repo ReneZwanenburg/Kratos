@@ -18,8 +18,6 @@ else
 		mouse.setGrabbed(true);
 
 		import kratos.resource.loader;
-		import vibe.data.json;
-		import std.typecons : scoped;
 		auto scene = loadScene(Configuration.startupScene);
 
 		import std.experimental.logger;
@@ -30,12 +28,8 @@ else
 			window.updateInput();
 			scene.rootDispatcher.frameUpdate();
 
-			import kratos.component.camera;
-			import std.algorithm.iteration : map, joiner;
-			foreach(camera; scene.entities.map!(a => a.components.all!Camera).joiner)
-			{
-				camera.render();
-			}
+			import kratos.component.renderer : Renderer;
+			scene.components.firstOrAdd!Renderer().renderScene();
 
 			window.swapBuffers();
 			Time.update();

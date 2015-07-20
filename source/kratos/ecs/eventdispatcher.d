@@ -57,7 +57,7 @@ package final class ComponentDispatcher(ComponentType)
 
 	private void componentDestructionEventHandler(ComponentType.ComponentBaseType component)
 	{
-		auto rangeToRemove = components[].find(component).take(0);
+		auto rangeToRemove = components[].find(component).take(1);
 		components.linearRemove(rangeToRemove);
 	}
 
