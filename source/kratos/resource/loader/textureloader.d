@@ -22,10 +22,10 @@ private Texture loadTexture(ResourceIdentifier name)
 	auto dataPtr = ilGetData();
 	auto resolution = vec2i(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
 	auto format = ilTextureFormat[ilGetInteger(IL_IMAGE_FORMAT)];
-	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL) == bytesPerPixel[format]);
-	assert(ilGetInteger(IL_IMAGE_TYPE) == IL_UNSIGNED_BYTE);
+	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL) == format.bytesPerPixel);
+	assert(ilGetInteger(IL_IMAGE_TYPE) == format.type);
 	
-	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*bytesPerPixel[format]], name);
+	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bytesPerPixel], name);
 }
 
 shared static this()
@@ -81,10 +81,10 @@ shared static this()
 		".tiff"	: IL_TIF,
 		".wal"	: IL_WAL
 	];
-	
+
 	ilTextureFormat = [
-		IL_LUMINANCE	: TextureFormat.R,
-		IL_RGB			: TextureFormat.RGB,
-		IL_RGBA			: TextureFormat.RGBA
+		IL_LUMINANCE	: DefaultTextureFormat.R,
+		IL_RGB			: DefaultTextureFormat.RGB,
+		IL_RGBA			: DefaultTextureFormat.RGBA
 	];
 }

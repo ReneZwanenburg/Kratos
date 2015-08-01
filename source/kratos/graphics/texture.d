@@ -91,18 +91,29 @@ struct SamplerSettings
 	SamplerAnisotropy	anisotropy	= 1;
 }
 
-enum TextureFormat : GLenum
+struct TextureFormat
 {
-	R		= GL_RED,
-	RGB		= GL_RGB,
-	RGBA	= GL_RGBA
+	GLenum	format;
+	GLenum	internalFormatUncompressed;
+	GLenum	internalFormatCompressed;
+	GLenum	type;
+	uint	bytesPerPixel;
+}
+
+enum DefaultTextureFormat : TextureFormat
+{
+	R		= TextureFormat(GL_RED,				GL_RED,				GL_COMPRESSED_RED,	GL_UNSIGNED_BYTE,	1),
+	//RG		= TextureFormat(GL_RG,				GL_RG8,				GL_COMPRESSED_RG,	GL_UNSIGNED_BYTE,	2),
+	RGB		= TextureFormat(GL_RGB,				GL_RGB8,			GL_COMPRESSED_RGB,	GL_UNSIGNED_BYTE,	3),
+	RGBA	= TextureFormat(GL_RGBA,			GL_RGBA8,			GL_COMPRESSED_RGBA,	GL_UNSIGNED_BYTE,	4),
+	Depth	= TextureFormat(GL_DEPTH_COMPONENT,	GL_DEPTH_COMPONENT,	GL_DEPTH_COMPONENT,	GL_FLOAT,			4)
 }
 
 enum DefaultTextureCompression = false;
 
 Texture texture(TextureFormat format, vec2i resolution, void[] data, string name = null, bool compressed = DefaultTextureCompression)
 {
-	assert(bytesPerPixel[format] * resolution.x * resolution.y == data.length);
+	assert(format.bytesPerPixel * resolution.x * resolution.y == data.length);
 
 	const handle = gl.genTexture();
 	auto texture = Texture(handle, resolution, format, name ? name : handle.text, compressed);
@@ -111,12 +122,12 @@ Texture texture(TextureFormat format, vec2i resolution, void[] data, string name
 	gl.TexImage2D(
 		GL_TEXTURE_2D, 
 		0, 
-		compressed ? compressedFormat[format] : format,
+		compressed ? format.internalFormatCompressed : format.internalFormatUncompressed,
 		resolution.x,
 		resolution.y,
 		0,
-		format,
-		GL_UNSIGNED_BYTE,
+		format.format,
+		format.type,
 		data.ptr
 	);
 
@@ -138,7 +149,7 @@ Texture defaultTexture()
 			127, 0, 127, 255,
 			255, 0, 255, 255
 		];
-		texture = .texture(TextureFormat.RGBA, vec2i(2, 2), data, "Default Texture", false);
+		texture = .texture(DefaultTextureFormat.RGBA, vec2i(2, 2), data, "Default Texture", false);
 		initialized = true;
 	}
 	return texture;
@@ -154,30 +165,10 @@ struct Texture_Impl
 	TextureFormat	format;
 	string			name;
 	bool			compressed;
-}
 
-private	immutable GLenum[GLenum]		compressedFormat;
-public	immutable size_t[TextureFormat]	bytesPerPixel;
-static this()
-{
-	import std.traits;
-	foreach(format; EnumMembers!TextureFormat)
+	~this()
 	{
-		final switch(format) with(TextureFormat)
-		{
-			case R:
-				compressedFormat[format]	= GL_COMPRESSED_RED;
-				bytesPerPixel[format]		= 1;
-			break;
-			case RGB:
-				compressedFormat[format]	= GL_COMPRESSED_RGB;
-				bytesPerPixel[format]		= 3;
-			break;
-			case RGBA:
-				compressedFormat[format]	= GL_COMPRESSED_RGBA;
-				bytesPerPixel[format]		= 4;
-			break;
-		}
+		gl.DeleteTextures(1, &handle);
 	}
 }
 

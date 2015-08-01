@@ -2,6 +2,7 @@
 
 import kgl3n;
 import kratos.graphics.gl;
+import kratos.graphics.texture;
 import kratos.window;
 
 final class RenderTarget
@@ -73,6 +74,12 @@ private struct ClearSettings
 
 final class FrameBuffer
 {
+	public static struct BufferDescription
+	{
+		string name;
+		TextureFormat format;
+	}
+
 	private static FrameBuffer activeFrameBuffer;
 	static this()
 	{
@@ -80,8 +87,10 @@ final class FrameBuffer
 	}
 
 	private GLuint handle;
-
+	private BufferDescription[] bufferDescriptions;
+	private Texture[] textures;
 	private vec2i _size;
+
 	@property
 	{
 		vec2i size() const { return _size; }
@@ -91,6 +100,18 @@ final class FrameBuffer
 		{
 			assert(handle == 0, "Non-screen FrameBuffer resizing not supported");
 			this._size = size;
+		}
+	}
+
+	public this(vec2i resolution, BufferDescription[] bufferDescriptions, bool createDepthRenderBufferIfMissing = true)
+	{
+		//TODO: generate FBO
+		this._size = resolution;
+
+		bool depthProvided = false;
+		foreach(description; bufferDescriptions)
+		{
+
 		}
 	}
 
