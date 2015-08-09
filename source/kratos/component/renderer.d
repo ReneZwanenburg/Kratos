@@ -27,7 +27,7 @@ final class Renderer : SceneComponent
 
 	public void renderScene()
 	{
-		mainRenderTarget.apply();
+		mainRenderTarget.bind();
 		mainRenderTarget.clear();
 
 		import std.algorithm.iteration : joiner, map;

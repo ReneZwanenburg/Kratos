@@ -160,7 +160,7 @@ alias Texture = Handle!Texture_Impl;
 struct Texture_Impl
 {
 	const:
-	private GLuint	handle;
+	package GLuint	handle;
 	vec2i			resolution;
 	TextureFormat	format;
 	string			name;

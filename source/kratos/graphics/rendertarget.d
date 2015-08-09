@@ -16,7 +16,6 @@ final class RenderTarget
 	}
 
 	ClearSettings clearSettings;
-	alias clearSettings this;
 
 	Buffer clearBuffers = Buffer.All;
 	FrameBuffer frameBuffer;
@@ -26,9 +25,9 @@ final class RenderTarget
 		frameBuffer = currentWindow.frameBuffer;
 	}
 
-	void apply()
+	void bind()
 	{
-		frameBuffer.apply();
+		frameBuffer.bind();
 	}
 
 	void clear()
@@ -43,9 +42,9 @@ private struct ClearSettings
 {
 	private static ClearSettings currentClearSettings;
 
-	vec4 clearColor;
-	float clearDepth = 1;
-	int clearStencil = 0;
+	vec4 color;
+	float depth = 1;
+	int stencil = 0;
 
 	private void apply()
 	{
@@ -54,39 +53,38 @@ private struct ClearSettings
 	
 	private void apply(ref const ClearSettings settings)
 	{
-		if(clearColor != settings.clearColor)
+		if(color != settings.color)
 		{
-			clearColor = settings.clearColor;
-			gl.ClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+			color = settings.color;
+			gl.ClearColor(color.r, color.g, color.b, color.a);
 		}
-		if(clearDepth != settings.clearDepth)
+		if(depth != settings.depth)
 		{
-			clearDepth = settings.clearDepth;
-			gl.ClearDepth(clearDepth);
+			depth = settings.depth;
+			gl.ClearDepth(depth);
 		}
-		if(clearStencil != settings.clearStencil)
+		if(stencil != settings.stencil)
 		{
-			clearStencil = settings.clearStencil;
-			gl.ClearStencil(clearStencil);
+			stencil = settings.stencil;
+			gl.ClearStencil(stencil);
 		}
 	}
 }
 
+//TODO: Make refcounted struct
 final class FrameBuffer
 {
-	public static struct BufferDescription
+	static struct BufferDescription
 	{
 		string name;
 		TextureFormat format;
 	}
 
-	private static FrameBuffer activeFrameBuffer;
-	static this()
-	{
-		activeFrameBuffer = createScreenFrameBuffer(-1, -1);
-	}
-
+	private static GLuint activeHandle;
+	private static vec2i activeViewportSize;
+	//TODO: Constness
 	private GLuint handle;
+	private GLuint renderBufferHandle;
 	private BufferDescription[] bufferDescriptions;
 	private Texture[] textures;
 	private vec2i _size;
@@ -103,16 +101,50 @@ final class FrameBuffer
 		}
 	}
 
-	public this(vec2i resolution, BufferDescription[] bufferDescriptions, bool createDepthRenderBufferIfMissing = true)
+	this(vec2i resolution, BufferDescription[] bufferDescriptions, bool createDepthRenderBufferIfMissing = true)
 	{
-		//TODO: generate FBO
+		gl.GenFramebuffers(1, &handle);
 		this._size = resolution;
 
 		bool depthProvided = false;
+		auto colorAttachment = GL_COLOR_ATTACHMENT0;
+		enum maxColorAttachment = GL_COLOR_ATTACHMENT8;
+
+		bind();
+
 		foreach(description; bufferDescriptions)
 		{
+			auto format = description.format;
 
+			auto tex = texture(format, resolution, null, description.name, false);
+			textures ~= tex;
+
+			GLenum attachment;
+			//TODO: Support DepthStencil / Stencil formats
+			if(format == DefaultTextureFormat.Depth)
+			{
+				assert(!depthProvided);
+				depthProvided = true;
+				attachment = GL_DEPTH_ATTACHMENT;
+			}
+			else
+			{
+				attachment = colorAttachment++;
+				assert(attachment <= maxColorAttachment);
+			}
+
+			gl.FramebufferTexture(GL_DRAW_FRAMEBUFFER, attachment, tex.handle, 0);
 		}
+
+		if(!depthProvided && createDepthRenderBufferIfMissing)
+		{
+			gl.GenRenderbuffers(1, &renderBufferHandle);
+			gl.BindRenderbuffer(GL_RENDERBUFFER, renderBufferHandle);
+			gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, resolution.x, resolution.y);
+			gl.FramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderBufferHandle);
+		}
+
+		assert(gl.CheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 	}
 
 	private this(vec2i size)
@@ -121,21 +153,22 @@ final class FrameBuffer
 		this.size = size;
 	}
 
-	private void apply()
+	~this()
 	{
-		activeFrameBuffer.apply(this);
+		gl.DeleteFramebuffers(1, &handle);
+		gl.DeleteRenderbuffers(1, &renderBufferHandle);
 	}
 
-	private void apply(const FrameBuffer buffer)
+	private void bind()
 	{
-		if(handle != buffer.handle)
+		if(handle != activeHandle)
 		{
-			handle = buffer.handle;
-			gl.BindFramebuffer(GL_FRAMEBUFFER, handle);
+			activeHandle = handle;
+			gl.BindFramebuffer(GL_DRAW_FRAMEBUFFER, handle);
 		}
-		if(size != buffer.size)
+		if(size != activeViewportSize)
 		{
-			size = buffer.size;
+			activeViewportSize = size;
 			gl.Viewport(0, 0, size.x, size.y);
 		}
 	}
@@ -144,7 +177,7 @@ final class FrameBuffer
 	{
 		bool active() const
 		{
-			return activeFrameBuffer.handle == handle;
+			return activeHandle == handle;
 		}
 	}
 
