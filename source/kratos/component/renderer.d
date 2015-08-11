@@ -7,8 +7,10 @@ import kratos.component.meshrenderer : MeshRendererPartitioning;
 import kratos.component.camera : Camera;
 import kratos.component.transform : Transform;
 
-import kratos.graphics.rendertarget : RenderTarget;
+import kratos.graphics.rendertarget : RenderTarget, FrameBuffer;
 import kratos.graphics.shadervariable : UniformRef, BuiltinUniformName;
+
+import kgl3n.vector : vec2i;
 
 //TODO: Make non-final, provide multiple renderer types? (forward, deferred)
 final class Renderer : SceneComponent
@@ -18,17 +20,20 @@ final class Renderer : SceneComponent
 	@dependency
 	private MeshRendererPartitioning meshRendererPartitioning;
 
-	private RenderTarget mainRenderTarget;
+	private RenderTarget gBuffer;
+	private RenderTarget screen;
 
 	this()
 	{
-		mainRenderTarget = new RenderTarget();
+		import kratos.window : currentWindow;
+		screen = new RenderTarget(currentWindow.frameBuffer);
+		gBuffer = new RenderTarget(createGBuffer(screen.frameBuffer.size));
 	}
 
-	public void renderScene()
+	void renderScene()
 	{
-		mainRenderTarget.bind();
-		mainRenderTarget.clear();
+		gBuffer.bind();
+		gBuffer.clear();
 
 		import std.algorithm.iteration : joiner, map;
 		auto camera = scene.entities.map!(a => a.components.all!Camera).joiner.front;
@@ -40,12 +45,25 @@ final class Renderer : SceneComponent
 			{
 				builtinUniformSetters[builtinUniform[0]](camera, meshRenderer.transform, builtinUniform[1]);
 			}
-			
+
 			meshRenderer.renderState.apply();
 			import kratos.graphics.gl;
 			meshRenderer.vao.bind();
 			gl.DrawElements(GL_TRIANGLES, meshRenderer.mesh.ibo.numIndices, meshRenderer.mesh.ibo.indexType, null);
 		}
+	}
+
+	private static FrameBuffer createGBuffer(vec2i size)
+	{
+		import kratos.graphics.texture : DefaultTextureFormat;
+
+		static bufferDescriptions = [
+			FrameBuffer.BufferDescription("albedo", DefaultTextureFormat.RGBA),
+			FrameBuffer.BufferDescription("normal", DefaultTextureFormat.RGBA),
+			FrameBuffer.BufferDescription("depth", DefaultTextureFormat.Depth)
+		];
+
+		return new FrameBuffer(size, bufferDescriptions);
 	}
 }
 

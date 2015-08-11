@@ -1,11 +1,7 @@
 {
 	"Shader":
 	{
-		"modules":
-		[
-			"Shaders/Test.vert",
-			"Shaders/Test.frag"
-		],
+		"program": "ShaderPrograms/Test.prog",
 		
 		"uniforms":
 		{

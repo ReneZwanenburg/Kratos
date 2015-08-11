@@ -1,0 +1,19 @@
+{
+	"modules":
+	[
+		"Shaders/Test.vert",
+		"Shaders/Test.frag"
+	],
+	
+	"samplers":
+	{
+		"texture":
+		{
+			"minFilter": "Trilinear",
+			"magFilter": "Bilinear",
+			"xWrap": "Repeat",
+			"yWrap": "Repeat",
+			"anisotropy": 1
+		}
+	}
+}

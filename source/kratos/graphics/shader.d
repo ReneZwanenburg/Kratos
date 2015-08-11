@@ -127,6 +127,11 @@ private struct Program_Impl
 		//TODO: Update Shaders using this Program
 	}
 
+	void setSampler(string name, Sampler sampler)
+	{
+		_samplers[_uniforms.getSamplerIndex(name)] = sampler;
+	}
+
 	void use() const
 	{
 		static GLuint current = 0;

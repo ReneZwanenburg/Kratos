@@ -5,6 +5,8 @@ import kratos.graphics.gl;
 import kgl3n.vector;
 import std.experimental.logger;
 
+import vibe.data.serialization : optional, byName;
+
 public import kratos.graphics.textureunit;
 
 
@@ -30,20 +32,30 @@ enum SamplerWrap : GLenum
 
 struct SamplerAnisotropy
 {
-	this(ubyte level)
+	this(int level)
 	{
 		assert(level <= maxAnisotropy);
 		this._level = level;
 	}
 
 	alias level this;
-	@property ubyte level() const nothrow
+	@property int level() const nothrow
 	{
 		return _level;
 	}
 
-	enum ubyte maxAnisotropy = 16;
-	private ubyte _level = 1;
+	int toRepresentation() const nothrow
+	{
+		return _level;
+	}
+
+	static SamplerAnisotropy fromRepresentation(int level)
+	{
+		return SamplerAnisotropy(level);
+	}
+
+	enum int maxAnisotropy = 16;
+	private int _level = 1;
 }
 
 Sampler sampler(SamplerSettings settings)
@@ -80,10 +92,16 @@ private struct Sampler_Impl
 	SamplerSettings		settings;
 
 	alias settings this;
+
+	~this()
+	{
+		gl.DeleteSamplers(1, &handle);
+	}
 }
 
 struct SamplerSettings
 {
+	@optional @byName:
 	SamplerMinFilter	minFilter	= SamplerMinFilter.Trilinear;
 	SamplerMagFilter	magFilter	= SamplerMagFilter.Bilinear;
 	SamplerWrap			xWrap		= SamplerWrap.Repeat;
@@ -113,7 +131,7 @@ enum DefaultTextureCompression = false;
 
 Texture texture(TextureFormat format, vec2i resolution, void[] data, string name = null, bool compressed = DefaultTextureCompression)
 {
-	assert(format.bytesPerPixel * resolution.x * resolution.y == data.length);
+	assert(data.ptr == null || format.bytesPerPixel * resolution.x * resolution.y == data.length);
 
 	const handle = gl.genTexture();
 	auto texture = Texture(handle, resolution, format, name ? name : handle.text, compressed);

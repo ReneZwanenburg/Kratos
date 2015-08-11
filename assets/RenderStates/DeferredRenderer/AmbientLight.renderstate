@@ -1,0 +1,11 @@
+{
+	"Shader":
+	{
+		"program": "ShaderPrograms/DeferredRenderer/AmbientLight.prog",
+		
+		"uniforms":
+		{
+			"lighting": [0.25, 0.25, 0.25]
+		}
+	}
+}

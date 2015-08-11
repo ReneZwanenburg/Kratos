@@ -1,0 +1,34 @@
+{
+	"modules":
+	[
+		"Shaders/DeferredRenderer/VertexPassThrough.vert"
+		"Shaders/DeferredRenderer/AmbientLight.frag"
+	],
+	
+	"samplers":
+	{
+		"albedo":
+		{
+			"minFilter": "Nearest",
+			"magFilter": "Nearest",
+			"xWrap": "Clamp",
+			"yWrap": "Clamp"
+		},
+		
+		"normal":
+		{
+			"minFilter": "Nearest",
+			"magFilter": "Nearest",
+			"xWrap": "Clamp",
+			"yWrap": "Clamp"
+		},
+		
+		"depth":
+		{
+			"minFilter": "Nearest",
+			"magFilter": "Nearest",
+			"xWrap": "Clamp",
+			"yWrap": "Clamp"
+		}
+	}
+}

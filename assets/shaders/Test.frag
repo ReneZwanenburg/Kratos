@@ -1,8 +1,14 @@
 #version 330
+
 uniform sampler2D texture;
-in vec2 _texCoord;
+
+in vec2 texCoord;
+
+layout(location = 0) out vec4 color;
+layout(location = 1) out vec4 normal;
 
 void main()
 {
-	gl_FragData[0] = texture2D(texture, _texCoord);
+	color = texture2D(texture, texCoord);
+	normal = vec4(0);
 }

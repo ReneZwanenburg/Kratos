@@ -13,7 +13,7 @@ alias RenderStateCache = Cache!(RenderState, ResourceIdentifier, id => loadRende
 
 private RenderState loadRenderState(ResourceIdentifier name)
 {
-	auto json = parseJsonString(activeFileSystem.get!char(name));
+	auto json = loadJson(name);
 
 	if(json["parent"].type == Json.Type.undefined)
 	{
@@ -27,12 +27,7 @@ private RenderState loadRenderState(ResourceIdentifier name)
 			
 			static if(is(T == Shader))
 			{
-				auto modules = deserializeJson!(string[])(stateJson["modules"]);
-				import std.algorithm : sort;
-				modules.sort();
-				
-				field = Shader(ProgramCache.get(modules));
-				
+				field = Shader(ProgramCache.get(stateJson["program"].get!string));
 				loadUniforms(renderState, stateJson["uniforms"]);
 			}
 			else

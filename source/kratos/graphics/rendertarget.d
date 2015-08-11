@@ -3,7 +3,6 @@
 import kgl3n;
 import kratos.graphics.gl;
 import kratos.graphics.texture;
-import kratos.window;
 
 final class RenderTarget
 {
@@ -20,9 +19,10 @@ final class RenderTarget
 	Buffer clearBuffers = Buffer.All;
 	FrameBuffer frameBuffer;
 
-	this()
+	this(FrameBuffer frameBuffer)
 	{
-		frameBuffer = currentWindow.frameBuffer;
+		assert(frameBuffer);
+		this.frameBuffer = frameBuffer;
 	}
 
 	void bind()
@@ -107,8 +107,8 @@ final class FrameBuffer
 		this._size = resolution;
 
 		bool depthProvided = false;
-		auto colorAttachment = GL_COLOR_ATTACHMENT0;
-		enum maxColorAttachment = GL_COLOR_ATTACHMENT8;
+		GLenum colorAttachmentIndex = 0;
+		enum maxColorAttachment = GL_COLOR_ATTACHMENT7;
 
 		bind();
 
@@ -129,12 +129,25 @@ final class FrameBuffer
 			}
 			else
 			{
-				attachment = colorAttachment++;
+				attachment = GL_COLOR_ATTACHMENT0 + colorAttachmentIndex++;
 				assert(attachment <= maxColorAttachment);
 			}
 
 			gl.FramebufferTexture(GL_DRAW_FRAMEBUFFER, attachment, tex.handle, 0);
 		}
+
+		static immutable drawBuffers = [
+			GL_COLOR_ATTACHMENT0,
+			GL_COLOR_ATTACHMENT1,
+			GL_COLOR_ATTACHMENT2,
+			GL_COLOR_ATTACHMENT3,
+			GL_COLOR_ATTACHMENT4,
+			GL_COLOR_ATTACHMENT5,
+			GL_COLOR_ATTACHMENT6,
+			GL_COLOR_ATTACHMENT7
+		];
+
+		gl.DrawBuffers(colorAttachmentIndex, drawBuffers.ptr);
 
 		if(!depthProvided && createDepthRenderBufferIfMissing)
 		{

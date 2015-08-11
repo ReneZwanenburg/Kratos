@@ -384,6 +384,11 @@ struct Uniforms
 		}
 	}
 
+	package uint getSamplerIndex(string name)
+	{
+		return _textureIndices[name];
+	}
+
 	package bool opEquals(const ref Uniforms other) const
 	{
 		import std.algorithm.comparison : equal;
