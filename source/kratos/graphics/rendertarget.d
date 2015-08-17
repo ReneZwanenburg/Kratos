@@ -105,6 +105,7 @@ final class FrameBuffer
 	{
 		gl.GenFramebuffers(1, &handle);
 		this._size = resolution;
+		this.bufferDescriptions = bufferDescriptions;
 
 		bool depthProvided = false;
 		GLenum colorAttachmentIndex = 0;
@@ -192,6 +193,18 @@ final class FrameBuffer
 		{
 			return activeHandle == handle;
 		}
+	}
+
+	Texture opIndex(string name)
+	{
+		import std.range : zip;
+
+		foreach(description, texture; zip(bufferDescriptions, textures))
+		{
+			if(description.name == name) return texture;
+		}
+
+		assert(false);
 	}
 
 	// Should be package(kratos)

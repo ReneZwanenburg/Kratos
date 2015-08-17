@@ -1,12 +1,11 @@
 #version 330
 
-in vec3 position;
-in vec2 texCoord0;
+in vec2 position;
 
-out vec2 texCoord;
+out vec2 normalizedCoord;
 
 void main()
 {
-	texCoord = texCoord0;
-	gl_Position = vec4(position, 1);
+	normalizedCoord = position * 0.5 + 0.5;
+	gl_Position = vec4(position, 0, 1);
 }

@@ -92,7 +92,8 @@ else
 			foreach(meshIndex; 0..node.mNumMeshes)
 			{
 				auto meshRenderer = entity.components.add!MeshRenderer;
-				meshRenderer.set(loadedMeshes[node.mMeshes[meshIndex]], loadedMaterials[importedScene.mMeshes[node.mMeshes[meshIndex]].mMaterialIndex]);
+				import kratos.graphics.renderablemesh : renderableMesh;
+				meshRenderer.mesh = renderableMesh(loadedMeshes[node.mMeshes[meshIndex]], loadedMaterials[importedScene.mMeshes[node.mMeshes[meshIndex]].mMaterialIndex]);
 			}
 			
 			foreach(childIndex; 0..node.mNumChildren)

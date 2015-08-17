@@ -1,0 +1,25 @@
+{
+	"Blend":
+	{
+		"srcFunction": "One",
+		"dstFunction": "One"
+	},
+	
+	"DepthTest":
+	{
+		"read": false,
+		"write": true
+	},
+
+	"Shader":
+	{
+		"program": "ShaderPrograms/DeferredRenderer/DirectionalLight.prog",
+		
+		"uniforms":
+		{
+			"color": [1, 1, 1],
+			"ambientColor": [0.1, 0.1, 0.1],
+			"direction": [0, 0, 0]
+		}
+	}
+}

@@ -22,6 +22,21 @@
 					}
 				}
 			]
+		},
+		
+		{
+			"name": "Sun",
+			"components":
+			[
+				{
+					"type": "kratos.component.light.DirectionalLight",
+					"representation": {
+						"color": [1, 1, 1],
+						"ambientColor": [1, 1, 1],
+						"direction": [1, -5, 1]
+					}
+				}
+			]
 		}
 	]
 }

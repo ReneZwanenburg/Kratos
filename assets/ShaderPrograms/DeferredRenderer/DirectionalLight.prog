@@ -1,13 +1,13 @@
 {
 	"modules":
 	[
-		"Shaders/DeferredRenderer/VertexPassThrough.vert"
-		"Shaders/DeferredRenderer/AmbientLight.frag"
+		"Shaders/DeferredRenderer/VertexPassThrough.vert",
+		"Shaders/DeferredRenderer/DirectionalLight.frag"
 	],
 	
 	"samplers":
 	{
-		"albedo":
+		"color":
 		{
 			"minFilter": "Nearest",
 			"magFilter": "Nearest",
