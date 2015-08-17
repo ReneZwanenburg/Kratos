@@ -169,9 +169,17 @@ struct Uniform
 // Reference to an Uniform instance. Can be used to set the value of this Uniform
 struct UniformRef
 {
-	const	GLenum	type;
-	const	GLsizei	size;
+	private	GLenum	_type;
+	private	GLsizei	_size;
 	private	ubyte[]	store;
+
+	auto opAssign(UniformRef uniformRef)
+	{
+		_type = uniformRef._type;
+		_size = uniformRef._type;
+		store = uniformRef.store;
+		return this;
+	}
 
 	auto opAssign(T)(auto ref T value)
 	{
@@ -190,6 +198,11 @@ struct UniformRef
 
 	auto opIndexAssign(T)(auto ref T value, size_t index)
 	{
+		if(store == null)
+		{
+			return this;
+		}
+
 		assert(GLType!T == type, "Uniform type mismatch: " ~ T.stringof);
 		assert(index < size, "Uniform index out of bounds");
 		import std.traits;
@@ -200,6 +213,12 @@ struct UniformRef
 	private inout(void*) ptr() inout
 	{
 		return store.ptr;
+	}
+
+	@property const
+	{
+		GLenum type() { return _type; }
+		GLsizei size() { return _size; }
 	}
 }
 
@@ -298,7 +317,25 @@ struct Uniforms
 
 	UniformRef opIndex(string name)
 	{
-		return toRef(_allUniforms[_userUniforms[name]]);
+		if(auto indexPtr = name in _userUniforms)
+		{
+			return toRef(_allUniforms[*indexPtr]);
+		}
+		else
+		{
+			return UniformRef(0, 0, null);
+		}
+	}
+
+	RefContainer getRefs(RefContainer)()
+	{
+		RefContainer container;
+		foreach(i, ref field; container.tupleof)
+		{
+			static assert(is(typeof(field) == UniformRef), "Can only get refs when all fields are UniformRefs");
+			field = this[__traits(identifier, container.tupleof[i])];
+		}
+		return container;
 	}
 
 	package void apply(ref Uniforms newValues, ref Array!Sampler samplers)
@@ -384,9 +421,9 @@ struct Uniforms
 		}
 	}
 
-	package uint getSamplerIndex(string name)
+	package uint* getSamplerIndex(string name)
 	{
-		return _textureIndices[name];
+		return name in _textureIndices;
 	}
 
 	package bool opEquals(const ref Uniforms other) const

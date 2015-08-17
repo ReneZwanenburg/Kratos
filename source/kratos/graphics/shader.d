@@ -129,7 +129,10 @@ private struct Program_Impl
 
 	void setSampler(string name, Sampler sampler)
 	{
-		_samplers[_uniforms.getSamplerIndex(name)] = sampler;
+		if(auto indexPtr = _uniforms.getSamplerIndex(name))
+		{
+			_samplers[*indexPtr] = sampler;
+		}
 	}
 
 	void use() const
