@@ -82,7 +82,7 @@ final class Renderer : SceneComponent
 			{
 				color = light.color;
 				ambientColor = light.ambientColor;
-				projectionSpaceDirection = camera.viewProjectionMatrix * vec4(light.direction.normalized, 0);
+				viewSpaceDirection = (camera.viewMatrix * vec4(light.direction.normalized, 0)).xyz;
 			}
 
 			render(directionalLightRenderableMesh);
@@ -184,5 +184,5 @@ private struct DirectionalLightUniforms
 {
 	UniformRef color;
 	UniformRef ambientColor;
-	UniformRef projectionSpaceDirection;
+	UniformRef viewSpaceDirection;
 }

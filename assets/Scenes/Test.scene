@@ -33,7 +33,7 @@
 					"representation": {
 						"color": [1, 1, 1],
 						"ambientColor": [1, 1, 1],
-						"direction": [1, -5, 1]
+						"direction": [1, -5, -2]
 					}
 				}
 			]
