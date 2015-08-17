@@ -172,8 +172,10 @@ private struct Program_Impl
 
 		gl.GetProgramiv(handle, GL_ACTIVE_ATTRIBUTES, &attributes.count);
 
-		foreach(i, ref attribute; attributes[])
+		foreach(i; 0 .. attributes.count)
 		{
+			VertexAttribute attribute;
+
 			GLsizei nameLength;
 			GLsizei size;
 
@@ -189,6 +191,14 @@ private struct Program_Impl
 
 			assert(size == 1, "Attribute arrays not supported yet");
 			attribute.name.length = cast(typeof(attribute.name.length))nameLength;
+
+			auto location = gl.GetAttribLocation(
+				handle,
+				attribute.name.data.ptr
+			);
+
+			assert(0 <= location && location < attributes.count);
+			attributes[location] = attribute;
 		}
 
 		this._attributes = attributes;
