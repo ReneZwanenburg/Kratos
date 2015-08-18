@@ -2,6 +2,7 @@
 
 import kratos.ecs.component : dependency;
 import kratos.ecs.entity : Component;
+import kratos.ecs.scene : SceneComponent;
 
 import kratos.component.transform;
 import kgl3n.matrix;
@@ -19,6 +20,7 @@ struct StandardProjection
 final class Camera : Component
 {
 	private @dependency Transform transform;
+	private @dependency CameraSelection cameraSelection;
 
 	private mat4				_projectionMatrix;
 	private StandardProjection	standardProjection;
@@ -64,8 +66,17 @@ final class Camera : Component
 			_projectionMatrix = perspectiveProjection(aspect, 1, projection.fov, projection.nearPlane, projection.farPlane);
 			customProjection = false;
 		}
+
+		bool mainCamera()
+		{
+			return cameraSelection.mainCamera is this;
+		}
 	}
 
+	public void makeMainCamera()
+	{
+		cameraSelection.mainCamera = this;
+	}
 
 	Json toRepresentation()
 	{
@@ -87,15 +98,54 @@ final class Camera : Component
 	{
 		auto camera = new Camera();
 
-		if(json["customProjection"].get!bool)
+		if(json["customProjection"].to!bool)
 		{
 			camera.projectionMatrix = json["projection"].deserializeJson!mat4;
 		}
 		else
 		{
-			camera.projectionMatrix = json["projection"].deserializeJson!StandardProjection;
+			auto projection = json["projection"];
+			camera.projectionMatrix = projection.type == Json.Type.undefined
+				? StandardProjection.init
+				: projection.deserializeJson!StandardProjection;
+		}
+
+		auto mainJson = json["main"];
+		// Dependencies have not been set at this point, but scene is set during construction so use that.
+		auto cameraSelection = camera.scene.components.firstOrAdd!CameraSelection;
+
+		if(mainJson.type == Json.Type.undefined)
+		{
+			if(cameraSelection.mainCamera is null)
+			{
+				cameraSelection.mainCamera = camera;
+			}
+		}
+		else if(mainJson.get!bool)
+		{
+			cameraSelection.mainCamera = camera;
 		}
 
 		return camera;
+	}
+}
+
+public final class CameraSelection : SceneComponent
+{
+	private Camera _mainCamera;
+
+	@property
+	{
+		Camera mainCamera()
+		{
+			return _mainCamera;
+		}
+
+		void mainCamera(Camera newMainCamera)
+		{
+			import std.stdio;
+			writeln("Setting main camera ", newMainCamera);
+			_mainCamera = newMainCamera;
+		}
 	}
 }

@@ -9,7 +9,10 @@
 		},
 		
 		{
-			"type": "kratos.component.camera.Camera"
+			"type": "kratos.component.camera.Camera",
+			"representation": {
+				"main": true
+			}
 		},
 		
 		{

@@ -4,7 +4,7 @@ import kratos.ecs.scene : SceneComponent;
 import kratos.ecs.component : dependency, ignore;
 
 import kratos.component.meshrenderer : MeshRendererPartitioning;
-import kratos.component.camera : Camera;
+import kratos.component.camera : Camera, CameraSelection;
 import kratos.component.transform : Transform;
 import kratos.component.light : DirectionalLightPartitioning, DirectionalLight, PointLightPartitioning, PointLight;
 
@@ -23,6 +23,7 @@ final class Renderer : SceneComponent
 
 	private @dependency
 	{
+		CameraSelection cameraSelection;
 		MeshRendererPartitioning meshRenderers;
 		DirectionalLightPartitioning directionalLights;
 		PointLightPartitioning pointLights;
@@ -49,7 +50,7 @@ final class Renderer : SceneComponent
 	void renderScene()
 	{
 		import std.algorithm.iteration : joiner, map;
-		auto camera = scene.entities.map!(a => a.components.all!Camera).joiner.front;
+		auto camera = cameraSelection.mainCamera;
 
 		gBuffer.bind();
 		gBuffer.clear();
