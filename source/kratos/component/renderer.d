@@ -148,7 +148,7 @@ final class Renderer : SceneComponent
 
 		static bufferDescriptions = [
 			FrameBuffer.BufferDescription("albedo", DefaultTextureFormat.RGBA),
-			FrameBuffer.BufferDescription("normal", DefaultTextureFormat.RGBA),
+			FrameBuffer.BufferDescription("normal", DefaultTextureFormat.RGBA16),
 			FrameBuffer.BufferDescription("depth", DefaultTextureFormat.Depth)
 		];
 
