@@ -196,6 +196,8 @@ template ComponentInteraction(ComponentType)
 				component.tupleof[i] = ComponentType.resolveDependency!(T, uda.value)(component.owner);
 			}
 		}
+
+		callInitializer(component);
 	}
 
 	private void registerAtDispatcher(ComponentType component)
@@ -210,6 +212,22 @@ template ComponentInteraction(ComponentType)
 		component.scene.rootDispatcher.getDispatcher!ComponentType.add(component);
 	}
 
+	private void callInitializer(ComponentType component)
+	{
+		import std.traits : BaseClassesTuple, hasMember;
+		alias ParentType = BaseClassesTuple!ComponentType[0];
+		static if(!is(ParentType == ComponentType.ComponentBaseType))
+		{
+			ComponentInteraction!ParentType.callInitializer(component);
+		}
+
+		//TODO: Type and arg checking, make reusable
+		//TODO: Call all initializers only after full deserialization
+		static if(hasMember!(ComponentType, "initialize"))
+		{
+			component.initialize();
+		}
+	}
 }
 
 public void registerComponent(ComponentType)()
