@@ -143,8 +143,6 @@ public final class CameraSelection : SceneComponent
 
 		void mainCamera(Camera newMainCamera)
 		{
-			import std.stdio;
-			writeln("Setting main camera ", newMainCamera);
 			_mainCamera = newMainCamera;
 		}
 	}

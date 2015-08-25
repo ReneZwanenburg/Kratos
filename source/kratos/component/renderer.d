@@ -49,7 +49,6 @@ final class Renderer : SceneComponent
 
 	void renderScene()
 	{
-		import std.algorithm.iteration : joiner, map;
 		auto camera = cameraSelection.mainCamera;
 
 		gBuffer.bind();
@@ -77,13 +76,15 @@ final class Renderer : SceneComponent
 
 	private void renderLights(Camera camera)
 	{
+		directionalLightUniforms.projectionMatrixInverse = camera.projectionMatrix.inverse;
+
 		foreach(light; directionalLights.all)
 		{
 			with(directionalLightUniforms)
 			{
 				color = light.color;
 				ambientColor = light.ambientColor;
-				viewSpaceDirection = (camera.viewMatrix * vec4(light.direction.normalized, 0)).xyz;
+				viewspaceDirection = (camera.viewMatrix * vec4(light.direction.normalized, 0)).xyz;
 			}
 
 			render(directionalLightRenderableMesh);
@@ -185,5 +186,6 @@ private struct DirectionalLightUniforms
 {
 	UniformRef color;
 	UniformRef ambientColor;
-	UniformRef viewSpaceDirection;
+	UniformRef viewspaceDirection;
+	UniformRef projectionMatrixInverse;
 }

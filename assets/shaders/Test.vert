@@ -7,12 +7,12 @@ in vec2 texCoord0;
 uniform mat4 WVP;
 uniform mat4 WV;
 
-out vec3 viewSpaceNormal;
+out vec3 viewspaceNormal;
 out vec2 texCoord;
 
 void main()
 {
 	gl_Position = WVP * vec4(position, 1);
 	texCoord = texCoord0;
-	viewSpaceNormal = mat3(WV) * normal;
+	viewspaceNormal = mat3(WV) * normal;
 }
