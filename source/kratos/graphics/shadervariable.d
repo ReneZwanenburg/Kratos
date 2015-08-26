@@ -12,6 +12,7 @@ import std.conv : text;
 import std.typetuple : TypeTuple, staticIndexOf;
 import std.container : Array;
 import std.experimental.logger;
+import std.traits : Unqual;
 
 
 immutable VertexAttributes toVertexAttributes(T) = toVertexAttributesImpl!T;
@@ -154,60 +155,46 @@ struct Uniform
 		return type == GLType!TextureUnit;
 	}
 	
-	bool isBuiltin() const
-	{
-		import std.algorithm : canFind;
-		return BuiltinUniformName.canFind(name);
-	}
-	
 	bool isUser() const
 	{
-		return !(isSampler || isBuiltin);
+		return !isSampler;
 	}
 }
 
 // Reference to an Uniform instance. Can be used to set the value of this Uniform
-struct UniformRef
+struct UniformRef(T)
 {
-	private	GLenum	_type;
 	private	GLsizei	_size;
-	private	ubyte[]	store;
+	private	T[]	store;
 
-	auto opAssign(UniformRef uniformRef)
+	void opAssign(UniformRef uniformRef)
 	{
-		_type = uniformRef._type;
-		_size = uniformRef._type;
+		_size = uniformRef._size;
 		store = uniformRef.store;
-		return this;
 	}
 
-	auto opAssign(T)(auto ref T value)
+	void opAssign(Y)(auto ref Y value) if(is(Unqual!Y == T))
 	{
-		return this[0] = value;
+		this[0] = value;
 	}
 
-	auto opAssign(T)(T[] values)
+	void opAssign(Y)(Y[] values) if(is(Unqual!Y == T))
 	{
 		foreach(i, ref value; values)
 		{
 			this[i] = value;
 		}
-
-		return this;
 	}
 
-	auto opIndexAssign(T)(auto ref T value, size_t index)
+	void opIndexAssign(Y)(auto ref Y value, size_t index) if(is(Unqual!Y == T))
 	{
 		if(store == null)
 		{
-			return this;
+			return;
 		}
 
-		assert(GLType!T == type, "Uniform type mismatch: " ~ T.stringof);
 		assert(index < size, "Uniform index out of bounds");
-		import std.traits;
-		(cast(Unqual!T[])store)[index] = value;
-		return this;
+		store[index] = value;
 	}
 
 	private inout(void*) ptr() inout
@@ -217,7 +204,6 @@ struct UniformRef
 
 	@property const
 	{
-		GLenum type() { return _type; }
 		GLsizei size() { return _size; }
 	}
 }
@@ -243,12 +229,6 @@ struct Uniforms
 			allUniforms
 			.zip(iota(uint.max));
 
-		_builtinUniforms =
-			indexedUniforms
-			.filter!(a => a[0].isBuiltin)
-			.map!(a => a[1])
-			.array;
-
 		auto samplerUniforms =
 			indexedUniforms
 			.filter!(a => a[0].isSampler);
@@ -261,7 +241,7 @@ struct Uniforms
 
 		foreach(uniform, ui, tu; zip(samplerUniforms, iota(TextureUnit.Size)))
 		{
-			toRef(_allUniforms[ui]) = TextureUnit(tu);
+			toRef!TextureUnit(_allUniforms[ui]) = TextureUnit(tu);
 		}
 
 		_textures.insert(defaultTexture.repeat(_textureIndices.length));
@@ -273,21 +253,24 @@ struct Uniforms
 			.assocArray;
 
 		_setters = _allUniforms.map!(a => uniformSetter[a.type]).array;
+
+		_builtinUniforms = getRefs!BuiltinUniforms;
 	}
 
 	this(this)
 	{
 		trace("Duplicating Uniforms");
-		_uniformData	= _uniformData.dup;
-		_textures		= _textures.dup;
+		_uniformData		= _uniformData.dup;
+		_textures			= _textures.dup;
+		_builtinUniforms	= getRefs!BuiltinUniforms;
 	}
 
 	private ubyte[]			_uniformData;
 	private Array!Texture	_textures;
+	private BuiltinUniforms _builtinUniforms;
 
 	//Shared across instances for the same program
 	private Uniform[]		_allUniforms;
-	private uint[]			_builtinUniforms;
 	private uint[string]	_userUniforms;
 	private uint[string]	_textureIndices;
 	private UniformSetter[]	_setters;
@@ -311,19 +294,18 @@ struct Uniforms
 
 	void opIndexAssign(T)(auto ref T value, string name)
 	{
-		auto uRef = this[name];
-		uRef = value;
+		getRef!T(name) = value;
 	}
 
-	UniformRef opIndex(string name)
+	UniformRef!T getRef(T)(string name)
 	{
 		if(auto indexPtr = name in _userUniforms)
 		{
-			return toRef(_allUniforms[*indexPtr]);
+			return toRef!T(_allUniforms[*indexPtr]);
 		}
 		else
 		{
-			return UniformRef(0, 0, null);
+			return UniformRef!T(0, null);
 		}
 	}
 
@@ -332,10 +314,22 @@ struct Uniforms
 		RefContainer container;
 		foreach(i, ref field; container.tupleof)
 		{
-			static assert(is(typeof(field) == UniformRef), "Can only get refs when all fields are UniformRefs");
-			field = this[__traits(identifier, container.tupleof[i])];
+			static if(is(typeof(field) == UniformRef!T, T))
+			{
+				field = this.getRef!T(__traits(identifier, container.tupleof[i]));
+			}
+			else static assert(false, "Can only get refs when all fields are UniformRefs");
+
 		}
 		return container;
+	}
+
+	@property
+	{
+		BuiltinUniforms builtinUniforms()
+		{
+			return _builtinUniforms;
+		}
 	}
 
 	package void apply(ref Uniforms newValues, ref Array!Sampler samplers)
@@ -343,12 +337,12 @@ struct Uniforms
 		//TODO: Ensure equivalent Uniforms passed
 		foreach(i, uniform; _allUniforms)
 		{
-			auto currentValue	= toRef(uniform);
-			auto newValue		= newValues.toRef(uniform);
-			if(currentValue.store != newValue.store)
+			auto currentValue	= _uniformData[uniform.offset .. uniform.offset + uniform.byteSize];
+			auto newValue		= newValues._uniformData[uniform.offset .. uniform.offset + uniform.byteSize];
+			if(currentValue != newValue)
 			{
-				_setters[i](i, newValue);
-				currentValue.store[] = newValue.store[];
+				_setters[i](i, uniform.size, newValue.ptr);
+				currentValue[] = newValue[];
 			}
 		}
 
@@ -370,42 +364,14 @@ struct Uniforms
 		return _allUniforms;
 	}
 
-	private UniformRef toRef(Uniform uniform)
+	private UniformRef!T toRef(T)(Uniform uniform)
 	{
-		return UniformRef(
-			uniform.type,
+		assert(GLType!T == uniform.type, "Uniform type mismatch: " ~ T.stringof);
+
+		return UniformRef!T(
 			uniform.size,
-			_uniformData[uniform.offset .. uniform.offset + uniform.byteSize]
+			cast(T[])(_uniformData[uniform.offset .. uniform.offset + uniform.byteSize])
 		);
-	}
-
-	// Should be package(kratos)
-	auto builtinUniforms()
-	{
-		static struct BuiltinUniformRange
-		{
-			private Uniforms* backingUniforms;
-			private int index;
-
-			@property bool empty()
-			{
-				return index >= backingUniforms._builtinUniforms.length;
-			}
-
-			void popFront()
-			{
-				++index;
-			}
-
-			auto front()
-			{
-				import std.typecons;
-				auto uniform = backingUniforms._allUniforms[backingUniforms._builtinUniforms[index]];
-				return tuple(uniform.name, backingUniforms.toRef(uniform));
-			}
-		}
-
-		return BuiltinUniformRange(&this);
 	}
 
 	package void initializeSamplerIndices()
@@ -415,8 +381,8 @@ struct Uniforms
 		{
 			if(uniform.isSampler)
 			{
-				auto uniformRef = toRef(uniform);
-				_setters[i](i, uniformRef);
+				auto uniformRef = toRef!TextureUnit(uniform);
+				_setters[i](i, uniformRef.size, uniformRef.ptr);
 			}
 		}
 	}
@@ -426,6 +392,19 @@ struct Uniforms
 		return name in _textureIndices;
 	}
 
+	// Should be package(kratos)
+	GLenum getGlType(string name)
+	{
+		if(auto indexPtr = name in _userUniforms)
+		{
+			return _allUniforms[*indexPtr].type;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
 	package bool opEquals(const ref Uniforms other) const
 	{
 		import std.algorithm.comparison : equal;
@@ -433,6 +412,16 @@ struct Uniforms
 			_uniformData.equal(other._uniformData) &&
 			_allUniforms.equal(other._allUniforms);
 	}
+}
+
+struct BuiltinUniforms
+{
+	UniformRef!mat4 W;
+	UniformRef!mat4 V;
+	UniformRef!mat4 P;
+	UniformRef!mat4 WV;
+	UniformRef!mat4 VP;
+	UniformRef!mat4 WVP;
 }
 
 /// TypeTuple of all types which can be used as shader uniforms
@@ -456,7 +445,7 @@ alias UniformTypes = TypeTuple!(
 	TextureUnit
 );
 
-private alias UniformSetter = void function(GLint location, ref const UniformRef uniform);
+private alias UniformSetter = void function(GLint location, GLsizei size, void* data);
 private UniformSetter[GLenum] uniformSetter;
 static this()
 {
@@ -465,55 +454,45 @@ static this()
 		enum type = GLType!T;
 
 		static if(is(T == float))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1fv(location, uniform.size, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.Uniform1fv(location, size, cast(float*)data);
 		else static if(is(T == vec2))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform2fv(location, uniform.size, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.Uniform2fv(location, size, cast(float*)data);
 		else static if(is(T == vec3))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform3fv(location, uniform.size, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.Uniform3fv(location, size, cast(float*)data);
 		else static if(is(T == vec4))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform4fv(location, uniform.size, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.Uniform4fv(location, size, cast(float*)data);
 
 		else static if(is(T == int))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.Uniform1iv(location, size, cast(int*)data);
 		else static if(is(T == vec2i))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform2iv(location, uniform.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.Uniform2iv(location, size, cast(int*)data);
 		else static if(is(T == vec3i))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform3iv(location, uniform.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.Uniform3iv(location, size, cast(int*)data);
 		else static if(is(T == vec4i))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform4iv(location, uniform.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.Uniform4iv(location, size, cast(int*)data);
 
 		else static if(is(T == bool))
-			uniformSetter[type] = (location, ref uniform) => gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.Uniform1iv(location, size, cast(int*)data);
 
 		else static if(is(T == mat2))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix2fv(location, uniform.size, true, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.UniformMatrix2fv(location, size, true, cast(float*)data);
 		else static if(is(T == mat3))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix3fv(location, uniform.size, true, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.UniformMatrix3fv(location, size, true, cast(float*)data);
 		else static if(is(T == mat4))
-			uniformSetter[type] = (location, ref uniform) => gl.UniformMatrix4fv(location, uniform.size, true, cast(float*)uniform.ptr);
+			uniformSetter[type] = (location, size, data) => gl.UniformMatrix4fv(location, size, true, cast(float*)data);
 
 		else static if(is(T == TextureUnit))
 		{
-			uniformSetter[type] = (location, ref uniform) 
+			uniformSetter[type] = (location, size, data) 
 			{
-				info("Assigning Texture Unit", location, " - ", cast(int*)uniform.ptr);
-				gl.Uniform1iv(location, uniform.size, cast(int*)uniform.ptr);
+				info("Assigning Texture Unit", location, " - ", *cast(int*)data);
+				gl.Uniform1iv(location, size, cast(int*)data);
 			};
 		}
 
 		else static assert(false, "No uniform setter implemented for " ~ T.stringof);
 	}
 }
-
-immutable string[] BuiltinUniformName =
-[
-	"W",
-	"V",
-	"P",
-	"WV",
-	"VP",
-	"WVP",
-];
 
 
 private void[][GLenum] defaultUniformValue;

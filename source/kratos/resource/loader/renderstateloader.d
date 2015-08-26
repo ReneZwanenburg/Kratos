@@ -58,18 +58,18 @@ private void loadUniforms(ref RenderState renderState, Json uniforms)
 			}
 			else
 			{
-				auto uniform = renderState.shader[name];
+				auto uniformType = renderState.shader.getGlType(name);
 				
 				import kratos.graphics.gl;
 				foreach(TypeBinding; GLTypes)
 				{
 					alias UT = TypeBinding.nativeType;
-					if(TypeBinding.glType == uniform.type)
+					if(TypeBinding.glType == uniformType)
 					{
 						//TODO: Add support for uniform arrays and matrices
 						static if(!is(UT == TextureUnit))
 						{
-							uniform = deserializeJson!(UT)(value);
+							renderState.shader.uniforms[name] = deserializeJson!(UT)(value);
 						}
 					}
 				}

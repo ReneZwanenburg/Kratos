@@ -11,8 +11,8 @@ layout(location = 1) out vec4 normal; // rgb = viewspace normal xyz, a = specula
 void main()
 {
 	vec3 albedoSample = texture2D(texture, texCoord).rgb;
-	float specularLevel = dot(albedoSample, vec3(1));
+	float specularLevel = dot(albedoSample, vec3(1)) * 0.75 + 0.25;
 	
 	albedo = vec4(albedoSample, specularLevel);
-	normal = vec4(viewspaceNormal * 0.5 + 0.5, 1-specularLevel * 0.5);
+	normal = vec4(viewspaceNormal * 0.5 + 0.5, specularLevel);
 }
