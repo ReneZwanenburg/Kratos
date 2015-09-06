@@ -85,20 +85,27 @@ public final class Scene
 
 	public void merge(Json entityRepresentation, Json function(string) loadJson)
 	{
+		auto taskRunner = delayedTaskRunnerInstance;
+		mergeImpl(entityRepresentation, loadJson, taskRunner);
+		taskRunner.runTasks();
+	}
+
+	private void mergeImpl(Json entityRepresentation, Json function(string) loadJson, InitializationTaskRunner taskRunner)
+	{
 		if(entityRepresentation.type == Json.Type.array)
 		{
 			foreach(entity; entityRepresentation[])
 			{
-				merge(entity, loadJson);
+				mergeImpl(entity, loadJson, taskRunner);
 			}
 		}
 		else if(entityRepresentation.type == Json.Type.object)
 		{
-			Entity.deserialize(this, entityRepresentation);
+			Entity.deserialize(this, entityRepresentation, taskRunner);
 		}
 		else if(entityRepresentation.type == Json.Type.string)
 		{
-			merge(loadJson(entityRepresentation.get!string), loadJson);
+			mergeImpl(loadJson(entityRepresentation.get!string), loadJson, taskRunner);
 		}
 		else assert(false);
 	}
@@ -106,18 +113,21 @@ public final class Scene
 	public static Scene deserialize(Json representation, Json function(string) loadJson)
 	{
 		auto scene = new Scene(representation["name"].opt!string);
+		auto taskRunner = delayedTaskRunnerInstance;
 
 		auto componentsRepresentation = representation["components"];
 		if(componentsRepresentation.type != Json.Type.undefined)
 		{
-			scene._components.deserialize(componentsRepresentation);
+			scene._components.deserialize(componentsRepresentation, taskRunner);
 		}
 
 		auto entitiesRepresentation = representation["entities"];
 		if(entitiesRepresentation.type != Json.Type.undefined)
 		{
-			scene.merge(entitiesRepresentation, loadJson);
+			scene.mergeImpl(entitiesRepresentation, loadJson, taskRunner);
 		}
+
+		taskRunner.runTasks();
 
 		return scene;
 	}

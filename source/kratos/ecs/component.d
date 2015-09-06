@@ -68,14 +68,19 @@ struct ComponentContainer(ComponentBaseType)
 
 	T add(T)() if(is(T : ComponentBaseType))
 	{
+		return add!T(immediateTaskRunnerInstance);
+	}
+
+	private T add(T)(InitializationTaskRunner taskRunner) if(is(T : ComponentBaseType))
+	{
 		ComponentBaseType.constructingOwner = _owner;
 		auto component = new T();
 		ComponentBaseType.constructingOwner = null;
-
+		
 		// Add the component to the array before initializing, so cyclic dependencies can be resolved
 		_components.insertBack(component);
-		ComponentInteraction!T.initialize(component);
-
+		ComponentInteraction!T.initialize(component, taskRunner);
+		
 		return component;
 	}
 
@@ -118,7 +123,7 @@ struct ComponentContainer(ComponentBaseType)
 	}
 
 
-	package void deserialize(Json containerRepresentation)
+	package void deserialize(Json containerRepresentation, InitializationTaskRunner taskRunner)
 	{
 		assert(containerRepresentation.type == Json.Type.array);
 
@@ -127,7 +132,7 @@ struct ComponentContainer(ComponentBaseType)
 			auto fullTypeName = componentRepresentation["type"].get!string;
 			auto serializer = fullTypeName in Serializers!ComponentBaseType;
 			assert(serializer, fullTypeName ~ " has not been registered for serialization");
-			serializer.deserialize(_owner, componentRepresentation); // Added to _components in deserializer
+			serializer.deserialize(_owner, componentRepresentation, taskRunner); // Added to _components in deserializer
 		}
 	}
 
@@ -181,23 +186,12 @@ package mixin template ComponentBasicImpl(OwnerType)
 template ComponentInteraction(ComponentType)
 {
 
-	private void initialize(ComponentType component)
+	private void initialize(ComponentType component, InitializationTaskRunner taskRunner)
 	{
-		import std.traits;
-		import vibe.internal.meta.uda : findFirstUDA;
 
 		registerAtDispatcher(component);
 
-		foreach(i, T; typeof(ComponentType.tupleof))
-		{
-			enum uda = findFirstUDA!(Dependency, ComponentType.tupleof[i]);
-			static if(uda.found)
-			{
-				component.tupleof[i] = ComponentType.resolveDependency!(T, uda.value)(component.owner);
-			}
-		}
-
-		callInitializer(component);
+		taskRunner.addTask(&resolveDependencies, component);
 	}
 
 	private void registerAtDispatcher(ComponentType component)
@@ -212,7 +206,24 @@ template ComponentInteraction(ComponentType)
 		component.scene.rootDispatcher.getDispatcher!ComponentType.add(component);
 	}
 
-	private void callInitializer(ComponentType component)
+	private void resolveDependencies(ComponentType component, InitializationTaskRunner taskRunner)
+	{
+		import std.traits;
+		import vibe.internal.meta.uda : findFirstUDA;
+
+		foreach(i, T; typeof(ComponentType.tupleof))
+		{
+			enum uda = findFirstUDA!(Dependency, ComponentType.tupleof[i]);
+			static if(uda.found)
+			{
+				component.tupleof[i] = ComponentType.resolveDependency!(T, uda.value)(component.owner);
+			}
+		}
+
+		taskRunner.addTask(&callInitializer, component);
+	}
+
+	private void callInitializer(ComponentType component, InitializationTaskRunner taskRunner)
 	{
 		import std.traits : BaseClassesTuple, hasMember;
 		alias ParentType = BaseClassesTuple!ComponentType[0];
@@ -241,7 +252,7 @@ private abstract class ComponentSerializer(ComponentBaseType)
 	private alias OwnerType = typeof(ComponentBaseType.init.owner());
 
 	abstract Json serialize(ComponentBaseType);
-	abstract void deserialize(OwnerType, Json);
+	abstract void deserialize(OwnerType, Json, InitializationTaskRunner);
 }
 
 private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(ComponentType.ComponentBaseType)
@@ -268,7 +279,7 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 		return representation;
 	}
 
-	override void deserialize(OwnerType owner, Json representation)
+	override void deserialize(OwnerType owner, Json representation, InitializationTaskRunner taskRunner)
 	{
 		assert(fullTypeName == representation["type"].get!string, "Component representation ended up in the wrong deserializer");
 		assert(owner, "Null owner provided");
@@ -277,7 +288,7 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 		
 		if(componentRepresentation.type == Json.Type.undefined)
 		{
-			owner.components.add!ComponentType;
+			owner.components.add!ComponentType(taskRunner);
 		}
 		else
 		{
@@ -286,7 +297,7 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 			ComponentType.ComponentBaseType.constructingOwner = null;
 
 			owner.components._components.insertBack(component);
-			ComponentInteraction!ComponentType.initialize(component);
+			ComponentInteraction!ComponentType.initialize(component, taskRunner);
 		}
 	}
 }
@@ -294,4 +305,73 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 private template Serializers(ComponentBaseType)
 {
 	private ComponentSerializer!ComponentBaseType[string] Serializers;
+}
+
+package abstract class InitializationTaskRunner
+{
+	alias Task = void function(Object argument, InitializationTaskRunner taskRunner);
+
+	protected abstract void addTaskImpl(Task task, Object argument);
+
+	public void addTask(T)(void function (T argument, InitializationTaskRunner taskRunner)task, T argument)
+	{
+		addTaskImpl(cast(Task)task, argument);
+	}
+}
+
+private ImmediateTaskRunner immediateTaskRunnerInstance;
+package DelayedTaskRunner delayedTaskRunnerInstance;
+
+static this()
+{
+	immediateTaskRunnerInstance = new ImmediateTaskRunner();
+	delayedTaskRunnerInstance = new DelayedTaskRunner();
+}
+
+private final class ImmediateTaskRunner : InitializationTaskRunner
+{
+	override void addTaskImpl(Task task, Object argument)
+	{
+		task(argument, this);
+	}
+}
+
+private final class DelayedTaskRunner : InitializationTaskRunner
+{
+	private static struct TaskArgumentPair
+	{
+		Task task;
+		Object argument;
+	}
+
+	private TaskArgumentPair[] frontBuffer, backBuffer;
+
+	override void addTaskImpl(Task task, Object argument)
+	{
+		frontBuffer ~= TaskArgumentPair(task, argument);
+	}
+
+	void runTasks()
+	{
+		while(frontBuffer.length > 0)
+		{
+			swapBuffers();
+
+			foreach(taskArgPair; backBuffer)
+			{
+				taskArgPair.task(taskArgPair.argument, this);
+			}
+
+			backBuffer.length = 0;
+		}
+	}
+
+	private void swapBuffers()
+	{
+		auto tmp = backBuffer;
+		backBuffer = frontBuffer;
+		frontBuffer = tmp;
+		assert(frontBuffer.length == 0);
+		frontBuffer.assumeSafeAppend();
+	}
 }

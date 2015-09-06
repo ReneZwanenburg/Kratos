@@ -72,14 +72,14 @@ public final class Entity
 		}
 	}
 
-	package static void deserialize(Scene owner, Json representation)
+	package static void deserialize(Scene owner, Json representation, InitializationTaskRunner taskRunner)
 	{
 		auto entity = owner.createEntity(representation["name"].opt!string);
 
 		auto componentsRepresentation = representation["components"];
 		if(componentsRepresentation.type != Json.Type.undefined)
 		{
-			entity._components.deserialize(componentsRepresentation);
+			entity._components.deserialize(componentsRepresentation, taskRunner);
 		}
 	}
 
