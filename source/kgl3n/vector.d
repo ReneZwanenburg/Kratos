@@ -2,6 +2,7 @@
 
 import kgl3n.util;
 import std.algorithm : min, max, among;
+import std.traits : isFloatingPoint;
 
 import vibe.data.serialization : optional;
 
@@ -283,27 +284,31 @@ struct Vector(type, size_t dimension_)
 		import std.math : sqrt;
 		return sqrt(sqrMagnitude);
 	}
-	
-	/// Normalizes the vector.
-	void normalize()
+
+
+	static if(isFloatingPoint!vt)
 	{
-		real len = magnitude;
-		
-		if(len != 0)
+		/// Normalizes the vector.
+		void normalize()
 		{
-			foreach(index; TupleRange!(0, dimension))
+			real len = magnitude;
+			
+			if(len != 0)
 			{
-				vector[index] /= len;
+				foreach(index; TupleRange!(0, dimension))
+				{
+					vector[index] /= len;
+				}
 			}
 		}
-	}
-	
-	/// Returns a normalized copy of the current vector.
-	@property Vector normalized() const
-	{
-		Vector ret = this;
-		ret.normalize();
-		return ret;
+		
+		/// Returns a normalized copy of the current vector.
+		@property Vector normalized() const
+		{
+			Vector ret = this;
+			ret.normalize();
+			return ret;
+		}
 	}
 	
 	Vector opUnary(string op : "-")() const
