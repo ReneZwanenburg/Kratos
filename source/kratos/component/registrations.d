@@ -17,7 +17,6 @@ static this()
 	registerComponent!DirectionalLight;
 	registerComponent!PointLight;
 	registerComponent!MeshRenderer;
-	registerComponent!MeshRendererPartitioning;
 	registerComponent!SimpleMovement;
 	registerComponent!Transform;
 }

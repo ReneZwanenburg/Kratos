@@ -8,7 +8,6 @@ import kgl3n.matrix;
 final class Transform : Component
 {
 	@optional:
-	private ulong		_id;
 	private Transform	_parent = null;
 	private vec3		_position;
 	private quat		_rotation;
@@ -95,32 +94,6 @@ final class Transform : Component
 		{
 			_scale = scale;
 			mark();
-		}
-
-		ulong id() const
-		{
-			return _id ? _id : cast(ulong)cast(void*)this;
-		}
-
-		void id(ulong id)
-		{
-			this._id = id;
-		}
-
-		ulong parentId() const
-		{
-			return parent !is null ? parent.id : 0;
-		}
-
-		void parentId(ulong id)
-		{
-			if(id)
-			{
-				import std.algorithm.searching : find;
-				import std.algorithm.iteration : map, joiner;
-				//TODO: use transform container
-				parent = scene.entities.map!(a => a.components.all!Transform).joiner.find!(a => a.id == id).front;
-			}
 		}
 
 		string path() const

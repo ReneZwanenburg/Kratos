@@ -68,7 +68,9 @@ struct ComponentContainer(ComponentBaseType)
 
 	T add(T)() if(is(T : ComponentBaseType))
 	{
-		return add!T(immediateTaskRunnerInstance);
+		auto component = add!T(immediateTaskRunnerInstance);
+		component.assignId(null);
+		return component;
 	}
 
 	private T add(T)(InitializationTaskRunner taskRunner) if(is(T : ComponentBaseType))
@@ -144,8 +146,15 @@ struct ComponentContainer(ComponentBaseType)
 		{
 			auto fullTypeName = component.classinfo.name;
 			auto serializer = fullTypeName in Serializers!ComponentBaseType;
-			assert(serializer, fullTypeName ~ " has not been registered for serialization");
-			json ~= serializer.serialize(component);
+
+			if(serializer !is null)
+			{
+				json ~= serializer.serialize(component);
+			}
+			else
+			{
+				// Log?
+			}
 		}
 
 		return json;
@@ -155,10 +164,12 @@ struct ComponentContainer(ComponentBaseType)
 
 package mixin template ComponentBasicImpl(OwnerType)
 {
+	import std.uuid : UUID, randomUUID, md5UUID, UUIDParsingException;
+
 	package static OwnerType constructingOwner;
 
 	private OwnerType _owner;
-
+	private UUID _id;
 	public Event!ComponentBaseType onDestruction;
 	
 	protected this()
@@ -178,6 +189,37 @@ package mixin template ComponentBasicImpl(OwnerType)
 		{
 			return _owner;
 		}
+
+		UUID id() const
+		{
+			return _id;
+		}
+	}
+
+	/// Internal use only.
+	public void assignId(string idString)
+	{
+		assert(_id.empty);
+
+		if(idString.length == 0)
+		{
+			_id = randomUUID();
+		}
+		else if(idString.length == 36)
+		{
+			try
+			{
+				_id = UUID(idString);
+			}
+			catch(UUIDParsingException)
+			{
+				_id = md5UUID(idString);
+			}
+		}
+		else
+		{
+			_id = md5UUID(idString);
+		}
 	}
 	
 	package alias ComponentBaseType = Unqual!(typeof(this));
@@ -188,7 +230,6 @@ template ComponentInteraction(ComponentType)
 
 	private void initialize(ComponentType component, InitializationTaskRunner taskRunner)
 	{
-
 		registerAtDispatcher(component);
 
 		taskRunner.addTask(&resolveDependencies, component);
@@ -276,6 +317,7 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 		auto representation = Json.emptyObject;
 		representation["type"] = fullTypeName;
 		representation["representation"] = serializeToJson(component);
+		representation["id"] = component.id.toString();
 		return representation;
 	}
 
@@ -285,20 +327,24 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 		assert(owner, "Null owner provided");
 		
 		auto componentRepresentation = representation["representation"];
+
+		ComponentType component;
 		
 		if(componentRepresentation.type == Json.Type.undefined)
 		{
-			owner.components.add!ComponentType(taskRunner);
+			component = owner.components.add!ComponentType(taskRunner);
 		}
 		else
 		{
 			ComponentType.ComponentBaseType.constructingOwner = owner;
-			auto component = deserializeJson!ComponentType(componentRepresentation);
+			component = deserializeJson!ComponentType(componentRepresentation);
 			ComponentType.ComponentBaseType.constructingOwner = null;
 
 			owner.components._components.insertBack(component);
 			ComponentInteraction!ComponentType.initialize(component, taskRunner);
 		}
+
+		component.assignId(representation["id"].opt!string);
 	}
 }
 
