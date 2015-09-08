@@ -3,7 +3,7 @@
 import kratos.ecs;
 import kratos.input;
 import kratos.component.transform;
-import kratos.time : Time;
+import kratos.component.time : Time;
 import kgl3n.vector;
 import kgl3n.quaternion;
 import kgl3n.math;
@@ -14,6 +14,7 @@ final class SimpleMovement : Component
 	float sensitivity = .002f;
 	float speed = 1;
 	private @dependency Transform transform;
+	private @dependency Time time;
 
 	vec3 ypr;
 
@@ -25,9 +26,9 @@ final class SimpleMovement : Component
 
 		transform.rotation = quat.eulerRotation(ypr);
 
-		auto forward = (transform.rotation * vec3(0, 0, -1)) * speed * Time.delta;
-		auto right = (transform.rotation * vec3(1, 0, 0)) * speed * Time.delta;
-		auto up = (transform.rotation * vec3(0, 1, 0)) * speed * Time.delta;
+		auto forward = (transform.rotation * vec3(0, 0, -1)) * speed * time.delta;
+		auto right = (transform.rotation * vec3(1, 0, 0)) * speed * time.delta;
+		auto up = (transform.rotation * vec3(0, 1, 0)) * speed * time.delta;
 
 		if(keyboard["W"].pressed)
 		{

@@ -6,6 +6,7 @@ import kratos.component.camera : Camera;
 import kratos.component.light : DirectionalLight, PointLight;
 import kratos.component.meshrenderer : MeshRenderer, MeshRendererPartitioning;
 import kratos.component.simplemovement : SimpleMovement;
+import kratos.component.time : Time;
 import kratos.component.transform : Transform;
 
 static this()
@@ -18,5 +19,6 @@ static this()
 	registerComponent!PointLight;
 	registerComponent!MeshRenderer;
 	registerComponent!SimpleMovement;
+	registerComponent!Time;
 	registerComponent!Transform;
 }

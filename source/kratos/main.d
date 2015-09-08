@@ -22,7 +22,6 @@ else
 
 		import std.experimental.logger;
 		globalLogLevel = LogLevel.info;
-		Time.reset();
 		while(!window.closeRequested)
 		{
 			window.updateInput();
@@ -32,9 +31,10 @@ else
 			scene.components.firstOrAdd!Renderer().renderScene();
 
 			window.swapBuffers();
-			Time.update();
+			import kratos.component.time : Time;
+			scene.components.firstOrAdd!Time().update();
 		}
 
-		//activeFileSystem.write(Configuration.startupScene, scene.Scoped_payload.serializeToJson().toPrettyString);
+		//activeFileSystem.write(Configuration.startupScene, scene.serialize().toPrettyString);
 	}
 }
