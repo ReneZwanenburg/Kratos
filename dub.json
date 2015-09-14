@@ -10,6 +10,11 @@
 	"targetPath": "build",
 	"mainSourceFile": "source/kratos/main.d",
 
+	"versions":
+	[
+		"DerelictODE_Single"
+	],
+
 	"buildTypes":
 	{
 		"performance-debug":
@@ -20,15 +25,11 @@
 
 	"copyFiles-windows-x86":
 	[
-		"lib/windows/x86/glfw3.dll",
-		"lib/windows/x86/assimp.dll",
-		"lib/windows/x86/DevIL.dll"
+		"lib/windows/x86/*"
 	],
 	"copyFiles-windows-x86_64":
 	[
-		"lib/windows/x86_64/glfw3.dll",
-		"lib/windows/x86_64/assimp.dll",
-		"lib/windows/x86_64/DevIL.dll"
+		"lib/windows/x86_64/*"
 	],
 
 	"dependencies":
@@ -38,5 +39,6 @@
 		"derelict-assimp3": "~>1.0.1",
 		"derelict-il": "~master",
 		"logger": "==0.3.3",
+		"derelict-ode": "~>1.1.2"
 	}
 }
