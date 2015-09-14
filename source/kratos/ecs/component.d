@@ -227,6 +227,9 @@ package mixin template ComponentBasicImpl(OwnerType)
 
 template ComponentInteraction(ComponentType)
 {
+	import std.traits : BaseClassesTuple;
+	private alias ParentType = BaseClassesTuple!ComponentType[0];
+	private enum ParentIsRoot = is(ParentType == ComponentType.ComponentBaseType);
 
 	private void initialize(ComponentType component, InitializationTaskRunner taskRunner)
 	{
@@ -237,9 +240,7 @@ template ComponentInteraction(ComponentType)
 
 	private void registerAtDispatcher(ComponentType component)
 	{
-		import std.traits : BaseClassesTuple;
-		alias ParentType = BaseClassesTuple!ComponentType[0];
-		static if(!is(ParentType == ComponentType.ComponentBaseType))
+		static if(!ParentIsRoot)
 		{
 			ComponentInteraction!ParentType.registerAtDispatcher(component);
 		}
@@ -249,7 +250,6 @@ template ComponentInteraction(ComponentType)
 
 	private void resolveDependencies(ComponentType component, InitializationTaskRunner taskRunner)
 	{
-		import std.traits;
 		import vibe.internal.meta.uda : findFirstUDA;
 
 		foreach(i, T; typeof(ComponentType.tupleof))
@@ -266,20 +266,107 @@ template ComponentInteraction(ComponentType)
 
 	private void callInitializer(ComponentType component, InitializationTaskRunner taskRunner)
 	{
-		import std.traits : BaseClassesTuple, hasMember;
-		alias ParentType = BaseClassesTuple!ComponentType[0];
-		static if(!is(ParentType == ComponentType.ComponentBaseType))
+		static if(!ParentIsRoot)
 		{
 			ComponentInteraction!ParentType.callInitializer(component);
 		}
 
 		//TODO: Type and arg checking, make reusable
-		//TODO: Call all initializers only after full deserialization
+		import std.traits : hasMember;
 		static if(hasMember!(ComponentType, "initialize"))
 		{
 			component.initialize();
 		}
 	}
+
+	static this()
+	{
+		auto dependencyList = DependencyList(typeid(ComponentType));
+
+		static if(!ParentIsRoot)
+		{
+			dependencyList.dependencies ~= typeid(ParentType);
+		}
+
+		foreach(i, T; typeof(ComponentType.tupleof))
+		{
+			import vibe.internal.meta.uda : findFirstUDA;
+			enum uda = findFirstUDA!(Dependency, ComponentType.tupleof[i]);
+			static if(uda.found)
+			{
+				dependencyList.dependencies ~= typeid(T);
+			}
+		}
+
+		componentDependencies ~= dependencyList;
+	}
+}
+
+private struct DependencyList
+{
+	private TypeInfo_Class componentType;
+	private TypeInfo_Class[] dependencies;
+}
+
+private DependencyList[] componentDependencies;
+private int[TypeInfo_Class] componentOrdering;
+
+package int[TypeInfo_Class] getComponentOrdering()
+{
+	if(componentOrdering.length) return componentOrdering;
+
+	static struct Vertex
+	{
+		TypeInfo_Class type;
+	}
+
+	static struct Edge
+	{
+		Vertex from;
+		Vertex to;
+	}
+
+	Vertex[] remainingVertices;
+	Edge[] remainingEdges;
+
+	foreach(dependencyList; componentDependencies)
+	{
+		remainingVertices ~= Vertex(dependencyList.componentType);
+		foreach(dependency; dependencyList.dependencies)
+		{
+			remainingEdges ~= Edge(Vertex(dependencyList.componentType), Vertex(dependency));
+		}
+	}
+
+	TypeInfo_Class[] ordering;
+
+	while(remainingVertices.length)
+	{
+		import std.algorithm.iteration : filter;
+		import std.algorithm.searching : canFind, countUntil;
+
+		auto freeVertices = remainingVertices.filter!(a => !remainingEdges.canFind!(b => b.to == a));
+
+		assert(!freeVertices.empty, "Cyclic component dependencies");
+
+		foreach(freeVertex; freeVertices)
+		{
+			import std.algorithm.mutation : remove, SwapStrategy;
+			ordering ~= freeVertex.type;
+
+			remainingVertices = remainingVertices.remove!(a => a == freeVertex);
+			remainingEdges = remainingEdges.remove!(a => a.from == freeVertex);
+		}
+	}
+
+	assert(remainingEdges.length == 0);
+
+	foreach(i, componentType; ordering)
+	{
+		componentOrdering[componentType] = i;
+	}
+
+	return componentOrdering;
 }
 
 public void registerComponent(ComponentType)()
