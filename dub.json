@@ -38,7 +38,6 @@
 		"derelict-glfw3": "~>1.0",
 		"derelict-assimp3": "~>1.0.1",
 		"derelict-il": "~master",
-		"logger": "==0.3.3",
 		"derelict-ode": "~>1.1.2"
 	}
 }

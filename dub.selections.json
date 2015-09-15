@@ -1,7 +1,6 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"logger": "0.3.3",
 		"memutils": "0.3.6",
 		"derelict-assimp3": "1.0.1",
 		"derelict-util": "2.0.0",

@@ -17,7 +17,9 @@ VAO vao(const Mesh mesh, const Program program)
 	auto vao = initialized!VAO;
 	gl.GenVertexArrays(1, &vao.handle);
 	info("Created VAO ", vao.handle);
-	tracef("VAO linking VBO, Program attribs:\n%s\n%s", mesh.vbo.attributes, program.attributes);
+	//TODO: Remove manual toString calls once logger is fixed
+	//tracef("VAO linking VBO, Program attribs:\n%s\n%s", mesh.vbo.attributes, program.attributes);
+	tracef("VAO linking VBO, Program attribs:\n%s\n%s", mesh.vbo.attributes.toString(), program.attributes.toString());
 
 	vao.bind();
 	mesh.ibo.bind();
@@ -30,7 +32,7 @@ VAO vao(const Mesh mesh, const Program program)
 		import std.algorithm : countUntil;
 		
 		const vboIndex = mesh.vbo.attributes[].countUntil!q{a.name == b.name}(programAttribute);
-		fatal(vboIndex < 0, "VBO does not contain variable '", programAttribute.name, "': ", mesh.vbo.attributes.text);
+		fatal(vboIndex < 0, "VBO does not contain variable '", programAttribute.name[], "': ", mesh.vbo.attributes.text);
 		const vboAttribute = mesh.vbo.attributes[vboIndex];
 
 		auto offset = mesh.vbo.attributes[0..vboIndex].totalByteSize;
