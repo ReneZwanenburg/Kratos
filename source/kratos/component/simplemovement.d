@@ -13,7 +13,7 @@ final class SimpleMovement : Component
 	@optional:
 	float sensitivity = .002f;
 	float speed = 1;
-	private @dependency Transform transform;
+	private @dependency(Dependency.Direction.Write) Transform transform;
 	private @dependency Time time;
 
 	vec3 ypr;

@@ -16,12 +16,24 @@ private alias DefaultAllowDerived = AllowDerived.yes;
 
 struct Dependency
 {
+	enum Direction
+	{
+		Read,
+		Write
+	}
+
 	AllowDerived allowDerived = DefaultAllowDerived;
+	Direction direction = Direction.Read;
 }
 
-@property Dependency dependency(AllowDerived allowDerived = DefaultAllowDerived)
+@property Dependency dependency(AllowDerived allowDerived = DefaultAllowDerived, Dependency.Direction direction = Dependency.Direction.Read)
 {
-	return Dependency(allowDerived);
+	return Dependency(allowDerived, direction);
+}
+
+@property Dependency dependency(Dependency.Direction direction)
+{
+	return dependency(DefaultAllowDerived, direction);
 }
 
 //TODO: Make generic Ref struct
@@ -294,7 +306,15 @@ template ComponentInteraction(ComponentType)
 			enum uda = findFirstUDA!(Dependency, ComponentType.tupleof[i]);
 			static if(uda.found)
 			{
-				dependencyList.dependencies ~= typeid(T);
+				static if(uda.value.direction == Dependency.Direction.Read)
+				{
+					dependencyList.readDependencies ~= typeid(T);
+				}
+				else static if(uda.value.direction == Dependency.Direction.Write)
+				{
+					dependencyList.writeDependencies ~= typeid(T);
+				}
+				else static assert(false);
 			}
 		}
 
@@ -305,7 +325,8 @@ template ComponentInteraction(ComponentType)
 private struct DependencyList
 {
 	private TypeInfo_Class componentType;
-	private TypeInfo_Class[] dependencies;
+	private TypeInfo_Class[] readDependencies;
+	private TypeInfo_Class[] writeDependencies;
 }
 
 private DependencyList[] componentDependencies;
@@ -332,9 +353,15 @@ package int[TypeInfo_Class] getComponentOrdering()
 	foreach(dependencyList; componentDependencies)
 	{
 		remainingVertices ~= Vertex(dependencyList.componentType);
-		foreach(dependency; dependencyList.dependencies)
+
+		foreach(readDependency; dependencyList.readDependencies)
 		{
-			remainingEdges ~= Edge(Vertex(dependencyList.componentType), Vertex(dependency));
+			remainingEdges ~= Edge(Vertex(readDependency), Vertex(dependencyList.componentType));
+		}
+
+		foreach(writeDependency; dependencyList.writeDependencies)
+		{
+			remainingEdges ~= Edge(Vertex(dependencyList.componentType), Vertex(writeDependency));
 		}
 	}
 
@@ -362,8 +389,7 @@ package int[TypeInfo_Class] getComponentOrdering()
 
 	assert(remainingEdges.length == 0);
 
-	import std.range : retro, enumerate;
-	foreach(i, vertex; ordering.retro.enumerate)
+	foreach(i, vertex; ordering)
 	{
 		componentOrdering[vertex.type] = i;
 	}
@@ -371,7 +397,7 @@ package int[TypeInfo_Class] getComponentOrdering()
 	debug
 	{
 		import std.stdio;
-		writefln("%(%s\n%)", ordering.retro);
+		writefln("%(%s\n%)", ordering);
 	}
 
 	return componentOrdering;
