@@ -1,5 +1,5 @@
 {
-	"startupScene": "Scenes/Test.scene",
+	"startupScene": "Scenes/Start.scene",
 	"defaultWindowProperties": {
 		"width": 800,
 		"height": 600,
