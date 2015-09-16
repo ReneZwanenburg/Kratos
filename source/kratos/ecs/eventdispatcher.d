@@ -8,45 +8,90 @@ import std.range : only, take;
 
 public final class RootDispatcher
 {
-	private alias FrameUpdater = void delegate();
-	private Array!FrameUpdater frameUpdaters;
+	private ComponentDispatcherBase[] dispatchers;
 
-	private Object[TypeInfo_Class] dispatchers;
+	private alias FrameUpdater = void delegate();
+	private FrameUpdater[] frameUpdaters;
+
+	private bool requiresSort;
 
 	public void frameUpdate()
 	{
+		ensureSorted();
+
 		foreach(frameUpdater; frameUpdaters)
 		{
 			frameUpdater();
 		}
 	}
 
-	public auto getDispatcher(ComponentType)()
+	package auto getDispatcher(ComponentType)()
 	{
-		auto typeInfo = typeid(ComponentDispatcher!ComponentType);
-		if(auto dispatcher = typeInfo in dispatchers)
+		auto typeInfo = typeid(ComponentType);
+		auto result = dispatchers.find!(a => a.componentType is typeInfo);
+
+		if(result.length > 0)
 		{
-			return cast(ComponentDispatcher!ComponentType)*dispatcher;
+			return cast(ComponentDispatcher!ComponentType)result[0];
 		}
 		else
 		{
-			auto dispatcher = new ComponentDispatcher!ComponentType(this);
-			dispatchers[typeInfo] = dispatcher;
+			auto dispatcher = new ComponentDispatcher!ComponentType();
+			dispatchers ~= dispatcher;
+			requiresSort = true;
 			return dispatcher;
 		}
 	}
+
+	private void ensureSorted()
+	{
+		if(!requiresSort) return;
+		requiresSort = false;
+
+		import std.algorithm.sorting : sort;
+
+		dispatchers.sort!((a, b) => a.priority < b.priority);
+		foreach(dispatcher; dispatchers) dispatcher.registerOptionals(this);
+	}
 }
 
-package final class ComponentDispatcher(ComponentType)
+private abstract class ComponentDispatcherBase
 {
-	private Array!ComponentType components;
+	public abstract void registerOptionals(RootDispatcher rootDispatcher);
+	public @property int priority() const;
+	public @priority TypeInfo_Class componentType() const;
+}
 
-	this(RootDispatcher rootDispatcher)
+package final class ComponentDispatcher(ComponentType) : ComponentDispatcherBase
+{
+	private enum derivedMembers = only(__traits(derivedMembers, ComponentType));
+	private enum hasFrameUpdate = derivedMembers.canFind("frameUpdate");
+
+	private Array!ComponentType components;
+	private int _priority;
+
+	private this()
 	{
-		static if(hasMember!(typeof(this), "frameUpdate"))
+		import kratos.ecs.component : getComponentOrdering;
+		_priority = getComponentOrdering()[componentType];
+	}
+
+	public override void registerOptionals(RootDispatcher rootDispatcher)
+	{
+		static if(hasFrameUpdate)
 		{
-			rootDispatcher.frameUpdaters.insertBack(&frameUpdate);
+			rootDispatcher.frameUpdaters ~= &frameUpdate;
 		}
+	}
+
+	public override @property int priority() const
+	{
+		return _priority;
+	}
+
+	public override @property TypeInfo_Class componentType() const
+	{
+		return typeid(ComponentType);
 	}
 
 	package void add(ComponentType component)
@@ -61,7 +106,7 @@ package final class ComponentDispatcher(ComponentType)
 		components.linearRemove(rangeToRemove);
 	}
 
-	static if(only(__traits(derivedMembers, ComponentType)).canFind("frameUpdate"))
+	static if(hasFrameUpdate)
 	{
 		void frameUpdate()
 		{

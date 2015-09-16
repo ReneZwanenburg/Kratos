@@ -338,21 +338,22 @@ package int[TypeInfo_Class] getComponentOrdering()
 		}
 	}
 
-	TypeInfo_Class[] ordering;
+	Vertex[] ordering;
 
 	while(remainingVertices.length)
 	{
 		import std.algorithm.iteration : filter;
 		import std.algorithm.searching : canFind, countUntil;
+		import std.array : array;
 
-		auto freeVertices = remainingVertices.filter!(a => !remainingEdges.canFind!(b => b.to == a));
+		auto freeVertices = remainingVertices.filter!(a => !remainingEdges.canFind!(b => b.to == a)).array;
 
-		assert(!freeVertices.empty, "Cyclic component dependencies");
+		assert(freeVertices.length > 0, "Cyclic component dependencies");
 
 		foreach(freeVertex; freeVertices)
 		{
 			import std.algorithm.mutation : remove, SwapStrategy;
-			ordering ~= freeVertex.type;
+			ordering ~= freeVertex;
 
 			remainingVertices = remainingVertices.remove!(a => a == freeVertex);
 			remainingEdges = remainingEdges.remove!(a => a.from == freeVertex);
@@ -361,9 +362,16 @@ package int[TypeInfo_Class] getComponentOrdering()
 
 	assert(remainingEdges.length == 0);
 
-	foreach(i, componentType; ordering)
+	import std.range : retro, enumerate;
+	foreach(i, vertex; ordering.retro.enumerate)
 	{
-		componentOrdering[componentType] = i;
+		componentOrdering[vertex.type] = i;
+	}
+
+	debug
+	{
+		import std.stdio;
+		writefln("%(%s\n%)", ordering.retro);
 	}
 
 	return componentOrdering;
