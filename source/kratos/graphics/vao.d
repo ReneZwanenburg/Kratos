@@ -27,7 +27,7 @@ VAO vao(const Mesh mesh, const Program program)
 
 	const stride = mesh.vbo.attributes.totalByteSize;
 	
-	foreach(programIndex, programAttribute; program.attributes)
+	foreach(GLuint programIndex, programAttribute; program.attributes)
 	{
 		import std.algorithm : countUntil;
 		

@@ -17,7 +17,7 @@ private Texture loadTexture(ResourceIdentifier name)
 	import kgl3n.vector : vec2i;
 	
 	auto buffer = activeFileSystem.get(name);
-	ilLoadL(imageExtensionFormat[name.lowerCaseExtension], buffer.ptr, buffer.length);
+	ilLoadL(imageExtensionFormat[name.lowerCaseExtension], buffer.ptr, cast(uint)buffer.length);
 	
 	auto dataPtr = ilGetData();
 	auto resolution = vec2i(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));

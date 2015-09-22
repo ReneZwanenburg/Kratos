@@ -80,7 +80,7 @@ struct IBO
 	alias Buffer = BO!GL_ELEMENT_ARRAY_BUFFER;
 
 	private	Buffer		_buffer;
-	private	size_t		_numIndices;
+	private	GLint		_numIndices;
 	private	IndexType	_indexType;
 
 	alias buffer this;
@@ -103,7 +103,7 @@ struct IBO
 	this(void[] data, IndexType type, bool dynamic = false)
 	{
 		_buffer = bo!GL_ELEMENT_ARRAY_BUFFER(data, dynamic);
-		_numIndices = data.length / indexSize[type];
+		_numIndices = cast(GLint)(data.length / indexSize[type]);
 		_indexType = type;
 	}
 

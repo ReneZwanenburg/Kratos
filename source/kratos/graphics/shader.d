@@ -103,9 +103,9 @@ private struct Program_Impl
 			GLint logLength;
 			gl.GetProgramiv(handle, GL_INFO_LOG_LENGTH, &logLength);
 			assert(logLength > 0);
-			
+
 			auto log = new GLchar[](logLength);
-			gl.GetProgramInfoLog(handle, log.length, null, log.ptr);
+			gl.GetProgramInfoLog(handle, cast(GLsizei)log.length, null, log.ptr);
 			this._errorLog = log;
 
 			warningf("Linking Program %s failed:\n%s", name, log);
@@ -226,14 +226,14 @@ private struct Program_Impl
 		}
 
 		ptrdiff_t offset = 0;
-		foreach(i, ref uniform; allUniforms)
+		foreach(GLuint i, ref uniform; allUniforms)
 		{
 			GLsizei nameLength;
 			
 			gl.GetActiveUniform(
 				handle,
 				i,
-				nameBuffer.length,
+				cast(GLsizei)nameBuffer.length,
 				&nameLength,
 				&uniform.size,
 				&uniform.type,
@@ -370,7 +370,7 @@ private struct ShaderModule_Impl
 			assert(logLength > 0);
 			
 			auto log = new GLchar[](logLength);
-			gl.GetShaderInfoLog(handle, log.length, null, log.ptr);
+			gl.GetShaderInfoLog(handle, cast(GLsizei)log.length, null, log.ptr);
 			this.errorLog = log;
 
 			warningf("Compiling Shader %s failed:\n%s", name, log);

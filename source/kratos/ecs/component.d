@@ -394,7 +394,7 @@ package int[TypeInfo_Class] getComponentOrdering()
 
 	assert(remainingEdges.length == 0);
 
-	foreach(i, vertex; ordering)
+	foreach(int i, vertex; ordering)
 	{
 		componentOrdering[vertex.type] = i;
 	}

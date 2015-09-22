@@ -59,7 +59,7 @@ else
 
 		auto importedScene = aiImportFileFromMemory(
 			data.ptr,
-			data.length,
+			cast(uint)data.length,
 			aiProcess_CalcTangentSpace		|
 			aiProcess_JoinIdenticalVertices	|
 			aiProcess_Triangulate			|

@@ -335,7 +335,7 @@ struct Uniforms
 	package void apply(ref Uniforms newValues, ref Array!Sampler samplers)
 	{
 		//TODO: Ensure equivalent Uniforms passed
-		foreach(i, uniform; _allUniforms)
+		foreach(GLint i, uniform; _allUniforms)
 		{
 			auto currentValue	= _uniformData[uniform.offset .. uniform.offset + uniform.byteSize];
 			auto newValue		= newValues._uniformData[uniform.offset .. uniform.offset + uniform.byteSize];
@@ -377,7 +377,7 @@ struct Uniforms
 	package void initializeSamplerIndices()
 	{
 		import std.algorithm : filter;
-		foreach(i, uniform; allUniforms)
+		foreach(GLint i, uniform; allUniforms)
 		{
 			if(uniform.isSampler)
 			{

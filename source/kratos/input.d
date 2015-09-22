@@ -108,7 +108,7 @@ class Mouse
 			_absolutePointer.position = currentPointer;
 		}
 
-		foreach(i, ref button; _buttons)
+		foreach(uint i, ref button; _buttons)
 		{
 			button.update(glfwGetMouseButton(windowHandle, i) == GLFW_PRESS);
 		}
