@@ -19,7 +19,8 @@ struct Dependency
 	enum Direction
 	{
 		Read,
-		Write
+		Write,
+		Unordered
 	}
 
 	AllowDerived allowDerived = DefaultAllowDerived;
@@ -313,6 +314,10 @@ template ComponentInteraction(ComponentType)
 				else static if(uda.value.direction == Dependency.Direction.Write)
 				{
 					dependencyList.writeDependencies ~= typeid(T);
+				}
+				else static if(uda.value.direction == Dependency.Direction.Unordered)
+				{
+					// Unordered, no need to add anything
 				}
 				else static assert(false);
 			}
