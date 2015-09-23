@@ -20,8 +20,8 @@ else
 		import kratos.resource.loader;
 		auto scene = loadScene(Configuration.startupScene);
 
-		import std.experimental.logger;
-		globalLogLevel = LogLevel.info;
+		//import std.experimental.logger;
+		//globalLogLevel = LogLevel.info;
 		while(!window.closeRequested)
 		{
 			window.updateInput();

@@ -429,8 +429,8 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 	this()
 	{
 		fullTypeName = typeid(ComponentType).name;
-		import std.experimental.logger : info;
-		info("Instantiating serializer for ", fullTypeName);
+		//import std.experimental.logger : info;
+		//info("Instantiating serializer for ", fullTypeName);
 	}
 
 	override Json serialize(ComponentType.ComponentBaseType componentBase)

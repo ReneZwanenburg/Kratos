@@ -7,115 +7,103 @@ import kgl3n.matrix;
 
 final class Transform : Component
 {
-	@optional:
-	private Transform	_parent = null;
-	private vec3		_position;
-	private quat		_rotation;
-	//TODO: Decide if non-uniform scaling should be supported
-	private float		_scale = 1;
+	@ignore Transform		parent = null;
+	@ignore Transformation	localTransformation;
 
-	private	mat4		_localMatrix;
-	private	mat4		_worldMatrix;
-	private	bool		_dirty = false;
+	private	mat4			_localMatrix;
+	private	mat4			_worldMatrix;
 
 	@property
 	{
+		@optional:
+
+		ref position()
+		{
+			return localTransformation.position;
+		}
+
+		ref rotation()
+		{
+			return localTransformation.rotation;
+		}
+
+		ref scale()
+		{
+			return localTransformation.scale;
+		}
+
 		ref const(mat4) worldMatrix()
 		{
-			update();
 			return _worldMatrix;
 		}
 
 		ref const(mat4) localMatrix()
 		{
-			update();
 			return _localMatrix;
-		}
-
-		void setLocalMatrix(mat4 matrix)
-		{
-			position = matrix.translation.xyz;
-			rotation = quat.fromMatrix(mat3(matrix));
-			scale = matrix.scale.x;
 		}
 
 		mat4 worldMatrixInv() const
 		{
 			auto mat = localMatrixInv;
-			return _parent is null ? mat : mat * _parent.worldMatrixInv;
+			return parent is null ? mat : mat * parent.worldMatrixInv;
 		}
 
 		mat4 localMatrixInv() const
 		{
-			return mat4.scaling(vec3(1 / _scale)) * _rotation.inverted.toMatrix!(4) * mat4.translation(-_position);
-		}
-
-		@ignore
-		inout(Transform) parent() inout
-		{
-			return _parent;
-		}
-
-		@ignore
-		void parent(Transform parent)
-		{
-			_parent = parent;
-			mark();
-		}
-
-		vec3 position()	const
-		{
-			return _position;
-		}
-
-		void position(vec3 pos)
-		{
-			_position = pos;
-			mark();
-		}
-
-		quat rotation() const
-		{
-			return _rotation;
-		}
-
-		void rotation(quat rotation)
-		{
-			_rotation = rotation;
-			mark();
-		}
-
-		float scale() const
-		{
-			return _scale;
-		}
-
-		void scale(float scale)
-		{
-			_scale = scale;
-			mark();
+			return localTransformation.toMatrixInverse;
 		}
 
 		string path() const
 		{
 			auto path = owner.name;
-			return _parent !is null ? parent.path ~ "/" ~ path : path;
+			return parent !is null ? parent.path ~ "/" ~ path : path;
 		}
 	}
 
-	private void update()
+	void frameUpdate()
 	{
-		if(_dirty)
-		{
-			_localMatrix = mat4.translation(position) * rotation.toMatrix!(4) * mat4.scaling(vec3(scale));
-			_worldMatrix = _parent is null ? _localMatrix : _localMatrix * _parent.worldMatrix;
+		//TODO: Ensure correct update order of hierarchies
+		_localMatrix = localTransformation.toMatrix();
+		_worldMatrix = parent is null ? _localMatrix : _localMatrix * parent.worldMatrix;
+	}
+}
 
-			_dirty = false;
-		}
+struct Transformation
+{
+	vec3 position;
+	float scale = 1;
+	quat rotation;
+
+	mat4 toMatrix() const
+	{
+		//TODO: Compose in a sane way. This is _extremely_ inefficient
+		return mat4.translation(position) * rotation.toMatrix!(4) * mat4.scaling(vec3(scale));
 	}
 
-	private void mark()
+	mat4 toMatrixInverse() const
 	{
-		_dirty = true;
+		return mat4.scaling(vec3(1 / scale)) * rotation.inverted.toMatrix!(4) * mat4.translation(-position);
+	}
+
+	static Transformation fromMatrix(ref mat4 matrix)
+	{
+		return Transformation
+		(
+			matrix.translation.xyz,
+			matrix.scale.x,
+			quat.fromMatrix(mat3(matrix))
+		);
+	}
+
+	static Transformation interpolate(ref Transformation from, ref Transformation to, float phase)
+	{
+		import kgl3n.interpolate : lerp, slerp;
+
+		return Transformation
+		(
+			lerp(from.position, to.position, phase),
+			lerp(from.scale, to.scale, phase),
+			slerp(from.rotation, to.rotation, phase)
+		);
 	}
 }

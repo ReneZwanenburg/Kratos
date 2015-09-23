@@ -2,7 +2,7 @@
 
 import std.exception : assumeUnique;
 import kratos.resource.resource : ResourceIdentifier;
-import std.experimental.logger;
+//import std.experimental.logger;
 
 private __gshared FileSystem _activeFileSystem;
 
@@ -141,7 +141,7 @@ class NormalFileSystem : FileSystem
 	override immutable(void)[] getImpl(ResourceIdentifier name)
 	{
 		auto path = buildPath(name);
-		info("Reading ", path);
+		//info("Reading ", path);
 		return path.read().assumeUnique;
 	}
 
@@ -210,7 +210,7 @@ class PackFileSystem : FileSystem
 	
 	override immutable(void)[] getImpl(ResourceIdentifier name)
 	{
-		info("Reading ", _fileName, " : ", name);
+		//info("Reading ", _fileName, " : ", name);
 		auto offset = _fileMap[md5Of(name)];
 		return _pack[offset.startOffset .. offset.endOffset].assumeUnique;
 	}

@@ -7,7 +7,7 @@ import kratos.graphics.mesh;
 import kratos.graphics.shadervariable;
 
 import std.conv : to;
-import std.experimental.logger;
+//import std.experimental.logger;
 
 
 alias VAO = Handle!VAO_Impl;
@@ -16,10 +16,10 @@ VAO vao(const Mesh mesh, const Program program)
 {
 	auto vao = initialized!VAO;
 	gl.GenVertexArrays(1, &vao.handle);
-	info("Created VAO ", vao.handle);
+	//info("Created VAO ", vao.handle);
 	//TODO: Remove manual toString calls once logger is fixed
 	//tracef("VAO linking VBO, Program attribs:\n%s\n%s", mesh.vbo.attributes, program.attributes);
-	tracef("VAO linking VBO, Program attribs:\n%s\n%s", mesh.vbo.attributes.toString(), program.attributes.toString());
+	//tracef("VAO linking VBO, Program attribs:\n%s\n%s", mesh.vbo.attributes.toString(), program.attributes.toString());
 
 	vao.bind();
 	mesh.ibo.bind();
@@ -32,7 +32,7 @@ VAO vao(const Mesh mesh, const Program program)
 		import std.algorithm : countUntil;
 		
 		const vboIndex = mesh.vbo.attributes[].countUntil!q{a.name == b.name}(programAttribute);
-		fatal(vboIndex < 0, "VBO does not contain variable '", programAttribute.name[], "': ", mesh.vbo.attributes.text);
+		//fatal(vboIndex < 0, "VBO does not contain variable '", programAttribute.name[], "': ", mesh.vbo.attributes.text);
 		const vboAttribute = mesh.vbo.attributes[vboIndex];
 
 		auto offset = mesh.vbo.attributes[0..vboIndex].totalByteSize;
@@ -65,7 +65,7 @@ private struct VAO_Impl
 	~this()
 	{
 		gl.DeleteVertexArrays(1, &handle);
-		info("Deleted Vertex Array Object ", handle);
+		//info("Deleted Vertex Array Object ", handle);
 	}
 
 	void bind() const
@@ -79,7 +79,7 @@ private struct VAO_Impl
 
 		if(current != handle)
 		{
-			trace("Binding VAO ", handle);
+			//trace("Binding VAO ", handle);
 			gl.BindVertexArray(handle);
 			current = handle;
 		}

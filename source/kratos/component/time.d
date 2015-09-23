@@ -30,7 +30,9 @@ final class Time : SceneComponent
 		_delta = 0;
 	}
 
-	//TODO: Make this a frameUpdate, and build the dependency graph thingy
+	// This was originally planned to become a frameUpdate, but I've decided that
+	// would be the Wrong Thing to do. Time update needs to happen as the very 
+	// first or last action each frame to ensure accurate frame timings.
 	void update()
 	{
 		auto currentTick = TickDuration.currSystemTick;

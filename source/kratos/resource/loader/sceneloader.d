@@ -10,7 +10,7 @@ import derelict.assimp3.assimp;
 import kratos.graphics.renderstate;
 import kratos.resource.loader.renderstateloader;
 import kgl3n.vector;
-import std.experimental.logger;
+//import std.experimental.logger;
 
 public Scene loadScene(ResourceIdentifier name)
 {
@@ -55,7 +55,7 @@ else
 		import kratos.component.meshrenderer;
 		import std.algorithm : map;
 
-		info("Importing Scene ", name);
+		//info("Importing Scene ", name);
 
 		auto importedScene = aiImportFileFromMemory(
 			data.ptr,
@@ -75,19 +75,19 @@ else
 		enforce(importedScene, "Error while loading scene");
 		scope(exit) aiReleaseImport(importedScene);
 
-		info("Importing ", importedScene.mNumMeshes, " meshes");
+		//info("Importing ", importedScene.mNumMeshes, " meshes");
 		auto loadedMeshes = Array!Mesh(importedScene.mMeshes[0..importedScene.mNumMeshes].map!(a => loadMesh(a)));
-		info("Importing ", importedScene.mNumMaterials, " materials");
+		//info("Importing ", importedScene.mNumMaterials, " materials");
 		auto loadedMaterials = Array!RenderState(importedScene.mMaterials[0..importedScene.mNumMaterials].map!(a => loadMaterial(a)));
 
 		
 		void loadNode(const aiNode* node, Transform parent)
 		{
 			auto entity = scene.createEntity(node.mName.data[0 .. node.mName.length].idup);
-			info("Importing Node ", entity.name);
+			//info("Importing Node ", entity.name);
 			auto transform = entity.components.add!Transform;
 			transform.parent = parent;
-			transform.setLocalMatrix(*(cast(mat4*)&node.mTransformation));
+			transform.localTransformation = Transformation.fromMatrix(*(cast(mat4*)&node.mTransformation));
 			
 			foreach(meshIndex; 0..node.mNumMeshes)
 			{
@@ -110,7 +110,7 @@ else
 
 private Mesh loadMesh(const aiMesh* mesh)
 {
-	info("Importing Mesh '", mesh.mName.data[0..mesh.mName.length], '\'');
+	//info("Importing Mesh '", mesh.mName.data[0..mesh.mName.length], '\'');
 
 	import kratos.graphics.shadervariable;
 	VertexAttributes attributes;

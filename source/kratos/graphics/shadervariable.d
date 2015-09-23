@@ -11,7 +11,7 @@ import kgl3n.matrix;
 import std.conv : text;
 import std.typetuple : TypeTuple, staticIndexOf;
 import std.container : Array;
-import std.experimental.logger;
+//import std.experimental.logger;
 import std.traits : Unqual;
 
 
@@ -259,7 +259,7 @@ struct Uniforms
 
 	this(this)
 	{
-		trace("Duplicating Uniforms");
+		//trace("Duplicating Uniforms");
 		_uniformData		= _uniformData.dup;
 		_textures			= _textures.dup;
 		_builtinUniforms	= getRefs!BuiltinUniforms;
@@ -283,7 +283,7 @@ struct Uniforms
 		}
 		else
 		{
-			warning("No such texture: " ~ name);
+			//warning("No such texture: " ~ name);
 		}
 	}
 
@@ -485,7 +485,7 @@ static this()
 		{
 			uniformSetter[type] = (location, size, data) 
 			{
-				info("Assigning Texture Unit", location, " - ", *cast(int*)data);
+				//info("Assigning Texture Unit", location, " - ", *cast(int*)data);
 				gl.Uniform1iv(location, size, cast(int*)data);
 			};
 		}

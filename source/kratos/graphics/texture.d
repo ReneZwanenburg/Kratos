@@ -3,7 +3,7 @@
 import kratos.resource.resource;
 import kratos.graphics.gl;
 import kgl3n.vector;
-import std.experimental.logger;
+//import std.experimental.logger;
 
 import vibe.data.serialization : optional, byName;
 
@@ -216,7 +216,7 @@ void set(TextureUnit unit, ref Texture texture, ref Sampler sampler)
 	if(TextureUnits.units[unit.index] !is texture)
 	{
 		unit.makeCurrent();
-		trace("Binding Texture ", texture.name, " to unit ", unit.index);
+		//trace("Binding Texture ", texture.name, " to unit ", unit.index);
 		gl.BindTexture(GL_TEXTURE_2D, texture.handle);
 		TextureUnits.units[unit.index] = texture;
 	}
@@ -232,7 +232,7 @@ private void makeCurrent(TextureUnit unit)
 {
 	if(TextureUnits.current != unit.index)
 	{
-		trace("Switching to texture unit ", unit.index);
+		//trace("Switching to texture unit ", unit.index);
 
 		gl.ActiveTexture(GL_TEXTURE0 + unit.index);
 		TextureUnits.current = unit.index;

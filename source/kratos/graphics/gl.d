@@ -14,7 +14,7 @@ import kgl3n.matrix;
 
 import std.algorithm : joiner;
 import std.conv : text;
-import std.experimental.logger;
+//import std.experimental.logger;
 
 /// Thin OpenGL wrapper. Performs glGetError() error checking in debug mode.
 final abstract class gl
@@ -66,7 +66,7 @@ private void checkGLError(alias func, Args...)(Args args)
 	{
 		import std.traits : ParameterTypeTuple;
 
-		criticalf("GL Error %s (%s)", errorCode, glEnumString.get(errorCode, "Unknown error code"));
+		//criticalf("GL Error %s (%s)", errorCode, glEnumString.get(errorCode, "Unknown error code"));
 		
 		string[] stringifiedArgs;
 		foreach(i, T; ParameterTypeTuple!func)
@@ -81,7 +81,7 @@ private void checkGLError(alias func, Args...)(Args args)
 				}
 			}
 		}
-		criticalf("While calling %s(%s);", func.stringof, stringifiedArgs.joiner(", "));
+		//criticalf("While calling %s(%s);", func.stringof, stringifiedArgs.joiner(", "));
 		assert(false);
 	}
 }

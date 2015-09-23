@@ -1,6 +1,6 @@
 ﻿module kratos.graphics.renderstate;
 
-import std.experimental.logger;
+//import std.experimental.logger;
 import kratos.graphics.gl;
 import kgl3n.vector;
 import kratos.resource.resource : ResourceIdentifier;
@@ -291,7 +291,7 @@ struct Shader
 	
 	this(Program program)
 	{
-		info("Creating Shader from Program ", program.name);
+		//info("Creating Shader from Program ", program.name);
 		_program = program;
 		_uniforms = program.createUniforms();
 	}

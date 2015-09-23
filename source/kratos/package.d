@@ -12,4 +12,4 @@ public import kgl3n.quaternion;
 public import kgl3n.interpolate;
 public import kgl3n.math;
 
-public import std.experimental.logger;
+//public import std.experimental.logger;
