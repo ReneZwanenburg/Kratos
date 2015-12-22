@@ -17,7 +17,6 @@ import kratos.graphics.bo : VBO, IBO;
 import kgl3n.vector : vec2, vec2i, vec3, vec4;
 import kgl3n.matrix : mat4;
 
-//TODO: Make non-final, provide multiple renderer types? (forward, deferred)
 final class Renderer : SceneComponent
 {
 	@ignore:
@@ -51,6 +50,12 @@ final class Renderer : SceneComponent
 	void renderScene()
 	{
 		auto camera = cameraSelection.mainCamera;
+		
+		if(camera is null)
+		{
+			//TODO: Log warning
+			return;
+		}
 
 		gBuffer.bind();
 		gBuffer.clear();
@@ -71,6 +76,7 @@ final class Renderer : SceneComponent
 		{
 			with(meshRenderer.mesh.renderState.shader.uniforms.builtinUniforms)
 			{
+				//TODO: Only assign bound uniforms
 				auto w = meshRenderer.transform.worldMatrix;
 
 				W = w;
