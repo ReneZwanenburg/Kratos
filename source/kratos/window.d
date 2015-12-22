@@ -19,6 +19,7 @@ struct WindowProperties
 
 	bool	visible			= true;
 	bool	decorated		= true;
+	bool	resizable		= false;
 
 	int		msaa			= 0;
 	bool	sRGB			= false;
@@ -52,7 +53,7 @@ struct Window
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-			glfwWindowHint(GLFW_RESIZABLE,				false);
+			glfwWindowHint(GLFW_RESIZABLE,				resizable);
 			glfwWindowHint(GLFW_VISIBLE,				visible);
 			glfwWindowHint(GLFW_DECORATED,				decorated);
 			glfwWindowHint(GLFW_SAMPLES,				msaa);

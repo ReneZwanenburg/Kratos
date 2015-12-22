@@ -15,7 +15,7 @@ else
 		WindowProperties windowProperties = Configuration.defaultWindowProperties;
 		auto window = Window(windowProperties);
 		import kratos.input : mouse;
-		mouse.setGrabbed(true);
+		mouse.setGrabbed(Configuration.inputSettings.grabMouse);
 
 		import kratos.resource.loader;
 		auto scene = loadScene(Configuration.startupScene);
