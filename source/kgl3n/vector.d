@@ -418,7 +418,6 @@ private template IsValidSwizzleString(size_t dimension, string s)
 	{
 		enum IsValidSwizzleString = s[].all!((dchar a) => a.among('x', 'y', 'z', 'w', 'r', 'g', 'b', 'a', 's', 't', 'p', 'q', 'u', 'v'));
 	}
-	else static assert(false);
 }
 
 /// Calculates the product between two vectors.

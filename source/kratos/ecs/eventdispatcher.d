@@ -13,6 +13,12 @@ public final class RootDispatcher
 	private alias FrameUpdater = void delegate();
 	private FrameUpdater[] frameUpdaters;
 
+	private alias PhysicsPreStepUpdater = void delegate();
+	private PhysicsPreStepUpdater[] physicsPreStepUpdaters;
+
+	private alias PhysicsPostStepUpdater = void delegate();
+	private PhysicsPostStepUpdater[] physicsPostStepUpdaters;
+
 	private bool requiresSort;
 
 	public void frameUpdate()
@@ -22,6 +28,26 @@ public final class RootDispatcher
 		foreach(frameUpdater; frameUpdaters)
 		{
 			frameUpdater();
+		}
+	}
+
+	public void physicsPreStepUpdate()
+	{
+		ensureSorted();
+
+		foreach(physicsPreStepUpdater; physicsPreStepUpdaters)
+		{
+			physicsPreStepUpdater();
+		}
+	}
+
+	public void physicsPostStepUpdate()
+	{
+		ensureSorted();
+
+		foreach(physicsPostStepUpdater; physicsPostStepUpdaters)
+		{
+			physicsPostStepUpdater();
 		}
 	}
 
@@ -66,6 +92,8 @@ package final class ComponentDispatcher(ComponentType) : ComponentDispatcherBase
 {
 	private enum derivedMembers = only(__traits(derivedMembers, ComponentType));
 	private enum hasFrameUpdate = derivedMembers.canFind("frameUpdate");
+	private enum hasPhysicsPreStepUpdate = derivedMembers.canFind("physicsPreStepUpdate");
+	private enum hasPhysicsPostStepUpdate = derivedMembers.canFind("physicsPostStepUpdate");
 
 	private Array!ComponentType components;
 	private int _priority;
@@ -81,6 +109,14 @@ package final class ComponentDispatcher(ComponentType) : ComponentDispatcherBase
 		static if(hasFrameUpdate)
 		{
 			rootDispatcher.frameUpdaters ~= &frameUpdate;
+		}
+		static if(hasPhysicsPreStepUpdate)
+		{
+			rootDispatcher.physicsPreStepUpdaters ~= &physicsPreStepUpdate;
+		}
+		static if(hasPhysicsPostStepUpdate)
+		{
+			rootDispatcher.physicsPostStepUpdaters ~= &physicsPostStepUpdate;
 		}
 	}
 
@@ -113,6 +149,28 @@ package final class ComponentDispatcher(ComponentType) : ComponentDispatcherBase
 			foreach(component; components[])
 			{
 				component.frameUpdate();
+			}
+		}
+	}
+
+	static if(hasPhysicsPreStepUpdate)
+	{
+		void physicsPreStepUpdate()
+		{
+			foreach(component; components[])
+			{
+				component.physicsPreStepUpdate();
+			}
+		}
+	}
+
+	static if(hasPhysicsPostStepUpdate)
+	{
+		void physicsPostStepUpdate()
+		{
+			foreach(component; components[])
+			{
+				component.physicsPostStepUpdate();
 			}
 		}
 	}
