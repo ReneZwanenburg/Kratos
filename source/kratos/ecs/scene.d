@@ -8,6 +8,8 @@ import kratos.ecs.eventdispatcher;
 
 import vibe.data.json;
 
+import std.experimental.logger;
+
 public abstract class SceneComponent
 {
 	mixin ComponentBasicImpl!Scene;
@@ -115,6 +117,8 @@ public final class Scene
 		auto scene = new Scene(representation["name"].opt!string);
 		auto taskRunner = delayedTaskRunnerInstance;
 
+		info("Deserializing Scene ", scene.name);
+
 		auto componentsRepresentation = representation["components"];
 		if(componentsRepresentation.type != Json.Type.undefined)
 		{
@@ -134,6 +138,8 @@ public final class Scene
 	
 	Json serialize()
 	{
+		info("Serializing Scene ", name);
+
 		auto json = Json.emptyObject;
 
 		json["name"] = name;

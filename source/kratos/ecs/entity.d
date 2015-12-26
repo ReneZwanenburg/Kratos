@@ -5,6 +5,8 @@ import kratos.ecs.scene;
 
 import vibe.data.json;
 
+import std.experimental.logger;
+
 public abstract class Component
 {
 	mixin ComponentBasicImpl!Entity;
@@ -76,6 +78,8 @@ public final class Entity
 	{
 		auto entity = owner.createEntity(representation["name"].opt!string);
 
+		info("Deserializing Entity ", entity.name);
+
 		auto componentsRepresentation = representation["components"];
 		if(componentsRepresentation.type != Json.Type.undefined)
 		{
@@ -85,6 +89,8 @@ public final class Entity
 
 	package Json serialize()
 	{
+		info("Serializing Entity ", name);
+
 		auto json = Json.emptyObject;
 		json["name"] = name;
 		json["components"] = _components.serialize();
