@@ -11,7 +11,7 @@ import std.array : array;
 import std.container : Array;
 import std.conv : to;
 import std.range : isInputRange, take, repeat;
-//import std.experimental.logger;
+import std.experimental.logger;
 
 
 alias Program = Handle!Program_Impl;
@@ -24,7 +24,7 @@ Program program(Range)(Range shaders, string name = null)
 	auto program	= initialized!Program;
 	program.handle	= gl.CreateProgram();
 	program._name	= name ? name : program.handle.text;
-	//info("Created Shader Program ", program.name);
+	info("Created Shader Program ", program.name);
 	shaders.copy(program.shaders.backInserter);
 
 	foreach(shader; shaders)
@@ -62,7 +62,6 @@ private struct Program_Impl
 	private	string				_name;
 	private GLuint				handle;
 	private Array!ShaderModule	shaders;
-	//TODO Use fixed size array to store attributes.
 	private	VertexAttributes	_attributes;
 	private Uniforms			_uniforms;
 	private Array!Sampler		_samplers;
@@ -79,7 +78,7 @@ private struct Program_Impl
 		}
 
 		gl.DeleteProgram(handle);
-		//info("Deleted Shader Program ", name);
+		info("Deleted Shader Program ", name);
 	}
 
 	/// Create an array of Uniforms for use with this Program
@@ -92,7 +91,7 @@ private struct Program_Impl
 	{
 		if(_linked) return;
 
-		//info("Linking Program ", name);
+		info("Linking Program ", name);
 
 		gl.LinkProgram(handle);
 		GLint linkResult;
@@ -108,12 +107,12 @@ private struct Program_Impl
 			gl.GetProgramInfoLog(handle, cast(GLsizei)log.length, null, log.ptr);
 			this._errorLog = log;
 
-			//warningf("Linking Program %s failed:\n%s", name, log);
+			error("Linking Program", name, " failed:\n", log);
 
 			return;
 		}
 
-		//info("Linking Program ", name, " successful");
+		info("Linking Program ", name, " successful");
 		this._errorLog = null;
 		_linked = true;
 
@@ -154,7 +153,7 @@ private struct Program_Impl
 
 	private void invalidate()
 	{
-		//info("Invalidating Program ", name);
+		info("Invalidating Program ", name);
 		_linked = false;
 	}
 
@@ -306,7 +305,7 @@ ShaderModule shaderModule(ShaderModule.Type type, const(GLchar)[] shaderSource, 
 	shader.handle = gl.CreateShader(type);
 	shader._name = name ? name : shader.handle.text;
 
-	//info("Created ", type, " Shader ", shader.name);
+	info("Created ", type, " Shader ", shader.name);
 
 	shader.source = shaderSource;
 	shader.compile();
@@ -336,12 +335,12 @@ private struct ShaderModule_Impl
 	~this()
 	{
 		gl.DeleteShader(handle);
-		//info("Deleted ", type, " Shader ", name);
+		info("Deleted ", type, " Shader ", name);
 	}
 
 	@property void source(const(GLchar)[] source)
 	{
-		//info("Updating Shader ", name, " source");
+		info("Updating Shader ", name, " source");
 		const srcPtr = source.ptr;
 		const srcLength = source.length.to!GLint;
 		gl.ShaderSource(handle, 1, &srcPtr, &srcLength);
@@ -357,7 +356,7 @@ private struct ShaderModule_Impl
 	{
 		if(compiled) return;
 
-		//info("Compiling Shader ", name);
+		info("Compiling Shader ", name);
 		gl.CompileShader(handle);
 
 		GLint compileStatus;
@@ -373,11 +372,11 @@ private struct ShaderModule_Impl
 			gl.GetShaderInfoLog(handle, cast(GLsizei)log.length, null, log.ptr);
 			this.errorLog = log;
 
-			//warningf("Compiling Shader %s failed:\n%s", name, log);
+			error("Compiling Shader ", name, " failed:\n", log);
 		}
 		else
 		{
-			//info("Compiling Shader ", name, " successful");
+			info("Compiling Shader ", name, " successful");
 			compiled = true;
 			errorLog = null;
 			foreach(callback; compileCallbacks) callback();
@@ -403,5 +402,4 @@ unittest
 	assert(!shader.compiled);
 	assert(shader.hasErrors);
 	assert(shader.errorLog.length);
-
 }

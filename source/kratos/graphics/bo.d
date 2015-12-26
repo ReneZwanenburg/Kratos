@@ -4,7 +4,7 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
 
-//import std.experimental.logger;
+import std.experimental.logger;
 
 
 struct VBO
@@ -174,7 +174,7 @@ BO!Target bo(GLenum Target)(void[] data, bool dynamic)
 
 	auto bo = BO!Target(cast(ubyte[])data, 0, dynamic);
 	gl.GenBuffers(1, &bo.handle);
-	//info("Created Buffer Object ", bo.handle);
+	info("Created Buffer Object ", bo.handle);
 
 	unbindVAO();
 	bo.bind();
@@ -194,12 +194,12 @@ private struct BO_Impl(GLenum Target)
 	~this()
 	{
 		gl.DeleteBuffers(1, &handle);
-		//info("Deleted Buffer Object ", handle);
+		info("Deleted Buffer Object ", handle);
 	}
 	
 	void bind() const
 	{
-		//trace("Binding Buffer Object ", handle);
+		trace("Binding Buffer Object ", handle);
 		gl.BindBuffer(Target, handle);
 	}
 
