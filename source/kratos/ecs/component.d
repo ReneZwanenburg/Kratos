@@ -3,6 +3,7 @@
 import std.container : Array;
 import std.typecons : Flag;
 import std.traits : ReturnType, Unqual;
+import std.experimental.logger;
 
 import kratos.util : Event;
 
@@ -88,6 +89,8 @@ struct ComponentContainer(ComponentBaseType)
 
 	private T add(T)(InitializationTaskRunner taskRunner) if(is(T : ComponentBaseType))
 	{
+		info("Adding ", T.stringof, " to ", _owner.name);
+
 		ComponentBaseType.constructingOwner = _owner;
 		auto component = new T();
 		ComponentBaseType.constructingOwner = null;
@@ -166,7 +169,7 @@ struct ComponentContainer(ComponentBaseType)
 			}
 			else
 			{
-				// Log?
+				info("Not serializing ", fullTypeName, ", serializer has not been registered.");
 			}
 		}
 
@@ -399,10 +402,11 @@ package int[TypeInfo_Class] getComponentOrdering()
 		componentOrdering[vertex.type] = i;
 	}
 
-	debug
+	info("Resolved Component ordering:");
+	foreach(vertex; ordering)
 	{
-		import std.stdio;
-		writefln("%(%s\n%)", ordering);
+		info(vertex.type.name);
+
 	}
 
 	return componentOrdering;
@@ -422,20 +426,21 @@ private abstract class ComponentSerializer(ComponentBaseType)
 	abstract void deserialize(OwnerType, Json, InitializationTaskRunner);
 }
 
-private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(ComponentType.ComponentBaseType)
+private final class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(ComponentType.ComponentBaseType)
 {
 	const string fullTypeName;
 
 	this()
 	{
 		fullTypeName = typeid(ComponentType).name;
-		//import std.experimental.logger : info;
-		//info("Instantiating serializer for ", fullTypeName);
+		info("Instantiating serializer for ", fullTypeName);
 	}
 
 	override Json serialize(ComponentType.ComponentBaseType componentBase)
 	{
 		assert(typeid(ComponentType) == typeid(componentBase), "Component ended up in the wrong serializer");
+
+		info("Serializing component ", componentBase.id, " ", fullTypeName);
 
 		import kratos.util : staticCast;
 		auto component = staticCast!ComponentType(componentBase);
@@ -451,6 +456,8 @@ private class ComponentSerializerImpl(ComponentType) : ComponentSerializer!(Comp
 	{
 		assert(fullTypeName == representation["type"].get!string, "Component representation ended up in the wrong deserializer");
 		assert(owner, "Null owner provided");
+
+		info("Deserializing ", fullTypeName, " for ", owner.name);
 		
 		auto componentRepresentation = representation["representation"];
 

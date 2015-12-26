@@ -17,6 +17,8 @@ import kratos.graphics.bo : VBO, IBO;
 import kgl3n.vector : vec2, vec2i, vec3, vec4;
 import kgl3n.matrix : mat4;
 
+import std.experimental.logger;
+
 final class Renderer : SceneComponent
 {
 	@ignore:
@@ -53,7 +55,7 @@ final class Renderer : SceneComponent
 		
 		if(camera is null)
 		{
-			//TODO: Log warning
+			warning("Main camera not set, unable to render Scene");
 			return;
 		}
 
