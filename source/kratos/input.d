@@ -113,10 +113,18 @@ class Mouse
 			button.update(glfwGetMouseButton(windowHandle, i) == GLFW_PRESS);
 		}
 	}
-
-	void setGrabbed(bool grabbed)
+	
+	@property
 	{
-		glfwSetInputMode(windowHandle, GLFW_CURSOR, grabbed ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+		void grabbed(bool grab)
+		{
+			glfwSetInputMode(windowHandle, GLFW_CURSOR, grab ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+		}
+		
+		bool grabbed()
+		{
+			return glfwGetInputMode(windowHandle, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+		}
 	}
 
 	@property const
