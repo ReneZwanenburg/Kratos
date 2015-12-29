@@ -24,5 +24,5 @@ shared static this()
 private struct InputSettings
 {
 	@optional:
-	bool grabMouse = true;
+	bool grabMouse = false;
 }
