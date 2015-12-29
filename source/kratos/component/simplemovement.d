@@ -13,6 +13,7 @@ final class SimpleMovement : Component
 	@optional:
 	float sensitivity = .002f;
 	float speed = 1;
+	float speedMultiplier = 1.5f;
 	private @dependency(Dependency.Direction.Write) Transform transform;
 	private @dependency Time time;
 
@@ -53,6 +54,14 @@ final class SimpleMovement : Component
 		if(keyboard["Z"].pressed)
 		{
 			transform.position = transform.position - up;
+		}
+		if(keyboard["E"].justPressed)
+		{
+			speed /= speedMultiplier;
+		}
+		if(keyboard["R"].justPressed)
+		{
+			speed *= speedMultiplier;
 		}
 	}
 }
