@@ -29,16 +29,14 @@ private Mesh loadMesh(ResourceIdentifier name)
 
 private Mesh loadMeshKratos(immutable (void)[] data)
 {
-	import kratos.graphics.shadervariable : VertexAttributes;
+	import kratos.resource.format : KratosMesh;
 	import kratos.graphics.bo;
+	
+	auto importedMesh = KratosMesh.fromBuffer(data);
 
-	auto vertexAttributes = data.readFront!VertexAttributes;
-	auto vertexBufferByteLength = data.readFront!size_t;
-	auto indexType = data.readFront!IndexType;
-	auto indexBufferByteLength = data.readFront!size_t;
 	return Mesh(
-		IBO(data[vertexBufferByteLength .. $], indexType),
-		VBO(data[0 .. vertexBufferByteLength], vertexAttributes)
+		IBO(importedMesh.indexBuffer, importedMesh.indexType),
+		VBO(importedMesh.vertexBuffer, importedMesh.vertexAttributes)
 	);
 }
 
@@ -113,6 +111,7 @@ else
 			{
 				auto face = mesh.mFaces[faceIndex];
 				auto faceIndices = face.mIndices[0..face.mNumIndices];
+				if(faceIndices.length < 3) continue;
 				assert(faceIndices.length == 3);
 				indices.put(faceIndices);
 			}
