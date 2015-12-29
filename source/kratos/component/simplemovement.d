@@ -21,12 +21,15 @@ final class SimpleMovement : Component
 
 	void frameUpdate()
 	{
-		ypr.x += -mouse.xAxis.value * sensitivity;
-		ypr.y += -mouse.yAxis.value * sensitivity;
-		ypr.y = ypr.y.clamp(-PI / 2.5, PI / 2.5);
+		if(mouse.grabbed)
+		{
+			ypr.x += -mouse.xAxis.value * sensitivity;
+			ypr.y += -mouse.yAxis.value * sensitivity;
+			ypr.y = ypr.y.clamp(-PI / 2.5, PI / 2.5);
 
-		transform.rotation = quat.eulerRotation(ypr);
-
+			transform.rotation = quat.eulerRotation(ypr);
+		}
+		
 		auto forward = (transform.rotation * vec3(0, 0, -1)) * speed * time.delta;
 		auto right = (transform.rotation * vec3(1, 0, 0)) * speed * time.delta;
 		auto up = (transform.rotation * vec3(0, 1, 0)) * speed * time.delta;
@@ -62,6 +65,11 @@ final class SimpleMovement : Component
 		if(keyboard["R"].justPressed)
 		{
 			speed *= speedMultiplier;
+		}
+		
+		if(mouse.buttons[0].justReleased)
+		{
+			mouse.grabbed = !mouse.grabbed;
 		}
 	}
 }
