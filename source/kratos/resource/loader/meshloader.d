@@ -60,7 +60,11 @@ else
 		import kgl3n.matrix;
 		import std.array;
 		
-		auto scene = aiImportFileFromMemory(
+		auto properties = aiCreatePropertyStore();
+		scope(exit) aiReleasePropertyStore(properties);
+		aiSetImportPropertyFloat(properties, AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 45f);
+		
+		auto scene = aiImportFileFromMemoryWithProperties(
 			data.ptr,
 			cast(uint)data.length,
 			aiProcess_CalcTangentSpace		|
@@ -70,9 +74,9 @@ else
 			aiProcess_PreTransformVertices	|
 			aiProcess_ImproveCacheLocality	|
 			aiProcess_FindInvalidData		|
-			//aiProcess_GenUVCoords			|
 			aiProcess_FindInstances,
-			extension.toStringz
+			extension.toStringz,
+			properties
 			);
 		
 		enforce(scene, "Error while loading scene");
