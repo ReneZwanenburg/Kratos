@@ -1,6 +1,7 @@
 module kgl3n.aabb;
 
 import kgl3n.vector;
+import kgl3n.matrix : mat4;
 import kgl3n.math : almostEqual, min, max;
 import std.range : isInputRange, ElementType;
 import std.array;
@@ -16,8 +17,6 @@ struct AABBT(type)
 
 	vt min = vt(0); /// The minimum of the AABB (e.g. vt(0, 0, 0)).
 	vt max = vt(0); /// The maximum of the AABB (e.g. vt(1, 1, 1)).
-
-    @safe pure nothrow:
 
     /// Constructs the AABB around N points (all points will be part of the AABB).
     static AABBT fromPoints(Range)(Range points)
@@ -68,6 +67,13 @@ struct AABBT(type)
 		min = componentMin(min, v);
 		max = componentMax(max, v);
     }
+	
+	AABB transformed(mat4 transform) const
+	{
+		auto verts = vertices;
+		import std.algorithm.iteration : map;
+		return fromPoints(verts[].map!(a => (transform * vec4(a, 1)).xyz));
+	}
 
     unittest
 	{
