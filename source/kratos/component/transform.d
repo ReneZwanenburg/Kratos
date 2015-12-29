@@ -27,17 +27,17 @@ final class Transform : Component
 			return localTransformation.rotation;
 		}
 
-		ref scale()
+		ref scale() const
 		{
 			return localTransformation.scale;
 		}
 
-		ref const(mat4) worldMatrix()
+		ref const(mat4) worldMatrix() const
 		{
 			return _worldMatrix;
 		}
 
-		ref const(mat4) localMatrix()
+		ref const(mat4) localMatrix() const
 		{
 			return _localMatrix;
 		}
