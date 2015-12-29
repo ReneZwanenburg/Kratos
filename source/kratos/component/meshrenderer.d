@@ -8,6 +8,7 @@ import kratos.component.spatialpartitioning : SpatialPartitioning;
 
 import kratos.graphics.renderablemesh : RenderableMesh, renderableMesh;
 
+import kgl3n.aabb : AABB;
 
 alias MeshRendererPartitioning = SpatialPartitioning!MeshRenderer;
 
@@ -15,6 +16,7 @@ final class MeshRenderer : Component
 {
 	private @dependency Transform _transform;
 	private RenderableMesh _mesh;
+	private AABB _modelSpaceBoundingBox;
 
 	this()
 	{
@@ -27,6 +29,7 @@ final class MeshRenderer : Component
 	this(RenderableMesh mesh)
 	{
 		_mesh = mesh;
+		updateBound();
 		scene.components.firstOrAdd!MeshRendererPartitioning().register(this);
 	}
 
@@ -51,14 +54,27 @@ final class MeshRenderer : Component
 		void mesh(RenderableMesh mesh)
 		{
 			_mesh = mesh;
+			updateBound();
 		}
+		
+		AABB worldSpaceBound() const
+		{
+			return _modelSpaceBoundingBox.transformed(_transform.worldMatrix);
+		}
+	}
+	
+	private void updateBound()
+	{
+		import kgl3n.vector : vec3;
+		// Duplicate work when re-using meshes. Should store it at a lower level.
+		_modelSpaceBoundingBox = AABB.fromPoints(mesh.mesh.vbo.getAttribute!vec3("position"));
 	}
 
 	string[string] toRepresentation()
 	{
 		return [
-			"mesh": _mesh.mesh.id,
-			"renderState": _mesh.renderState.id
+			"mesh": mesh.mesh.id,
+			"renderState": mesh.renderState.id
 		];
 	}
 
