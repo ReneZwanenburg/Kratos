@@ -73,6 +73,10 @@ public final class RootDispatcher
 	{
 		if(!requiresSort) return;
 		requiresSort = false;
+		
+		frameUpdaters.length = 0;
+		physicsPreStepUpdaters.length = 0;
+		physicsPostStepUpdaters.length = 0;
 
 		import std.algorithm.sorting : sort;
 
