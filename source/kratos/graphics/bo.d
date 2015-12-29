@@ -38,7 +38,7 @@ struct VBO
 	{
 		static if(!is(T == void))
 		{
-			static assert(toVertexAttributes!T == attributes);
+			assert(toVertexAttributes!T == attributes);
 		}
 		return cast(T[])data;
 	}
