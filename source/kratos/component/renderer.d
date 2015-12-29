@@ -16,6 +16,7 @@ import kratos.graphics.bo : VBO, IBO;
 
 import kgl3n.vector : vec2, vec2i, vec3, vec4;
 import kgl3n.matrix : mat4;
+import kgl3n.frustum : Frustum;
 
 import std.experimental.logger;
 
@@ -73,8 +74,9 @@ final class Renderer : SceneComponent
 		auto v = camera.viewMatrix;
 		auto p = camera.projectionMatrix;
 		auto vp = camera.viewProjectionMatrix;
-
-		foreach(meshRenderer; meshRenderers.all)
+		auto worldSpaceFrustum = Frustum(vp);
+		
+		foreach(meshRenderer; meshRenderers.intersecting(worldSpaceFrustum))
 		{
 			with(meshRenderer.mesh.renderState.shader.uniforms.builtinUniforms)
 			{
