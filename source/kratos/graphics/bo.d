@@ -49,6 +49,38 @@ struct VBO
 		assert(toVertexAttributes!T == attributes);
 		return cast(T[])data;
 	}
+	
+	auto getAttribute(T)(string name)
+	{
+		import std.algorithm.searching : countUntil;
+		
+		auto idx = attributes[].countUntil!(a => a.name[] == name);
+		assert(idx >= 0);
+		
+		static struct Range
+		{
+			private const(void)[] buffer;
+			private const size_t offset;
+			private const size_t stride;
+			
+			T front()
+			{
+				return *cast(T*)buffer.ptr + offset;
+			}
+			
+			bool empty()
+			{
+				return buffer.length == 0;
+			}
+			
+			void popFront()
+			{
+				buffer = buffer[stride .. $];
+			}
+		}
+		
+		return Range(data, attributes[0 .. idx].totalByteSize, attributes.totalByteSize);
+	}
 
 	@property const
 	{
