@@ -100,15 +100,15 @@ else
 			{
 				auto vert		= mesh.mVertices[vertIndex];
 				auto normal		= mesh.mNormals[vertIndex];
-				auto tangent	= mesh.mTangents[vertIndex];
-				auto texCoord	= mesh.mTextureCoords[0][vertIndex];
+				auto tangent	= mesh.mTangents ? mesh.mTangents[vertIndex] : aiVector3D(0, 0, 0);
+				auto texCoord	= mesh.mTextureCoords[0] ? mesh.mTextureCoords[0][vertIndex] : aiVector3D(0, 0, 0);
 				
 				vertices ~= VertexFormat(
 					vec3(vert.x,		vert.y,			vert.z),
 					vec3(normal.x,		normal.y,		normal.z).normalized,
 					vec3(tangent.x,		tangent.y,		tangent.z).normalized,
 					vec2(texCoord.x,	texCoord.y),
-					);
+				);
 			}
 			
 			foreach(faceIndex; 0..mesh.mNumFaces)
