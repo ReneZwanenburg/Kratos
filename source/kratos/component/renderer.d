@@ -14,7 +14,7 @@ import kratos.graphics.renderablemesh : RenderableMesh, renderableMesh;
 import kratos.graphics.mesh : Mesh;
 import kratos.graphics.bo : VBO, IBO;
 
-import kgl3n.vector : vec2, vec2i, vec3, vec4;
+import kgl3n.vector : vec2, vec2ui, vec3, vec4;
 import kgl3n.matrix : mat4;
 import kgl3n.frustum : Frustum;
 
@@ -163,7 +163,7 @@ final class Renderer : SceneComponent
 		return Mesh(ibo, vbo);
 	}
 
-	private static FrameBuffer createGBuffer(vec2i size)
+	private static FrameBuffer createGBuffer(vec2ui size)
 	{
 		import kratos.graphics.texture : DefaultTextureFormat;
 

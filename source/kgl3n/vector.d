@@ -492,6 +492,8 @@ alias Vector!(int, 2) vec2i; /// ditto
 alias Vector!(int, 3) vec3i; /// ditto
 alias Vector!(int, 4) vec4i; /// ditto
 
+alias Vector!(uint, 2) vec2ui;
+
 enum isVector(T)		= is(T == Vector!Args,		Args...);
 
 

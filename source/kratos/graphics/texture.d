@@ -130,7 +130,7 @@ enum DefaultTextureFormat : TextureFormat
 
 enum DefaultTextureCompression = false;
 
-Texture texture(TextureFormat format, vec2i resolution, void[] data, string name = null, bool compressed = DefaultTextureCompression)
+Texture texture(TextureFormat format, vec2ui resolution, const(void)[] data, string name = null, bool compressed = DefaultTextureCompression)
 {
 	assert(data.ptr == null || format.bytesPerPixel * resolution.x * resolution.y == data.length);
 
@@ -168,7 +168,7 @@ Texture defaultTexture()
 			127, 0, 127, 255,
 			255, 0, 255, 255
 		];
-		texture = .texture(DefaultTextureFormat.RGBA, vec2i(2, 2), data, "Default Texture", false);
+		texture = .texture(DefaultTextureFormat.RGBA, vec2ui(2, 2), data, "Default Texture", false);
 		initialized = true;
 	}
 	return texture;
@@ -180,7 +180,7 @@ struct Texture_Impl
 {
 	const:
 	package GLuint	handle;
-	vec2i			resolution;
+	vec2ui			resolution;
 	TextureFormat	format;
 	string			name;
 	bool			compressed;

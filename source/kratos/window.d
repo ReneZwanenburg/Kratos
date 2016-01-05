@@ -5,7 +5,7 @@ import std.exception : enforce, assumeWontThrow;
 import kratos.input;
 import vibe.data.serialization : optional;
 import kratos.graphics.rendertarget;
-import kgl3n.vector : vec2i; 
+import kgl3n.vector : vec2ui; 
 
 enum WindowProperties unittestWindowProperties = { visible: false, debugContext: true };
 
@@ -74,7 +74,7 @@ struct Window
 		import derelict.opengl3.gl3 : DerelictGL3;
 		DerelictGL3.reload();
 
-		glfwSetFramebufferSizeCallback(_handle, (window, width, height) { _currentWindow._frameBuffer.size = vec2i(width, height); });
+		glfwSetFramebufferSizeCallback(_handle, (window, width, height) { _currentWindow._frameBuffer.size = vec2ui(width, height); });
 		glfwSwapInterval(properties.vSync);
 
 		_activeProperties = properties;

@@ -81,27 +81,27 @@ final class FrameBuffer
 	}
 
 	private static GLuint activeHandle;
-	private static vec2i activeViewportSize;
+	private static vec2ui activeViewportSize;
 	//TODO: Constness
 	private GLuint handle;
 	private GLuint renderBufferHandle;
 	private BufferDescription[] bufferDescriptions;
 	private Texture[] textures;
-	private vec2i _size;
+	private vec2ui _size;
 
 	@property
 	{
-		vec2i size() const { return _size; }
+		vec2ui size() const { return _size; }
 
 		// Should be package(kratos)
-		void size(vec2i size) nothrow
+		void size(vec2ui size) nothrow
 		{
 			assert(handle == 0, "Non-screen FrameBuffer resizing not supported");
 			this._size = size;
 		}
 	}
 
-	this(vec2i resolution, BufferDescription[] bufferDescriptions, bool createDepthRenderBufferIfMissing = true)
+	this(vec2ui resolution, BufferDescription[] bufferDescriptions, bool createDepthRenderBufferIfMissing = true)
 	{
 		gl.GenFramebuffers(1, &handle);
 		this._size = resolution;
@@ -161,7 +161,7 @@ final class FrameBuffer
 		assert(gl.CheckFramebufferStatus(GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 	}
 
-	private this(vec2i size)
+	private this(vec2ui size)
 	{
 		this.handle = 0;
 		this.size = size;
@@ -208,8 +208,8 @@ final class FrameBuffer
 	}
 
 	// Should be package(kratos)
-	public static FrameBuffer createScreenFrameBuffer(int width, int height)
+	public static FrameBuffer createScreenFrameBuffer(uint width, uint height)
 	{
-		return new FrameBuffer(vec2i(width, height));
+		return new FrameBuffer(vec2ui(width, height));
 	}
 }

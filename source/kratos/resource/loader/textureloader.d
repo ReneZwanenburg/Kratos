@@ -5,22 +5,51 @@ import kratos.resource.cache;
 import kratos.resource.resource;
 import kratos.graphics.texture;
 import derelict.devil.il;
+import kgl3n.vector : vec2ui;
+import kratos.resource.format : KratosTexture;
 
 alias TextureCache = Cache!(Texture, ResourceIdentifier, id => loadTexture(id));
 
 public Texture loadTexture(ResourceIdentifier name, bool compress = DefaultTextureCompression)
 {
+	
+	auto buffer = activeFileSystem.get(name);
+	
+	auto extension = name.lowerCaseExtension;
+	
+	if(extension == ".kst")
+	{
+		return loadTextureKst(name, buffer, compress);
+	}
+	else
+	{
+		return loadTextureIl(name, buffer, extension, compress);
+	}
+}
+
+private Texture loadTextureKst(string name, const(void)[] buffer, bool compress)
+{
+	auto ksm = KratosTexture.fromBuffer(buffer);
+	
+	return texture
+	(
+		KratosTexture.getTextureFormat(ksm.format),
+		ksm.resolution,
+		ksm.pixelBuffer,
+		name,
+		compress
+	);
+}
+
+private Texture loadTextureIl(string name, const(void)[] buffer, string extension, bool compress)
+{
 	auto handle = ilGenImage();
 	scope(exit) ilDeleteImage(handle);
 	ilBindImage(handle);
-	
-	import kgl3n.vector : vec2i;
-	
-	auto buffer = activeFileSystem.get(name);
 	ilLoadL(imageExtensionFormat[name.lowerCaseExtension], buffer.ptr, cast(uint)buffer.length);
 	
 	auto dataPtr = ilGetData();
-	auto resolution = vec2i(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
+	auto resolution = vec2ui(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
 	auto format = ilTextureFormat[ilGetInteger(IL_IMAGE_FORMAT)];
 	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL) == format.bytesPerPixel);
 	assert(ilGetInteger(IL_IMAGE_TYPE) == format.type);
