@@ -129,3 +129,27 @@ T readFront(T)(ref inout(void)[] buffer)
 	buffer = buffer[T.sizeof .. $];
 	return value;
 }
+struct RawFileWriter
+{
+	import std.stdio : File;
+
+	private File file;
+
+	@disable this();
+	@disable this(this);
+
+	this(File file)
+	{
+		this.file = file;
+	}
+
+	void put(T)(auto ref T value) if(!is(T == U[], U))
+	{
+		put((&value)[0 .. 1]);
+	}
+
+	void put(T)(T[] values)
+	{
+		file.rawWrite(values);
+	}
+}
