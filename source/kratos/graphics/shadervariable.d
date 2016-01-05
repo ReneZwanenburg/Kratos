@@ -68,6 +68,11 @@ struct VertexAttribute
 		return (aggregateTypeName ~ " " ~ name[]).idup;
 	}
 
+	bool opEquals(const ref VertexAttribute other) const
+	{
+		return aggregateType == other.aggregateType && name == other.name;
+	}
+
 	static {
 		VertexAttribute fromAggregateType(T)(string name)
 		{
@@ -295,6 +300,13 @@ struct Uniforms
 	void opIndexAssign(T)(auto ref T value, string name)
 	{
 		getRef!T(name) = value;
+	}
+
+	Texture getTexture(string name)
+	{
+		auto indexPtr = name in _textureIndices;
+		assert(indexPtr, "No such Texture: " ~ name);
+		return _textures[*indexPtr];
 	}
 
 	UniformRef!T getRef(T)(string name)
