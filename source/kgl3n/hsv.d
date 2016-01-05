@@ -84,6 +84,9 @@ unittest
 /// RGB colors will be in the range [0, 1].
 /// This function is not marked es pure, since it depends on std.math.floor, which
 /// is also not pure.
+
+//Commented out forn now. Crashes compiler in release mode, investigate..
+/*
 @safe nothrow vec3 hsvToRgb(vec3 hsv)
 {
 	if (hsv.y == 0)
@@ -127,3 +130,4 @@ unittest
 
 	assert(hsvToRgb(vec3((300.0f / 360) * PI * 2, 1.0f, 1.0f)) == vec3(1.0f, 0.0f, 1.0f));
 }
+*/
