@@ -1,6 +1,5 @@
 ﻿module kratos.main;
 
-import kratos.time;
 import kratos.window;
 import kratos.resource.filesystem;
 import kratos.component.registrations;
