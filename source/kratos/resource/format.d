@@ -31,4 +31,16 @@ struct KratosMesh
 		
 		return retVal;
 	}
+
+	public void toBuffer(OutputRange)(auto ref OutputRange range)
+	{
+		import std.range.primitives : put;
+
+		range.put(vertexAttributes);
+		put(range, vertexBufferLength);
+		put(range, indexType);
+		put(range, indexBufferLength);
+		put(range, vertexBuffer);
+		put(range, indexBuffer);
+	}
 }
