@@ -19,7 +19,7 @@ struct StandardProjection
 
 final class Camera : Component
 {
-	private @dependency Transform transform;
+	private @dependency Transform _transform;
 	private @dependency CameraSelection cameraSelection;
 
 	private mat4				_projectionMatrix;
@@ -35,12 +35,12 @@ final class Camera : Component
 	{
 		mat4 viewProjectionMatrix() const
 		{
-			return projectionMatrix * transform.worldMatrixInv;
+			return projectionMatrix * _transform.worldMatrixInv;
 		}
 		
 		mat4 viewMatrix() const
 		{
-			return transform.worldMatrixInv;
+			return _transform.worldMatrixInv;
 		}
 
 		mat4 projectionMatrix() const
@@ -70,6 +70,11 @@ final class Camera : Component
 		bool mainCamera()
 		{
 			return cameraSelection.mainCamera is this;
+		}
+
+		inout(Transform) transform() inout
+		{
+			return _transform;
 		}
 	}
 
