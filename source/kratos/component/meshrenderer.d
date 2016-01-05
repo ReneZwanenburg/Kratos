@@ -66,8 +66,14 @@ final class MeshRenderer : Component
 	private void updateBound()
 	{
 		import kgl3n.vector : vec3;
+		import std.algorithm.iteration : map;
 		// Duplicate work when re-using meshes. Should store it at a lower level.
-		_modelSpaceBoundingBox = AABB.fromPoints(mesh.mesh.vbo.getAttribute!vec3("position"));
+		static struct Vertex
+		{
+			vec3 position;
+		}
+
+		_modelSpaceBoundingBox = AABB.fromPoints(mesh.mesh.vbo.getCustom!Vertex.map!(a => a.position));
 	}
 
 	string[string] toRepresentation()

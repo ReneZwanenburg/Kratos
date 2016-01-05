@@ -50,22 +50,30 @@ struct VBO
 		return cast(T[])data;
 	}
 	
-	auto getAttribute(T)(string name)
+	auto getCustom(T)()
 	{
-		import std.algorithm.searching : countUntil;
-		
-		auto idx = attributes[].countUntil!(a => a.name[] == name);
-		assert(idx >= 0);
-		
+		import std.algorithm.searching : all, canFind, countUntil;
+
+		static immutable partialAttributes = toVertexAttributes!T;
+
+		assert(partialAttributes[].all!(a => attributes[].canFind(a)));
+
 		static struct Range
 		{
 			private const(void)[] buffer;
-			private const size_t offset;
 			private const size_t stride;
+			private size_t[partialAttributes.count] offsets;
 			
 			T front()
 			{
-				return *cast(T*)buffer.ptr + offset;
+				T retVal;
+
+				foreach(i, FT; typeof(T.tupleof))
+				{
+					retVal.tupleof[i] = *cast(FT*)(buffer.ptr + offsets[i]);
+				}
+
+				return retVal;
 			}
 			
 			bool empty()
@@ -78,8 +86,16 @@ struct VBO
 				buffer = buffer[stride .. $];
 			}
 		}
-		
-		return Range(data, attributes[0 .. idx].totalByteSize, attributes.totalByteSize);
+
+		auto retVal = Range(data, attributes.totalByteSize);
+
+		foreach(i, ref offset; retVal.offsets)
+		{
+			auto idx = attributes[].countUntil(partialAttributes[i]);
+			offset = attributes[0 .. idx].totalByteSize;
+		}
+
+		return retVal;
 	}
 
 	@property const
