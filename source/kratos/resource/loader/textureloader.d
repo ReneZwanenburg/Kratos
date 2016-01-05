@@ -8,7 +8,7 @@ import derelict.devil.il;
 
 alias TextureCache = Cache!(Texture, ResourceIdentifier, id => loadTexture(id));
 
-private Texture loadTexture(ResourceIdentifier name)
+public Texture loadTexture(ResourceIdentifier name, bool compress = DefaultTextureCompression)
 {
 	auto handle = ilGenImage();
 	scope(exit) ilDeleteImage(handle);
@@ -25,7 +25,7 @@ private Texture loadTexture(ResourceIdentifier name)
 	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL) == format.bytesPerPixel);
 	assert(ilGetInteger(IL_IMAGE_TYPE) == format.type);
 	
-	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bytesPerPixel], name);
+	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bytesPerPixel], name, compress);
 }
 
 shared static this()
