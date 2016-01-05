@@ -80,19 +80,19 @@ struct ComponentContainer(ComponentBaseType)
 		return ComponentContainerRef!ComponentBaseType(&this);
 	}
 
-	T add(T)() if(is(T : ComponentBaseType))
+	T add(T, Args...)(Args args) if(is(T : ComponentBaseType))
 	{
-		auto component = add!T(immediateTaskRunnerInstance);
+		auto component = addInternal!T(immediateTaskRunnerInstance, args);
 		component.assignId(null);
 		return component;
 	}
 
-	private T add(T)(InitializationTaskRunner taskRunner) if(is(T : ComponentBaseType))
+	private T addInternal(T, Args...)(InitializationTaskRunner taskRunner, Args args) if(is(T : ComponentBaseType))
 	{
 		info("Adding ", T.stringof, " to ", _owner.name);
 
 		ComponentBaseType.constructingOwner = _owner;
-		auto component = new T();
+		auto component = new T(args);
 		ComponentBaseType.constructingOwner = null;
 		
 		// Add the component to the array before initializing, so cyclic dependencies can be resolved
@@ -465,7 +465,7 @@ private final class ComponentSerializerImpl(ComponentType) : ComponentSerializer
 		
 		if(componentRepresentation.type == Json.Type.undefined)
 		{
-			component = owner.components.add!ComponentType(taskRunner);
+			component = owner.components.addInternal!ComponentType(taskRunner);
 		}
 		else
 		{
