@@ -111,41 +111,57 @@ struct SamplerSettings
 
 struct TextureFormat
 {
-	GLenum	format;
-	GLenum	internalFormatUncompressed;
-	GLenum	internalFormatCompressed;
+	GLenum	bufferFormat;
+	GLenum	internalFormat;
 	GLenum	type;
 	uint	bytesPerPixel;
+	
+	@property
+	{
+		bool bufferFormatIsCompressed() const
+		{
+			return isCompressedFormat(bufferFormat);
+		}
+		
+		bool internalFormatIsCompressed() const
+		{
+			return isCompressedFormat(internalFormat);
+		}
+	}
+	
+	private static bool isCompressedFormat(GLenum format)
+	{
+		import std.algorithm.comparison : among;
+		return format.among(GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT) != 0;
+	}
 }
 
 enum DefaultTextureFormat : TextureFormat
 {
-	R		= TextureFormat(GL_RED,				GL_RED,				GL_COMPRESSED_RED,	GL_UNSIGNED_BYTE,	1),
-	//RG		= TextureFormat(GL_RG,				GL_RG8,				GL_COMPRESSED_RG,	GL_UNSIGNED_BYTE,	2),
-	RGB		= TextureFormat(GL_RGB,				GL_RGB8,			GL_COMPRESSED_RGB,	GL_UNSIGNED_BYTE,	3),
-	RGBA	= TextureFormat(GL_RGBA,			GL_RGBA8,			GL_COMPRESSED_RGBA,	GL_UNSIGNED_BYTE,	4),
-	RGBA16	= TextureFormat(GL_RGBA,			GL_RGBA16,			GL_COMPRESSED_RGBA,	GL_UNSIGNED_SHORT,	8),
-	Depth	= TextureFormat(GL_DEPTH_COMPONENT,	GL_DEPTH_COMPONENT,	GL_DEPTH_COMPONENT,	GL_FLOAT,			4)
+	R		= TextureFormat(GL_RED,				GL_RED,				GL_UNSIGNED_BYTE,	1),
+	//RG		= TextureFormat(GL_RG,				GL_RG8,				GL_UNSIGNED_BYTE,	2),
+	RGB		= TextureFormat(GL_RGB,				GL_RGB8,			GL_UNSIGNED_BYTE,	3),
+	RGBA	= TextureFormat(GL_RGBA,			GL_RGBA8,			GL_UNSIGNED_BYTE,	4),
+	RGBA16	= TextureFormat(GL_RGBA,			GL_RGBA16,			GL_UNSIGNED_SHORT,	8),
+	Depth	= TextureFormat(GL_DEPTH_COMPONENT,	GL_DEPTH_COMPONENT,	GL_FLOAT,			4)
 }
 
-enum DefaultTextureCompression = false;
-
-Texture texture(TextureFormat format, vec2ui resolution, const(void)[] data, string name = null, bool compressed = DefaultTextureCompression)
+Texture texture(TextureFormat format, vec2ui resolution, const(void)[] data, string name = null)
 {
 	assert(data.ptr == null || format.bytesPerPixel * resolution.x * resolution.y == data.length);
 
 	const handle = gl.genTexture();
-	auto texture = Texture(handle, resolution, format, name ? name : handle.text, compressed);
+	auto texture = Texture(handle, resolution, format, name ? name : handle.text);
 	ScratchTextureUnit.makeActiveScratch(texture);
 
 	gl.TexImage2D(
 		GL_TEXTURE_2D, 
 		0, 
-		compressed ? format.internalFormatCompressed : format.internalFormatUncompressed,
+		format.internalFormat,
 		resolution.x,
 		resolution.y,
 		0,
-		format.format,
+		format.bufferFormat,
 		format.type,
 		data.ptr
 	);
@@ -168,7 +184,7 @@ Texture defaultTexture()
 			127, 0, 127, 255,
 			255, 0, 255, 255
 		];
-		texture = .texture(DefaultTextureFormat.RGBA, vec2ui(2, 2), data, "Default Texture", false);
+		texture = .texture(DefaultTextureFormat.RGBA, vec2ui(2, 2), data, "Default Texture");
 		initialized = true;
 	}
 	return texture;
@@ -183,7 +199,6 @@ struct Texture_Impl
 	vec2ui			resolution;
 	TextureFormat	format;
 	string			name;
-	bool			compressed;
 
 	~this()
 	{

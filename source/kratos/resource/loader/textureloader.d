@@ -10,9 +10,8 @@ import kratos.resource.format : KratosTexture;
 
 alias TextureCache = Cache!(Texture, ResourceIdentifier, id => loadTexture(id));
 
-public Texture loadTexture(ResourceIdentifier name, bool compress = DefaultTextureCompression)
+public Texture loadTexture(ResourceIdentifier name, bool compress = false)
 {
-	
 	auto buffer = activeFileSystem.get(name);
 	
 	auto extension = name.lowerCaseExtension;
@@ -29,20 +28,23 @@ public Texture loadTexture(ResourceIdentifier name, bool compress = DefaultTextu
 
 private Texture loadTextureKst(string name, const(void)[] buffer, bool compress)
 {
+	//TODO: Update format based on compression
+	
 	auto ksm = KratosTexture.fromBuffer(buffer);
 	
 	return texture
 	(
 		KratosTexture.getTextureFormat(ksm.format),
 		ksm.resolution,
-		ksm.pixelBuffer,
-		name,
-		compress
+		ksm.texelBuffer,
+		name
 	);
 }
 
 private Texture loadTextureIl(string name, const(void)[] buffer, string extension, bool compress)
 {
+	//TODO: Update format based on compression
+	
 	auto handle = ilGenImage();
 	scope(exit) ilDeleteImage(handle);
 	ilBindImage(handle);
@@ -54,7 +56,7 @@ private Texture loadTextureIl(string name, const(void)[] buffer, string extensio
 	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL) == format.bytesPerPixel);
 	assert(ilGetInteger(IL_IMAGE_TYPE) == format.type);
 	
-	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bytesPerPixel], name, compress);
+	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bytesPerPixel], name);
 }
 
 shared static this()

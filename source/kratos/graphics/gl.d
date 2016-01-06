@@ -5,6 +5,7 @@ public
 	import derelict.opengl3.constants;
 	import derelict.opengl3.types;
 	import derelict.opengl3.ext : GL_TEXTURE_MAX_ANISOTROPY_EXT;
+	import derelict.opengl3.ext : GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 	import derelict.opengl3.arb;
 }
 

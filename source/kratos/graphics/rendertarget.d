@@ -117,7 +117,7 @@ final class FrameBuffer
 		{
 			auto format = description.format;
 
-			auto tex = texture(format, resolution, null, description.name, false);
+			auto tex = texture(format, resolution, null, description.name);
 			textures ~= tex;
 
 			GLenum attachment;

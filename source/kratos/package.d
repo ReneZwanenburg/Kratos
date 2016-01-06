@@ -3,7 +3,6 @@
 public import kratos.ecs;
 public import kratos.component;
 
-public import kratos.time;
 public import kratos.input;
 
 public import kgl3n.vector;
