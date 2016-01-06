@@ -71,8 +71,13 @@ struct AABBT(type)
 	AABB transformed(mat4 transform) const
 	{
 		auto verts = vertices;
-		import std.algorithm.iteration : map;
-		return fromPoints(verts[].map!(a => (transform * vec4(a, 1)).xyz));
+		
+		foreach(ref v; verts[])
+		{
+			v = (transform * vec4(v, 1)).xyz;
+		}
+		
+		return fromPoints(verts[]);
 	}
 
     unittest

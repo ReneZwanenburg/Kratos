@@ -2,7 +2,8 @@
 
 import kratos.ecs.scene : SceneComponent;
 import kgl3n.frustum : Frustum;
-import std.algorithm.iteration : filter;
+import std.algorithm.iteration : filter, map;
+import std.range : repeat, zip;
 
 public final class SpatialPartitioning(ComponentType) : SceneComponent
 {
@@ -19,7 +20,11 @@ public final class SpatialPartitioning(ComponentType) : SceneComponent
 	{
 		auto intersecting(Frustum frustum)
 		{
-			return all.filter!(a => frustum.intersects(a.worldSpaceBound));
+			// Looks a bit roundabout, but avoids allocating a closure.
+			return 
+				zip(all, repeat(frustum))
+				.filter!(a => a[1].intersects(a[0].worldSpaceBound))
+				.map!(a => a[0]);
 		}
 	}
 	
