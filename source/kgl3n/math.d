@@ -27,7 +27,7 @@ public {
 
 import std.conv : to;
 import std.algorithm : all;
-import std.traits : CommonType, isNumeric;
+import std.traits : CommonType, isNumeric, isIntegral;
 import std.range : ElementType;
 import smath = std.math;
 
@@ -44,6 +44,35 @@ public enum real DegToRad	= PI / 180;
 public enum real RadToDeg	= 180 / PI;
 
 public enum real Epsilon	= 0.00001f;
+
+/// The lowest power of two higher than value, or value if value is a POT
+T higherPOT(T)(T value) if(isIntegral!T)
+{
+	import core.bitop : bsf;
+	enum numShifts = bsf(T.sizeof * 8) - 1;
+	
+	value--;
+	
+	foreach(i; 0 .. numShifts)
+	{
+		value |= value >> (1 << i);
+	}
+	
+	return ++value;
+}
+
+bool isPOT(T)(T value) if(isIntegral!T)
+{
+	return value && !((value - 1) & value);
+}
+
+int getLog2(T)(T value) if(isIntegral!T)
+{
+	assert(value.isPOT);
+	
+	import core.bitop : bsf;
+	return value.bsf;
+}
 
 /// Modulus. Returns x - y * floor(x/y).
 T mod(T)(T x, T y)

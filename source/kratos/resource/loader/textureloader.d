@@ -10,7 +10,7 @@ import kratos.resource.format : KratosTexture;
 
 alias TextureCache = Cache!(Texture, ResourceIdentifier, id => loadTexture(id));
 
-public Texture loadTexture(ResourceIdentifier name, bool compress = false)
+public Texture loadTexture(ResourceIdentifier name, bool forceCompression = false)
 {
 	auto buffer = activeFileSystem.get(name);
 	
@@ -18,33 +18,35 @@ public Texture loadTexture(ResourceIdentifier name, bool compress = false)
 	
 	if(extension == ".kst")
 	{
-		return loadTextureKst(name, buffer, compress);
+		return loadTextureKst(name, buffer, forceCompression);
 	}
 	else
 	{
-		return loadTextureIl(name, buffer, extension, compress);
+		return loadTextureIl(name, buffer, extension, forceCompression);
 	}
 }
 
-private Texture loadTextureKst(string name, const(void)[] buffer, bool compress)
+private Texture loadTextureKst(string name, const(void)[] buffer, bool forceCompression)
 {
-	//TODO: Update format based on compression
-	
 	auto ksm = KratosTexture.fromBuffer(buffer);
+	
+	auto format = KratosTexture.getTextureFormat(ksm.format);
+	if(forceCompression)
+	{
+		format = format.asCompressed;
+	}
 	
 	return texture
 	(
-		KratosTexture.getTextureFormat(ksm.format),
+		format,
 		ksm.resolution,
 		ksm.texelBuffer,
 		name
 	);
 }
 
-private Texture loadTextureIl(string name, const(void)[] buffer, string extension, bool compress)
+private Texture loadTextureIl(string name, const(void)[] buffer, string extension, bool forceCompression)
 {
-	//TODO: Update format based on compression
-	
 	auto handle = ilGenImage();
 	scope(exit) ilDeleteImage(handle);
 	ilBindImage(handle);
@@ -52,11 +54,17 @@ private Texture loadTextureIl(string name, const(void)[] buffer, string extensio
 	
 	auto dataPtr = ilGetData();
 	auto resolution = vec2ui(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
-	auto format = ilTextureFormat[ilGetInteger(IL_IMAGE_FORMAT)];
-	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL) == format.bytesPerPixel);
+	TextureFormat format = ilTextureFormat[ilGetInteger(IL_IMAGE_FORMAT)];
+	
+	if(forceCompression)
+	{
+		format = format.asCompressed;
+	}
+	
+	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL)*8 == format.bitsPerPixel);
 	assert(ilGetInteger(IL_IMAGE_TYPE) == format.type);
 	
-	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bytesPerPixel], name);
+	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bitsPerPixel/8], name);
 }
 
 shared static this()

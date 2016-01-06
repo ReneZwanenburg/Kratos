@@ -47,7 +47,7 @@ struct KratosMesh
 struct KratosTexture
 {
 	import kgl3n.vector : vec2ui;
-	import kratos.graphics.texture : TextureFormat, DefaultTextureFormat;
+	import kratos.graphics.texture : TextureFormat, DefaultTextureFormat, getMipmapsBufferLength, getMipmapBufferLength;
 	
 	enum Format : uint
 	{
@@ -79,7 +79,7 @@ struct KratosTexture
 		);
 		
 		auto format = getTextureFormat(retVal.format);
-		assert(retVal.resolution.x * retVal.resolution.y * format.bytesPerPixel == data.length);
+		assert(data.length == getMipmapsBufferLength(format, retVal.resolution) || data.length == getMipmapBufferLength(format, retVal.resolution));
 		retVal.texelBuffer = data;
 		
 		return retVal;
@@ -95,11 +95,16 @@ struct KratosTexture
 	
 	public static TextureFormat getTextureFormat(Format format)
 	{
+		import kratos.graphics.gl;
+	
 		static immutable formatTable = 
 		[
 			DefaultTextureFormat.R,
 			DefaultTextureFormat.RGB,
-			DefaultTextureFormat.RGBA
+			DefaultTextureFormat.RGBA,
+			TextureFormat(GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_UNSIGNED_BYTE, 4),
+			TextureFormat(GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_UNSIGNED_BYTE, 8),
+			TextureFormat(GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_UNSIGNED_BYTE, 8)
 		];
 		
 		return formatTable[format];
