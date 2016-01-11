@@ -4,6 +4,7 @@ import kratos.ecs;
 import kgl3n.vector;
 import kgl3n.quaternion;
 import kgl3n.matrix;
+import kratos.util : Event;
 
 final class Transform : Component
 {
@@ -12,6 +13,11 @@ final class Transform : Component
 
 	private	mat4			_localMatrix;
 	private	mat4			_worldMatrix;
+
+	public Event!Transform onLocalTransformChanged;
+	public Event!Transform onWorldTransformChanged;
+
+	alias ChangedRegistration = onLocalTransformChanged.RegistrationType;
 
 	@property
 	{
@@ -63,8 +69,18 @@ final class Transform : Component
 	void frameUpdate()
 	{
 		//TODO: Ensure correct update order of hierarchies
-		_localMatrix = localTransformation.toMatrix();
-		_worldMatrix = parent is null ? _localMatrix : _localMatrix * parent.worldMatrix;
+		//TODO: Use some form of update-if-dirty
+		mat4 newLocalMatrix = localTransformation.toMatrix();
+		mat4 newWorldMatrix = parent is null ? newLocalMatrix : newLocalMatrix * parent.worldMatrix;
+
+		bool localMatrixChanged = newLocalMatrix !is localMatrix;
+		bool worldMatrixChanged = newWorldMatrix !is worldMatrix;
+
+		_localMatrix = newLocalMatrix;
+		_worldMatrix = newWorldMatrix;
+
+		onLocalTransformChanged.raiseIf(localMatrixChanged, this);
+		onWorldTransformChanged.raiseIf(worldMatrixChanged, this);
 	}
 }
 
