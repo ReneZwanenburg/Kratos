@@ -7,12 +7,21 @@ struct Event(Args...)
 	@disable this(this);
 
 	alias CallbackType = void delegate(Args);
+	alias RegistrationType = EventRegistration!(typeof(this));
 
 	private Array!CallbackType callbacks;
 
 	void raise(Args args)
 	{
 		foreach(callback; callbacks[]) callback(args);
+	}
+
+	void raiseIf(bool condition, Args args)
+	{
+		if(condition)
+		{
+			raise(args);
+		}
 	}
 	
 	void opOpAssign(string op)(CallbackType callback) if(op == "+")
@@ -25,6 +34,39 @@ struct Event(Args...)
 		import std.algorithm.searching : find;
 		import std.range : take;
 		callbacks.linearRemove(callbacks[].find(callback).take(1));
+	}
+
+	RegistrationType register(CallbackType callback)
+	{
+		this += callback;
+		return RegistrationType(&this, callback);
+	}
+}
+
+struct EventRegistration(EventType)
+{
+	alias CallbackType = EventType.CallbackType;
+	private EventType* event;
+	private CallbackType callback;
+
+	@disable this(this);
+
+	this(EventType* event, CallbackType callback)
+	{
+		this.event = event;
+		this.callback = callback;
+	}
+
+	~this()
+	{
+		if(event == null) return;
+		*event -= callback;
+	}
+
+	public void opAssign(EventRegistration other)
+	{
+		import std.algorithm.mutation : swap;
+		swap(this, other);
 	}
 }
 
