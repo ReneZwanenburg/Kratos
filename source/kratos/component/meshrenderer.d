@@ -16,6 +16,9 @@ final class MeshRenderer : Component
 {
 	private @dependency Transform _transform;
 	private RenderableMesh _mesh;
+	private AABB _worldSpaceBound;
+
+	Transform.ChangedRegistration worldtransformChangedRegistration;
 
 	this()
 	{
@@ -34,6 +37,12 @@ final class MeshRenderer : Component
 	~this()
 	{
 		scene.components.first!MeshRendererPartitioning().deregister(this);
+	}
+
+	void initialize()
+	{
+		worldtransformChangedRegistration = transform.onWorldTransformChanged.register(&worldTransformChanged);
+		worldTransformChanged(transform);
 	}
 
 	@property
@@ -56,8 +65,14 @@ final class MeshRenderer : Component
 		
 		AABB worldSpaceBound() const
 		{
-			return _mesh.modelSpaceBound.transformed(_transform.worldMatrix);
+			return _worldSpaceBound;
 		}
+	}
+
+	private void worldTransformChanged(Transform transform)
+	{
+		assert(transform is _transform);
+		_worldSpaceBound = _mesh.modelSpaceBound.transformed(transform.worldMatrix);
 	}
 
 	string[string] toRepresentation()
