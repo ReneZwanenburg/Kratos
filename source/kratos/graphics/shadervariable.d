@@ -137,6 +137,13 @@ struct VertexAttributes
 		import std.string;
 		return format("%s", this[]);
 	}
+
+	@property bool has(string name) const
+	{
+		import std.algorithm.searching : canFind;
+		import std.algorithm.iteration : map;
+		return this[].map!(a => a.name).canFind!"a[] == b"(name);
+	}
 }
 
 @property GLsizei totalByteSize(const VertexAttribute[] attributes)

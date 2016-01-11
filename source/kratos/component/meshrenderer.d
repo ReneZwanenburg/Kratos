@@ -16,7 +16,6 @@ final class MeshRenderer : Component
 {
 	private @dependency Transform _transform;
 	private RenderableMesh _mesh;
-	private AABB _modelSpaceBoundingBox;
 
 	this()
 	{
@@ -29,7 +28,6 @@ final class MeshRenderer : Component
 	this(RenderableMesh mesh)
 	{
 		_mesh = mesh;
-		updateBound();
 		scene.components.firstOrAdd!MeshRendererPartitioning().register(this);
 	}
 
@@ -54,26 +52,12 @@ final class MeshRenderer : Component
 		void mesh(RenderableMesh mesh)
 		{
 			_mesh = mesh;
-			updateBound();
 		}
 		
 		AABB worldSpaceBound() const
 		{
-			return _modelSpaceBoundingBox.transformed(_transform.worldMatrix);
+			return _mesh.modelSpaceBound.transformed(_transform.worldMatrix);
 		}
-	}
-	
-	private void updateBound()
-	{
-		import kgl3n.vector : vec3;
-		import std.algorithm.iteration : map;
-		// Duplicate work when re-using meshes. Should store it at a lower level.
-		static struct Vertex
-		{
-			vec3 position;
-		}
-
-		_modelSpaceBoundingBox = AABB.fromPoints(mesh.mesh.vbo.getCustom!Vertex.map!(a => a.position));
 	}
 
 	string[string] toRepresentation()

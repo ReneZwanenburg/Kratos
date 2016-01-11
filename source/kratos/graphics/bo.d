@@ -52,11 +52,11 @@ struct VBO
 	
 	auto getCustom(T)()
 	{
-		import std.algorithm.searching : all, canFind, countUntil;
+		import std.algorithm.searching : countUntil;
+
+		assert(isValidCustomFormat!T);
 
 		static immutable partialAttributes = toVertexAttributes!T;
-
-		assert(partialAttributes[].all!(a => attributes[].canFind(a)));
 
 		static struct Range
 		{
@@ -96,6 +96,13 @@ struct VBO
 		}
 
 		return retVal;
+	}
+
+	bool isValidCustomFormat(T)() const
+	{
+		import std.algorithm.searching : all, canFind;
+		static immutable partialAttributes = toVertexAttributes!T;
+		return partialAttributes[].all!(a => attributes[].canFind(a));
 	}
 
 	@property const
