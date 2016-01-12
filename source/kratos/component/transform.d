@@ -8,16 +8,20 @@ import kratos.util : Event;
 
 final class Transform : Component
 {
-	@ignore Transform		parent = null;
 	@ignore Transformation	localTransformation;
 
+	private Transform		_parent;
 	private	mat4			_localMatrix;
 	private	mat4			_worldMatrix;
+	private Transformation	_previousUpdateFransformation;
+	private bool			_refreshParentTransformation;
 
 	public Event!Transform onLocalTransformChanged;
 	public Event!Transform onWorldTransformChanged;
 
 	alias ChangedRegistration = onLocalTransformChanged.RegistrationType;
+	
+	private ChangedRegistration parentWorldTransformChangedRegistration;
 
 	@property
 	{
@@ -64,23 +68,59 @@ final class Transform : Component
 			auto path = owner.name;
 			return parent !is null ? parent.path ~ "/" ~ path : path;
 		}
+		
+		inout(Transform) parent() inout
+		{
+			return _parent;
+		}
+		
+		void parent(Transform parent)
+		{
+			//TODO: update dispatcher chain, invalidate depth
+			_parent = parent;
+			
+			if(parent is null)
+			{
+				parentWorldTransformChangedRegistration = ChangedRegistration.init;
+				_worldMatrix = _localMatrix;
+			}
+			else
+			{
+				parentWorldTransformChangedRegistration = parent.onWorldTransformChanged.register(&invalidateParentTransform);
+				invalidateParentTransform(parent);
+			}
+		}
+	}
+	
+	private void invalidateParentTransform(Transform parent)
+	{
+		assert(parent is this.parent);
+		_refreshParentTransformation = true;
 	}
 
 	void frameUpdate()
 	{
 		//TODO: Ensure correct update order of hierarchies
 		//TODO: Use some form of update-if-dirty
-		mat4 newLocalMatrix = localTransformation.toMatrix();
-		mat4 newWorldMatrix = parent is null ? newLocalMatrix : newLocalMatrix * parent.worldMatrix;
+		
+		auto updateLocal = _previousUpdateFransformation !is localTransformation;
+		auto updateWorld = _refreshParentTransformation || updateLocal;
+		auto worldUpdated = false;
+		
+		if(updateLocal)
+		{
+			_localMatrix = localTransformation.toMatrix();
+			_previousUpdateFransformation = localTransformation;
+		}
+		if(updateWorld)
+		{
+			mat4 newWorldMatrix = parent is null ? _localMatrix : _localMatrix * parent.worldMatrix;
+			worldUpdated = newWorldMatrix !is _worldMatrix;
+			_worldMatrix = newWorldMatrix;
+		}
 
-		bool localMatrixChanged = newLocalMatrix !is localMatrix;
-		bool worldMatrixChanged = newWorldMatrix !is worldMatrix;
-
-		_localMatrix = newLocalMatrix;
-		_worldMatrix = newWorldMatrix;
-
-		onLocalTransformChanged.raiseIf(localMatrixChanged, this);
-		onWorldTransformChanged.raiseIf(worldMatrixChanged, this);
+		onLocalTransformChanged.raiseIf(updateLocal, this);
+		onWorldTransformChanged.raiseIf(worldUpdated, this);
 	}
 }
 
