@@ -10,7 +10,7 @@ import kratos.resource.format : KratosTexture;
 
 alias TextureCache = Cache!(Texture, ResourceIdentifier, id => loadTexture(id));
 
-public Texture loadTexture(ResourceIdentifier name, bool forceCompression = false)
+public Texture loadTexture(ResourceIdentifier name, uint lod = 0, bool forceCompression = false)
 {
 	auto buffer = activeFileSystem.get(name);
 	
@@ -18,15 +18,15 @@ public Texture loadTexture(ResourceIdentifier name, bool forceCompression = fals
 	
 	if(extension == ".kst")
 	{
-		return loadTextureKst(name, buffer, forceCompression);
+		return loadTextureKst(name, buffer, lod, forceCompression);
 	}
 	else
 	{
-		return loadTextureIl(name, buffer, extension, forceCompression);
+		return loadTextureIl(name, buffer, extension, lod, forceCompression);
 	}
 }
 
-private Texture loadTextureKst(string name, const(void)[] buffer, bool forceCompression)
+private Texture loadTextureKst(string name, const(void)[] buffer, uint lod, bool forceCompression)
 {
 	auto ksm = KratosTexture.fromBuffer(buffer);
 	
@@ -36,17 +36,27 @@ private Texture loadTextureKst(string name, const(void)[] buffer, bool forceComp
 		format = format.asCompressed;
 	}
 	
+	assert(ksm.flags & KratosTexture.Flags.MipmapsIncluded || lod == 0);
+	
+	import std.algorithm.comparison : min;
+	lod = min(lod, getRequiredMipmapLevels(ksm.resolution)-1);
+	
+	auto lodResolution = getMipmapLevelResolution(ksm.resolution, lod);
+	auto lodBufferLength = getMipmapsBufferLength(format, lodResolution);
+	
 	return texture
 	(
 		format,
-		ksm.resolution,
-		ksm.texelBuffer,
+		lodResolution,
+		ksm.texelBuffer[0 .. lodBufferLength],
 		name
 	);
 }
 
-private Texture loadTextureIl(string name, const(void)[] buffer, string extension, bool forceCompression)
+private Texture loadTextureIl(string name, const(void)[] buffer, string extension, uint lod, bool forceCompression)
 {
+	assert(lod == 0);
+
 	auto handle = ilGenImage();
 	scope(exit) ilDeleteImage(handle);
 	ilBindImage(handle);

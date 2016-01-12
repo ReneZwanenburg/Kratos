@@ -204,7 +204,7 @@ Texture texture(TextureFormat format, vec2ui resolution, const(void)[] buffer, s
 		
 		auto remainingBuffer = buffer;
 		
-		foreach(level; getRequiredMipMapLevels(resolution).iota.retro)
+		foreach(level; getRequiredMipmapLevels(resolution).iota.retro)
 		{
 			auto levelResolution = getMipmapLevelResolution(resolution, level);
 			auto sliceLength = getMipmapBufferLength(format, levelResolution);
@@ -238,7 +238,7 @@ void[] downloadTextureBuffer(Texture texture, bool includeMipmaps = true)
 		
 	auto remainingBuffer = texelBuffer;
 	
-	foreach(level; getRequiredMipMapLevels(texture.resolution).iota.retro)
+	foreach(level; getRequiredMipmapLevels(texture.resolution).iota.retro)
 	{
 		auto levelResolution = getMipmapLevelResolution(texture.resolution, level);
 		auto sliceLength = getMipmapBufferLength(downloadFormat, levelResolution);
@@ -288,7 +288,7 @@ private void uploadMipmapLevel(TextureFormat format, vec2ui resolution, int leve
 
 uint getMipmapsBufferLength(TextureFormat format, vec2ui resolution)
 {
-	const requiredMipMapLevels = getRequiredMipMapLevels(resolution);
+	const requiredMipMapLevels = getRequiredMipmapLevels(resolution);
 	
 	uint mipmapsLengthInBytes = 0;
 	
@@ -316,7 +316,7 @@ uint getMipmapBufferLength(TextureFormat format, vec2ui resolution)
 	return (resolution.x * format.bitsPerPixel / 8) * resolution.y;
 }
 
-private vec2ui getMipmapLevelResolution(vec2ui baseResolution, uint level)
+vec2ui getMipmapLevelResolution(vec2ui baseResolution, uint level)
 {
 	foreach(_; 0..level) baseResolution = getNextMipmapLevelResolution(baseResolution);
 	return baseResolution;
@@ -330,7 +330,7 @@ private vec2ui getNextMipmapLevelResolution(vec2ui resolution)
 	return resolution;
 }
 
-private uint getRequiredMipMapLevels(vec2ui resolution)
+uint getRequiredMipmapLevels(vec2ui resolution)
 {
 	return max(resolution.x, resolution.y).higherPOT.getLog2 + 1;
 }
