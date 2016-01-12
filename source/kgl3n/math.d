@@ -34,6 +34,7 @@ import smath = std.math;
 import kgl3n.vector : isVector;
 import kgl3n.matrix : isMatrix;
 import kgl3n.quaternion : isQuaternion;
+import kgl3n.util : TupleRange;
 
 version(unittest) {
 	import kgl3n.vector;
@@ -97,8 +98,8 @@ if(isVector!T)
 {
     T ret;
 
-    foreach(i, element; vec.vector) {
-        ret.vector[i] = abs(element);
+    foreach(i; TupleRange!(0, T.dimension)) {
+        ret.vector[i] = abs(vec[i]);
     }
     
     return ret;
