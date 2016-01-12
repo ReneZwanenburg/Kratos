@@ -8,7 +8,7 @@ import std.range : only, take;
 
 public final class RootDispatcher
 {
-	private ComponentDispatcherBase[] dispatchers;
+	private GenericComponentManager[] managers;
 
 	private alias FrameUpdater = void delegate();
 	private FrameUpdater[] frameUpdaters;
@@ -51,21 +51,35 @@ public final class RootDispatcher
 		}
 	}
 
-	package auto getDispatcher(ComponentType)()
+	package auto getManager(ComponentType)()
 	{
 		auto typeInfo = typeid(ComponentType);
-		auto result = dispatchers.find!(a => a.componentType is typeInfo);
+		auto result = managers.find!(a => a.componentType is typeInfo);
 
 		if(result.length > 0)
 		{
-			return cast(ComponentDispatcher!ComponentType)result[0];
+			return cast(ComponentManager!ComponentType)result[0];
 		}
 		else
 		{
-			auto dispatcher = new ComponentDispatcher!ComponentType();
-			dispatchers ~= dispatcher;
+			auto manager = createManager!ComponentType;
+			managers ~= manager;
 			requiresSort = true;
-			return dispatcher;
+			return manager;
+		}
+	}
+
+	private auto createManager(ComponentType)()
+	{
+		enum derivedMembers = only(__traits(derivedMembers, ComponentType));
+		static if(derivedMembers.canFind("ManagerType"))
+		{
+			static assert(is(ComponentType.ManagerType));
+			return new ComponentType.ManagerType();
+		}
+		else
+		{
+			return new DefaultComponentManager!ComponentType();
 		}
 	}
 
@@ -80,19 +94,38 @@ public final class RootDispatcher
 
 		import std.algorithm.sorting : sort;
 
-		dispatchers.sort!((a, b) => a.priority < b.priority);
-		foreach(dispatcher; dispatchers) dispatcher.registerOptionals(this);
+		managers.sort!((a, b) => a.priority < b.priority);
+		foreach(manager; managers) manager.registerOptionals(this);
 	}
 }
 
-private abstract class ComponentDispatcherBase
+private interface GenericComponentManager
 {
-	public abstract void registerOptionals(RootDispatcher rootDispatcher);
-	public @property int priority() const;
-	public @priority TypeInfo_Class componentType() const;
+	void registerOptionals(RootDispatcher rootDispatcher);
+	@property int priority() const;
+	@property TypeInfo_Class componentType() const;
 }
 
-package final class ComponentDispatcher(ComponentType) : ComponentDispatcherBase
+public abstract class ComponentManager(ComponentType) : GenericComponentManager
+{
+	abstract void add(ComponentType component);
+
+	final @property const
+	{
+		TypeInfo_Class componentType() { return typeid(ComponentType); }
+		int priority() { return _priority; }
+	}
+
+	private int _priority;
+
+	protected this()
+	{
+		import kratos.ecs.component : getComponentOrdering;
+		_priority = getComponentOrdering()[componentType];
+	}
+}
+
+private final class DefaultComponentManager(ComponentType) : ComponentManager!ComponentType
 {
 	private enum derivedMembers = only(__traits(derivedMembers, ComponentType));
 	private enum hasFrameUpdate = derivedMembers.canFind("frameUpdate");
@@ -100,15 +133,8 @@ package final class ComponentDispatcher(ComponentType) : ComponentDispatcherBase
 	private enum hasPhysicsPostStepUpdate = derivedMembers.canFind("physicsPostStepUpdate");
 
 	private Array!ComponentType components;
-	private int _priority;
 
-	private this()
-	{
-		import kratos.ecs.component : getComponentOrdering;
-		_priority = getComponentOrdering()[componentType];
-	}
-
-	public override void registerOptionals(RootDispatcher rootDispatcher)
+	void registerOptionals(RootDispatcher rootDispatcher)
 	{
 		static if(hasFrameUpdate)
 		{
@@ -124,17 +150,7 @@ package final class ComponentDispatcher(ComponentType) : ComponentDispatcherBase
 		}
 	}
 
-	public override @property int priority() const
-	{
-		return _priority;
-	}
-
-	public override @property TypeInfo_Class componentType() const
-	{
-		return typeid(ComponentType);
-	}
-
-	package void add(ComponentType component)
+	override void add(ComponentType component)
 	{
 		components.insertBack(component);
 		component.onDestruction += &componentDestructionEventHandler;

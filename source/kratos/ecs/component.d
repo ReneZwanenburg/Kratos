@@ -261,7 +261,7 @@ template ComponentInteraction(ComponentType)
 			ComponentInteraction!ParentType.registerAtDispatcher(component);
 		}
 
-		component.scene.rootDispatcher.getDispatcher!ComponentType.add(component);
+		component.scene.rootDispatcher.getManager!ComponentType.add(component);
 	}
 
 	private void resolveDependencies(ComponentType component, InitializationTaskRunner taskRunner)
