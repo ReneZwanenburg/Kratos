@@ -92,13 +92,28 @@ struct Transformation
 
 	mat4 toMatrix() const
 	{
-		//TODO: Compose in a sane way. This is _extremely_ inefficient
-		return mat4.translation(position) * rotation.toMatrix!(4) * mat4.scaling(vec3(scale));
+		auto retVal = rotation.toMatrix!4;
+		retVal *= scale;
+		retVal[0].w = position.x;
+		retVal[1].w = position.y;
+		retVal[2].w = position.z;
+		retVal[3].w = 1;
+		
+		return retVal;
 	}
 
 	mat4 toMatrixInverse() const
 	{
-		return mat4.scaling(vec3(1 / scale)) * rotation.inverted.toMatrix!(4) * mat4.translation(-position);
+		auto invRotation = rotation.inverted;
+		auto invPosition = invRotation * -position;
+		auto retVal = invRotation.toMatrix!4;
+		retVal *= (1 / scale);
+		retVal[0].w = invPosition.x;
+		retVal[1].w = invPosition.y;
+		retVal[2].w = invPosition.z;
+		retVal[3].w = 1;
+		
+		return retVal;
 	}
 
 	static Transformation fromMatrix(ref mat4 matrix)
