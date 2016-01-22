@@ -15,6 +15,9 @@ final class Transform : Component
 	private	mat4			_worldMatrix;
 	private Transformation	_previousUpdateFransformation;
 	private bool			_refreshParentTransformation;
+	
+	//TODO: World rotation, scale
+	private vec3 			_worldPosition;
 
 	public Event!Transform onLocalTransformChanged;
 	public Event!Transform onWorldTransformChanged;
@@ -37,9 +40,14 @@ final class Transform : Component
 			return localTransformation.rotation;
 		}
 
-		ref scale() const
+		ref scale()
 		{
 			return localTransformation.scale;
+		}
+		
+		vec3 worldPosition() const
+		{
+			return _worldPosition;
 		}
 
 		ref const(mat4) worldMatrix() const
@@ -101,7 +109,6 @@ final class Transform : Component
 	void frameUpdate()
 	{
 		//TODO: Ensure correct update order of hierarchies
-		//TODO: Use some form of update-if-dirty
 		
 		auto updateLocal = _previousUpdateFransformation !is localTransformation;
 		auto updateWorld = _refreshParentTransformation || updateLocal;
@@ -114,9 +121,14 @@ final class Transform : Component
 		}
 		if(updateWorld)
 		{
-			mat4 newWorldMatrix = parent is null ? _localMatrix : _localMatrix * parent.worldMatrix;
+			mat4 newWorldMatrix = parent is null ? _localMatrix : parent.worldMatrix * _localMatrix;
 			worldUpdated = newWorldMatrix !is _worldMatrix;
 			_worldMatrix = newWorldMatrix;
+			
+			if(worldUpdated)
+			{
+				_worldPosition = _worldMatrix.col(3).xyz;
+			}
 		}
 
 		onLocalTransformChanged.raiseIf(updateLocal, this);
