@@ -20,5 +20,5 @@ struct TextureUnit
 		return _index;
 	}
 
-	enum Size = 48;
+	enum Size = 16;
 }
