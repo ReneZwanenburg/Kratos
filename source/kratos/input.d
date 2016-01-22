@@ -58,7 +58,7 @@ struct Pointer
 
 private Mouse _mouse;
 
-public @property Mouse mouse()
+public @property Mouse mouse() nothrow
 {
 	return _mouse;
 }
@@ -73,8 +73,10 @@ class Mouse
 	private Button[GLFW_MOUSE_BUTTON_LAST] _buttons;
 	private Axis _xAxis, _yAxis;
 	private Pointer _absolutePointer;
+	private Button _scrollUp, _scrollDown;
 
 	private GLFWwindow* windowHandle;
+	private double _yScroll;
 
 	package this(ref Window window)
 	{
@@ -88,8 +90,18 @@ class Mouse
 
 		_xAxis = Axis("Mouse X axis", 0, window.properties.width);
 		_yAxis = Axis("Mouse Y axis", 0, window.properties.height);
+		
+		_scrollUp = Button("Mouse Scroll Up");
+		_scrollDown = Button("Mouse Scroll Down");
 
 		_absolutePointer = Pointer("Mouse Pointer");
+		
+		glfwSetScrollCallback(window.handle, &scrollCallback);
+	}
+	
+	private static extern(C) void scrollCallback(GLFWwindow* w, double x, double y) nothrow
+	{
+		mouse._yScroll = y;
 	}
 
 	package void update()
@@ -112,6 +124,10 @@ class Mouse
 		{
 			button.update(glfwGetMouseButton(windowHandle, i) == GLFW_PRESS);
 		}
+		
+		_scrollUp.update(_yScroll > 0);
+		_scrollDown.update(_yScroll < 0);
+		_yScroll = 0;
 	}
 	
 	@property
@@ -147,6 +163,16 @@ class Mouse
 		auto absolutePointer()
 		{
 			return _absolutePointer;
+		}
+		
+		auto scrollUp()
+		{
+			return _scrollUp;
+		}
+		
+		auto scrollDown()
+		{
+			return _scrollDown;
 		}
 	}
 }
