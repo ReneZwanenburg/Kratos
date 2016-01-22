@@ -3,12 +3,13 @@
 import kratos.ecs.scene : SceneComponent;
 import kratos.ecs.component : dependency, ignore;
 
-import kratos.component.meshrenderer : MeshRendererPartitioning;
+import kratos.component.meshrenderer : MeshRenderer, MeshRendererPartitioning;
 import kratos.component.camera : Camera, CameraSelection;
 import kratos.component.transform : Transform;
 import kratos.component.light : DirectionalLightPartitioning, DirectionalLight, PointLightPartitioning, PointLight;
 
 import kratos.graphics.rendertarget : RenderTarget, FrameBuffer;
+import kratos.graphics.renderstate : RenderState;
 import kratos.graphics.shadervariable : UniformRef;
 import kratos.graphics.renderablemesh : RenderableMesh, renderableMesh;
 import kratos.graphics.mesh : Mesh;
@@ -17,6 +18,7 @@ import kratos.graphics.bo : VBO, IBO;
 import kgl3n.vector : vec2, vec2ui, vec3, vec4;
 import kgl3n.matrix : mat4;
 import kgl3n.frustum : Frustum;
+import kgl3n.math : max;
 
 import std.experimental.logger;
 
@@ -32,13 +34,18 @@ final class Renderer : SceneComponent
 		PointLightPartitioning pointLights;
 	}
 
-	private RenderTarget gBuffer;
-	private RenderTarget screen;
+	private
+	{
+		RenderTarget gBuffer;
+		RenderTarget screen;
 
-	private RenderableMesh directionalLightRenderableMesh = void;
-	private RenderableMesh pointLightRenderableMesh = void;
+		RenderableMesh directionalLightRenderableMesh = void;
+		RenderableMesh pointLightRenderableMesh = void;
 
-	private DirectionalLightUniforms directionalLightUniforms;
+		DirectionalLightUniforms directionalLightUniforms;
+		
+		RenderQueues renderQueues;
+	}
 
 	this()
 	{
@@ -76,22 +83,33 @@ final class Renderer : SceneComponent
 		auto vp = camera.viewProjectionMatrix;
 		auto worldSpaceFrustum = Frustum(vp);
 		
+		renderQueues.clear();
 		foreach(meshRenderer; meshRenderers.intersecting(worldSpaceFrustum))
 		{
-			with(meshRenderer.mesh.renderState.shader.uniforms.builtinUniforms)
+			renderQueues.enqueue(meshRenderer);
+		}
+		//TODO: Sort transparent queue
+		
+		foreach(queue; renderQueues.queues)
+		{
+			//TODO: Transparent queue should use forward rendering
+			foreach(meshRenderer; queue[])
 			{
-				//TODO: Only assign bound uniforms
-				auto w = meshRenderer.transform.worldMatrix;
+				with(meshRenderer.mesh.renderState.shader.uniforms.builtinUniforms)
+				{
+					//TODO: Only assign bound uniforms
+					auto w = meshRenderer.transform.worldMatrix;
 
-				W = w;
-				V = v;
-				P = p;
-				WV = v * w;
-				VP = vp;
-				WVP = vp * w;
+					W = w;
+					V = v;
+					P = p;
+					WV = v * w;
+					VP = vp;
+					WVP = vp * w;
+				}
+				
+				render(meshRenderer.mesh);
 			}
-			
-			render(meshRenderer.mesh);
 		}
 	}
 
@@ -174,6 +192,51 @@ final class Renderer : SceneComponent
 		];
 
 		return new FrameBuffer(size, bufferDescriptions);
+	}
+}
+
+private struct RenderQueues
+{
+	RenderQueue[RenderState.Queue.max + 1] queues;
+	
+	void clear()
+	{
+		foreach(ref queue; queues) queue.clear();
+	}
+	
+	void enqueue(MeshRenderer meshRenderer)
+	{
+		queues[meshRenderer.mesh.renderState.queue] ~= meshRenderer;
+	}
+}
+
+private struct RenderQueue
+{
+	private
+	{
+		MeshRenderer[] backingArray;
+		size_t used;
+	}
+	
+	void clear()
+	{
+		used = 0;
+		//TODO: Clear backingArray?
+	}
+	
+	void opOpAssign(string op : "~")(MeshRenderer meshRenderer) 
+	{
+		if(used == backingArray.length)
+		{
+			backingArray.length = max(16, backingArray.length * 2);
+		}
+		
+		backingArray[used++] = meshRenderer;
+	}
+	
+	MeshRenderer[] opIndex()
+	{
+		return backingArray[0 .. used];
 	}
 }
 

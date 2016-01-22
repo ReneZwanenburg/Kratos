@@ -18,8 +18,15 @@ private RenderState loadRenderState(ResourceIdentifier name)
 	if(json["parent"].type == Json.Type.undefined)
 	{
 		auto renderState = RenderState(name);
+		
+		auto queue = json["queue"];
+		if(queue.type != Json.Type.undefined)
+		{
+			import std.conv : to;
+			renderState.queue = queue.get!string.to!(RenderState.Queue);
+		}
 
-		foreach(ref field; renderState.content.tupleof)
+		foreach(ref field; renderState.states.tupleof)
 		{
 			alias T = typeof(field);
 			auto stateJson = json[T.stringof];

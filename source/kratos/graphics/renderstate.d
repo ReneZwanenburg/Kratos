@@ -9,12 +9,19 @@ import vibe.data.serialization;
 
 struct RenderState
 {
+	enum Queue
+	{
+		Opaque,
+		Transparent
+	}
+
 	ResourceIdentifier id;
-	RenderStateContent content;
-	alias content this;
+	Queue queue = Queue.Opaque;
+	RenderStateCollection states;
+	alias states this;
 }
 
-private struct RenderStateContent
+private struct RenderStateCollection
 {
 	Cull		cull;
 	Blend		blend;
