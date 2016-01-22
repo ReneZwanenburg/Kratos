@@ -8,11 +8,13 @@ import kratos.component.camera : Camera, CameraSelection;
 import kratos.component.transform : Transform;
 import kratos.component.light : DirectionalLightPartitioning, DirectionalLight, PointLightPartitioning, PointLight;
 
+import kratos.ui.panel;
+
 import kratos.graphics.rendertarget : RenderTarget, FrameBuffer;
 import kratos.graphics.renderstate : RenderState;
 import kratos.graphics.shadervariable : UniformRef;
 import kratos.graphics.renderablemesh : RenderableMesh, renderableMesh;
-import kratos.graphics.mesh : Mesh;
+import kratos.graphics.mesh : Mesh, quad2D;
 import kratos.graphics.bo : VBO, IBO;
 
 import kgl3n.vector : vec2, vec2ui, vec3, vec4;
@@ -32,6 +34,7 @@ final class Renderer : SceneComponent
 		MeshRendererPartitioning meshRenderers;
 		DirectionalLightPartitioning directionalLights;
 		PointLightPartitioning pointLights;
+		UiComponentPartitioning uiComponents;
 	}
 
 	private
@@ -45,6 +48,19 @@ final class Renderer : SceneComponent
 		DirectionalLightUniforms directionalLightUniforms;
 		
 		RenderQueues renderQueues;
+	}
+	
+	@property
+	{
+		vec2ui gBufferResolution() const
+		{
+			return gBuffer.frameBuffer.size;
+		}
+		
+		vec2ui screenResolution() const
+		{
+			return screen.frameBuffer.size;
+		}
 	}
 
 	this()
@@ -74,6 +90,8 @@ final class Renderer : SceneComponent
 		screen.bind();
 		screen.clear();
 		renderLights(camera);
+		
+		renderUi();
 	}
 
 	private void renderScene(Camera camera)
@@ -129,6 +147,19 @@ final class Renderer : SceneComponent
 			render(directionalLightRenderableMesh);
 		}
 	}
+	
+	private void renderUi()
+	{
+		foreach(uiComponent; uiComponents.all)
+		{
+			with(uiComponent.mesh.renderState.shader.uniforms.builtinUniforms)
+			{
+				W = uiComponent.transform.worldMatrix;
+			}
+			
+			render(uiComponent.mesh);
+		}
+	}
 
 	private void render(ref RenderableMesh renderableMesh)
 	{
@@ -143,7 +174,7 @@ final class Renderer : SceneComponent
 
 	private void initRenderMeshes()
 	{
-		auto quad = createFullscreenQuad();
+		auto quad = quad2D(vec2(-1, -1), vec2(1, 1));
 
 		import kratos.resource.loader.renderstateloader;
 
@@ -161,24 +192,6 @@ final class Renderer : SceneComponent
 	private void initUniformRefs()
 	{
 		directionalLightUniforms = directionalLightRenderableMesh.renderState.shader.getRefs!DirectionalLightUniforms;
-	}
-
-	private Mesh createFullscreenQuad()
-	{
-		static struct Vertex
-		{
-			vec2 position;
-		}
-
-		auto vbo = VBO([
-				Vertex(vec2(-1, 1)),
-				Vertex(vec2(1, 1)),
-				Vertex(vec2(-1, -1)),
-				Vertex(vec2(1, -1))
-			]);
-		auto ibo = IBO([0u, 2u, 1u, 1u, 2u, 3u]);
-		
-		return Mesh(ibo, vbo);
 	}
 
 	private static FrameBuffer createGBuffer(vec2ui size)

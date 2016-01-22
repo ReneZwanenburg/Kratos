@@ -8,7 +8,7 @@
 	"DepthTest":
 	{
 		"read": false,
-		"write": true
+		"write": false
 	},
 
 	"Shader":

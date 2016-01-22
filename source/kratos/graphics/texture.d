@@ -189,39 +189,47 @@ enum DefaultTextureFormat : TextureFormat
 // Determines if mipmaps are included based on buffer length. Generates mipmaps when not present.
 Texture texture(TextureFormat format, vec2ui resolution, const(void)[] buffer, string name = null)
 {
-	const mipmapsLength = getMipmapsBufferLength(format, resolution);
-	const bufferContainsMipmaps = buffer.length == mipmapsLength;
-	
-	assert(buffer.ptr == null || bufferContainsMipmaps || buffer.length == getMipmapBufferLength(format, resolution));
-
 	const handle = gl.genTexture();
 	auto texture = Texture(handle, resolution, format, name ? name : handle.text);
-	ScratchTextureUnit.makeActiveScratch(texture);
-
-	if(bufferContainsMipmaps)
-	{
-		import std.range : iota, retro;
-		
-		auto remainingBuffer = buffer;
-		
-		foreach(level; getRequiredMipmapLevels(resolution).iota.retro)
-		{
-			auto levelResolution = getMipmapLevelResolution(resolution, level);
-			auto sliceLength = getMipmapBufferLength(format, levelResolution);
-			
-			uploadMipmapLevel(format, levelResolution, level, remainingBuffer[0 .. sliceLength]);
-			remainingBuffer = remainingBuffer[sliceLength .. $];
-		}
-		
-		assert(remainingBuffer.length == 0);
-	}
-	else
-	{
-		uploadMipmapLevel(format, resolution, 0, buffer);
-		gl.GenerateMipmap(GL_TEXTURE_2D);
-	}
+	texture.update(buffer);
 
 	return texture;
+}
+
+public void update(Texture texture, const(void)[] buffer)
+{
+	with(texture)
+	{
+		const mipmapsLength = getMipmapsBufferLength(format, resolution);
+		const bufferContainsMipmaps = buffer.length == mipmapsLength;
+		
+		assert(buffer.ptr == null || bufferContainsMipmaps || buffer.length == getMipmapBufferLength(format, resolution));
+
+		ScratchTextureUnit.makeActiveScratch(texture);
+
+		if(bufferContainsMipmaps)
+		{
+			import std.range : iota, retro;
+			
+			auto remainingBuffer = buffer;
+			
+			foreach(level; getRequiredMipmapLevels(resolution).iota.retro)
+			{
+				auto levelResolution = getMipmapLevelResolution(resolution, level);
+				auto sliceLength = getMipmapBufferLength(format, levelResolution);
+				
+				uploadMipmapLevel(format, levelResolution, level, remainingBuffer[0 .. sliceLength]);
+				remainingBuffer = remainingBuffer[sliceLength .. $];
+			}
+			
+			assert(remainingBuffer.length == 0);
+		}
+		else
+		{
+			uploadMipmapLevel(format, resolution, 0, buffer);
+			gl.GenerateMipmap(GL_TEXTURE_2D);
+		}
+	}
 }
 
 void[] downloadTextureBuffer(Texture texture, bool includeMipmaps = true)

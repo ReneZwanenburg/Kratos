@@ -266,6 +266,11 @@ template ComponentInteraction(ComponentType)
 
 	private void resolveDependencies(ComponentType component, InitializationTaskRunner taskRunner)
 	{
+		static if(!ParentIsRoot)
+		{
+			ComponentInteraction!ParentType.resolveDependencies(component, taskRunner);
+		}
+		
 		import vibe.internal.meta.uda : findFirstUDA;
 
 		foreach(i, T; typeof(ComponentType.tupleof))
@@ -282,16 +287,13 @@ template ComponentInteraction(ComponentType)
 
 	private void callInitializer(ComponentType component, InitializationTaskRunner taskRunner)
 	{
-		static if(!ParentIsRoot)
-		{
-			ComponentInteraction!ParentType.callInitializer(component);
-		}
-
 		//TODO: Type and arg checking, make reusable
+		//TODO: Make sure we're not picking up base class members
 		import std.traits : hasMember;
 		static if(hasMember!(ComponentType, "initialize"))
 		{
-			component.initialize();
+			auto initializePtr = &__traits(getMember, component, "initialize");
+			initializePtr();
 		}
 	}
 
@@ -301,7 +303,7 @@ template ComponentInteraction(ComponentType)
 
 		static if(!ParentIsRoot)
 		{
-			dependencyList.dependencies ~= typeid(ParentType);
+			dependencyList.readDependencies ~= typeid(ParentType);
 		}
 
 		foreach(i, T; typeof(ComponentType.tupleof))

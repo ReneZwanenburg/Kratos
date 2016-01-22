@@ -3,6 +3,7 @@
 import kgl3n;
 import kratos.graphics.gl;
 import kratos.graphics.texture;
+import kratos.graphics.renderstate : DepthTest, DepthFunc;
 
 final class RenderTarget
 {
@@ -32,8 +33,11 @@ final class RenderTarget
 
 	void clear()
 	{
+		static depthTestState = DepthTest(DepthFunc.LessOrEqual, false, true);
+	
 		assert(frameBuffer.active, "RenderTarget frameBuffer must be active before clearing, call apply on the RenderTarget to ensure it's FrameBuffer is active");
 		clearSettings.apply();
+		depthTestState.apply();
 		gl.Clear(clearBuffers);
 	}
 }

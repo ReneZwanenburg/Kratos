@@ -12,7 +12,8 @@ struct RenderState
 	enum Queue
 	{
 		Opaque,
-		Transparent
+		Transparent,
+		UI
 	}
 
 	ResourceIdentifier id;
@@ -158,7 +159,7 @@ struct Blend
 			   current.dstRgbFunction != dstRgbFunction ||
 			   current.dstAlphaFunction != dstRgbFunction)
 			{
-				gl.BlendFuncSeparate(srcRgbFunction, srcAlphaFunction, dstRgbFunction, dstAlphaFunction);
+				gl.BlendFuncSeparate(srcRgbFunction, dstRgbFunction, srcAlphaFunction, dstAlphaFunction);
 			}
 
 			if(current.color != color) gl.BlendColor(color.r, color.g, color.b, color.a);

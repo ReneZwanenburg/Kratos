@@ -1,0 +1,17 @@
+{
+	"DepthTest":
+	{
+		"read": false,
+		"write": false
+	},
+
+	"Shader":
+	{
+		"program": "ShaderPrograms/UI/Panel.prog",
+		
+		"uniforms":
+		{
+			"texture": "Textures/White.png"
+		}
+	}
+}

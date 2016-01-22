@@ -1,0 +1,16 @@
+{
+	"modules":
+	[
+		"Shaders/UI/VertexTransform.vert",
+		"Shaders/UI/Panel.frag"
+	],
+	
+	"samplers":
+	{
+		"texture":
+		{
+			"xWrap": "Clamp",
+			"yWrap": "Clamp"
+		},
+	}
+}
