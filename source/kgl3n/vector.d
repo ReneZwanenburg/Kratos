@@ -126,7 +126,10 @@ struct Vector(type, size_t dimension_)
 		}
 		else static if(isCompatibleVector!T)
 		{
-			vector[i .. i + T.dimension] = head.vector[];
+			foreach(fi; TupleRange!(0, T.dimension))
+			{
+				vector[i+fi] = head.vector[fi];
+			}
 			construct!(i + T.dimension)(tail);
 		}
 		else
