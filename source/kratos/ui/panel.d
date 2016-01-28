@@ -74,22 +74,36 @@ public final class Panel : UiComponent
 
 public final class TextPanel : UiComponent
 {
-	vec2 size;
-	float fontSize;
-	string font;
-	string renderState;
-	
 	private @dependency Renderer renderer;
 	
 	private
 	{
 		string _text;
+
+		vec2 _size;
+		float _fontSize;
+		string _font;
+		string _renderState;
+
 		Texture _texture;
 		ubyte[] _texelBuffer;
-		bool _requiresUpdate;
 		FT_Face _face; // Not sure what the overhead is here. Maybe these should be cached.
 		immutable (ubyte)[] _faceBuffer;
 		int _pixelSize;
+
+		bool _requiresMeshUpdate;
+		bool _requiresTextureUpdate;
+		bool _requiresFontUpdate;
+	}
+
+	this(){};
+
+	this(vec2 size, float fontSize, string font, string renderState)
+	{
+		this.size = size;
+		this.fontSize = fontSize;
+		this.font = font;
+		this.renderState = renderState;
 	}
 	
 	@property
@@ -102,37 +116,53 @@ public final class TextPanel : UiComponent
 		void text(string newText)
 		{
 			_text = newText;
-			_requiresUpdate = true;
+			_requiresTextureUpdate = true;
 		}
-	}
-	
-	private void initialize()
-	{
-		auto screenResolution = renderer.screenResolution;
-		
-		auto texSize = vec2ui
-		( // Size is in clip space, so -1 to 1. Therefore, multiply final size by 0.5.
-			cast(uint)(screenResolution.x * size.x * 0.5f),
-			cast(uint)(screenResolution.y * size.y * 0.5f)
-		);
-		
-		_texture = texture(DefaultTextureFormat.R, texSize, null, owner.name ~ " TextPanel");
-		_texelBuffer = new ubyte[texSize.x * texSize.y];
-		
-		auto halfSize = size / 2;
-		_mesh = renderableMesh
-		(
-			quad2D(-halfSize, halfSize, vec2(0, 1), vec2(1, 0)),
-			RenderStateCache.get(renderState)
-		);
-		
-		_mesh.renderState.shader.uniforms["texture"] = _texture;
-		
-		//TODO: Error checks
-		_faceBuffer = activeFileSystem.get!ubyte(font);
-		FT_New_Memory_Face(freeType, _faceBuffer.ptr, cast(int)_faceBuffer.length, 0, &_face);
-		_pixelSize = cast(int)(screenResolution.y * fontSize);
-		FT_Set_Pixel_Sizes(_face, _pixelSize, 0);
+
+		vec2 size() const
+		{
+			return _size;
+		}
+
+		void size(vec2 newSize)
+		{
+			_size = newSize;
+			_requiresMeshUpdate = true;
+		}
+
+		float fontSize() const
+		{
+			return _fontSize;
+		}
+
+		void fontSize(float newFontSize)
+		{
+			_fontSize = newFontSize;
+			_requiresTextureUpdate = true;
+		}
+
+		string font() const
+		{
+			return _font;
+		}
+
+		void font(string newFont)
+		{
+			_font = newFont;
+			_requiresFontUpdate = true;
+		}
+
+		// I don't like having these as stirng properties..
+		string renderState() const
+		{
+			return _renderState;
+		}
+
+		void renderState(string newRenderState)
+		{
+			_renderState = newRenderState;
+			_requiresMeshUpdate = true;
+		}
 	}
 	
 	~this()
@@ -142,8 +172,48 @@ public final class TextPanel : UiComponent
 	
 	void frameUpdate()
 	{
-		if(_requiresUpdate)
+		if(_requiresMeshUpdate)
 		{
+			_requiresMeshUpdate = false;
+			_requiresTextureUpdate = true;
+
+			auto screenResolution = renderer.screenResolution;
+			
+			auto texSize = vec2ui
+			( // Size is in clip space, so -1 to 1. Therefore, multiply final size by 0.5.
+				cast(uint)(screenResolution.x * size.x * 0.5f),
+				cast(uint)(screenResolution.y * size.y * 0.5f)
+			);
+			
+			_texture = texture(DefaultTextureFormat.R, texSize, null, owner.name ~ " TextPanel");
+			_texelBuffer = new ubyte[texSize.x * texSize.y];
+			
+			auto halfSize = size / 2;
+			_mesh = renderableMesh
+			(
+				quad2D(-halfSize, halfSize, vec2(0, 1), vec2(1, 0)),
+				RenderStateCache.get(renderState)
+			);
+
+			_mesh.renderState.shader.uniforms["texture"] = _texture;
+		}
+
+		if(_requiresFontUpdate)
+		{
+			_requiresFontUpdate = false;
+			_requiresTextureUpdate = true;
+
+			//TODO: Error checks
+			FT_Done_Face(_face);
+			_faceBuffer = activeFileSystem.get!ubyte(font);
+			FT_New_Memory_Face(freeType, _faceBuffer.ptr, cast(int)_faceBuffer.length, 0, &_face);
+			_pixelSize = cast(int)(renderer.screenResolution.y * fontSize);
+			FT_Set_Pixel_Sizes(_face, _pixelSize, 0);
+		}
+
+		if(_requiresTextureUpdate)
+		{
+			_requiresTextureUpdate = false;
 			renderTextToTexture();
 		}
 	}
