@@ -195,3 +195,17 @@ struct RawFileWriter
 		file.rawWrite(values);
 	}
 }
+
+T getOrAdd(AA : T[K], T, K)(ref AA aa, K key, scope lazy T createT)
+{
+	if(auto tPtr = key in aa)
+	{
+		return *tPtr;
+	}
+	else
+	{
+		auto t = createT;
+		aa[key] = t;
+		return t;
+	}
+}
