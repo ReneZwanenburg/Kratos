@@ -23,10 +23,11 @@ public abstract class UiComponent : Component
 	@ignore:
 
 	protected @dependency Transform _transform;
-	protected RenderableMesh _mesh = void;
+	protected RenderableMesh _mesh;
 
 	protected this()
 	{
+		_mesh = defaultRenderableMesh;
 		scene.components.firstOrAdd!UiComponentPartitioning.register(this);
 	}
 	
