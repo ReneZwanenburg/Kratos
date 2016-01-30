@@ -22,6 +22,14 @@ struct RenderState
 	alias states this;
 }
 
+auto defaultRenderState()
+{
+	import kratos.graphics.shader : errorProgram;
+	RenderState renderState;
+	renderState.shader = Shader(errorProgram);
+	return renderState;
+}
+
 private struct RenderStateCollection
 {
 	Cull		cull;
@@ -284,7 +292,6 @@ struct Stencil
 		}
 	}
 }
-
 
 struct Shader
 {

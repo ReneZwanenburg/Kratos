@@ -10,6 +10,11 @@ auto renderableMesh()(Mesh mesh, auto ref RenderState renderState)
 	return RenderableMesh(mesh, renderState);
 }
 
+auto defaultRenderableMesh()
+{
+	return renderableMesh(emptyMesh, defaultRenderState);
+}
+
 struct RenderableMesh
 {
 	private Mesh		_mesh;
