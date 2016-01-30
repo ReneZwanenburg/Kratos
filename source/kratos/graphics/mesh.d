@@ -12,11 +12,12 @@ Mesh emptyMesh()
 	if(!initialized)
 	{
 		import kgl3n.vector;
+		import std.conv : emplace;
 		static struct S{ vec3 position; }
 		S[] sArr;
 		uint[] iArr;
 
-		emptyMesh = Mesh(IBO(iArr), VBO(sArr));
+		emplace!Mesh(&emptyMesh, IBO(iArr), VBO(sArr));
 		initialized = true;
 	}
 	return emptyMesh;
