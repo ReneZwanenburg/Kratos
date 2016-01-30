@@ -83,7 +83,7 @@ public final class Entity
 		auto componentsRepresentation = representation["components"];
 		if(componentsRepresentation.type != Json.Type.undefined)
 		{
-			entity._components.deserialize(componentsRepresentation, taskRunner);
+			entity._components.mergeImpl(componentsRepresentation, taskRunner);
 		}
 	}
 

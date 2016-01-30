@@ -140,18 +140,35 @@ struct ComponentContainer(ComponentBaseType)
 		return component is null ? add!T : component;
 	}
 
-
-	package void deserialize(Json containerRepresentation, InitializationTaskRunner taskRunner)
+	void merge(Json representation)
 	{
-		assert(containerRepresentation.type == Json.Type.array);
+		auto taskRunner = delayedTaskRunnerInstance;
+		mergeImpl(representation, taskRunner);
+		taskRunner.runTasks();
+	}
 
-		foreach(componentRepresentation; containerRepresentation[])
+	package void mergeImpl(Json representation, InitializationTaskRunner taskRunner)
+	{
+		if(representation.type == Json.Type.array)
 		{
-			auto fullTypeName = componentRepresentation["type"].get!string;
+			foreach(element; representation[])
+			{
+				mergeImpl(element, taskRunner);
+			}
+		}
+		else if(representation.type == Json.Type.Object)
+		{
+			auto fullTypeName = representation["type"].get!string;
 			auto serializer = fullTypeName in Serializers!ComponentBaseType;
 			assert(serializer, fullTypeName ~ " has not been registered for serialization");
-			serializer.deserialize(_owner, componentRepresentation, taskRunner); // Added to _components in deserializer
+			serializer.deserialize(_owner, representation, taskRunner); // Added to _components in deserializer
 		}
+		else if(representation.type == Json.Type.string)
+		{
+			//TODO: load from file
+			assert(false);
+		}
+		else assert(false);
 	}
 
 	package Json serialize()

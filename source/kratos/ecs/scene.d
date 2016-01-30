@@ -122,7 +122,7 @@ public final class Scene
 		auto componentsRepresentation = representation["components"];
 		if(componentsRepresentation.type != Json.Type.undefined)
 		{
-			scene._components.deserialize(componentsRepresentation, taskRunner);
+			scene._components.mergeImpl(componentsRepresentation, taskRunner);
 		}
 
 		auto entitiesRepresentation = representation["entities"];
