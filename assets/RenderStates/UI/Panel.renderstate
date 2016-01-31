@@ -11,6 +11,7 @@
 		
 		"uniforms":
 		{
+			"color": [1, 1, 1, 1],
 			"texture": "Textures/White.png"
 		}
 	}
