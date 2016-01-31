@@ -34,6 +34,16 @@ final class MeshRenderer : Component
 		scene.components.firstOrAdd!MeshRendererPartitioning().register(this);
 	}
 
+	this(string meshFileName, string renderStateFileName)
+	{
+		import kratos.resource.loader;
+		this(renderableMesh
+		(
+			MeshCache.get(meshFileName),
+			RenderStateCache.get(renderStateFileName)
+		));
+	}
+
 	~this()
 	{
 		scene.components.first!MeshRendererPartitioning().deregister(this);
@@ -85,10 +95,6 @@ final class MeshRenderer : Component
 
 	static MeshRenderer fromRepresentation(string[string] representation)
 	{
-		import kratos.resource.loader;
-		return new MeshRenderer(
-			renderableMesh(
-				MeshCache.get(representation["mesh"]),
-				RenderStateCache.get(representation["renderState"])));
+		return new MeshRenderer(representation["mesh"], representation["renderState"]);
 	}
 }
