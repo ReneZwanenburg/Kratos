@@ -59,7 +59,17 @@ public abstract class UiComponent : Component
 public final class Panel : UiComponent
 {
 	vec2 size; //TODO: Allow updating after initialization..
+	vec2 offset;
 	string renderState;
+
+	this(){}
+
+	this(vec2 size, vec2 offset, string renderState)
+	{
+		this.size = size;
+		this.offset = offset;
+		this.renderState = renderState;
+	}
 	
 	private void initialize()
 	{
@@ -67,7 +77,7 @@ public final class Panel : UiComponent
 	
 		_mesh = renderableMesh
 		(
-			quad2D(-halfSize, halfSize),
+			quad2D(-halfSize + offset, halfSize + offset),
 			RenderStateCache.get(renderState)
 		);
 	}
@@ -82,6 +92,7 @@ public final class TextPanel : UiComponent
 		string _text;
 
 		vec2 _size;
+		vec2 _offset;
 		float _fontSize;
 		string _font;
 		string _renderState;
@@ -99,9 +110,10 @@ public final class TextPanel : UiComponent
 
 	this(){};
 
-	this(vec2 size, float fontSize, string font, string renderState)
+	this(vec2 size, vec2 offset, float fontSize, string font, string renderState)
 	{
 		this.size = size;
+		this.offset = offset;
 		this.fontSize = fontSize;
 		this.font = font;
 		this.renderState = renderState;
@@ -128,6 +140,17 @@ public final class TextPanel : UiComponent
 		void size(vec2 newSize)
 		{
 			_size = newSize;
+			_requiresMeshUpdate = true;
+		}
+
+		vec2 offset() const
+		{
+			return _offset;
+		}
+
+		void offset(vec2 newOffset)
+		{
+			_offset = newOffset;
 			_requiresMeshUpdate = true;
 		}
 
@@ -192,7 +215,7 @@ public final class TextPanel : UiComponent
 			auto halfSize = size / 2;
 			_mesh = renderableMesh
 			(
-				quad2D(-halfSize, halfSize, vec2(0, 1), vec2(1, 0)),
+				quad2D(-halfSize + offset, halfSize + offset, vec2(0, 1), vec2(1, 0)),
 				RenderStateCache.get(renderState)
 			);
 
@@ -208,7 +231,8 @@ public final class TextPanel : UiComponent
 			FT_Done_Face(_face);
 			_faceBuffer = activeFileSystem.get!ubyte(font);
 			FT_New_Memory_Face(freeType, _faceBuffer.ptr, cast(int)_faceBuffer.length, 0, &_face);
-			_pixelSize = cast(int)(renderer.screenResolution.y * fontSize);
+			// Size is in clip space, so -1 to 1. Therefore, multiply final size by 0.5.
+			_pixelSize = cast(int)(renderer.screenResolution.y * fontSize * 0.5f);
 			FT_Set_Pixel_Sizes(_face, _pixelSize, 0);
 		}
 
