@@ -70,17 +70,22 @@ package @property void mouse(Mouse mouse)
 
 class Mouse
 {
+	import kgl3n.vector : vec2;
+
 	private Button[GLFW_MOUSE_BUTTON_LAST] _buttons;
 	private Axis _xAxis, _yAxis;
 	private Pointer _absolutePointer;
+	private Pointer _clipPointer;
 	private Button _scrollUp, _scrollDown;
 
 	private GLFWwindow* windowHandle;
+	private vec2 windowSize;
 	private double _yScroll;
 
 	package this(ref Window window)
 	{
 		this.windowHandle = window.handle;
+		this.windowSize = vec2(window.properties.width, window.properties.height);
 
 		foreach(i, ref button; _buttons)
 		{
@@ -108,8 +113,6 @@ class Mouse
 	{
 		//TODO: Support delta-only mode
 		{
-			import kgl3n.vector : vec2;
-
 			double tmpX, tmpY;
 			glfwGetCursorPos(windowHandle, &tmpX, &tmpY);
 			vec2 currentPointer = vec2(tmpX, tmpY);
@@ -118,6 +121,7 @@ class Mouse
 			_xAxis.update(pointerDelta.x);
 			_yAxis.update(pointerDelta.y);
 			_absolutePointer.position = currentPointer;
+			_clipPointer.position = currentPointer / (windowSize * 0.5f) - vec2(1, 1);
 		}
 
 		foreach(uint i, ref button; _buttons)
@@ -163,6 +167,11 @@ class Mouse
 		auto absolutePointer()
 		{
 			return _absolutePointer;
+		}
+
+		auto clipPointer()
+		{
+			return _clipPointer;
 		}
 		
 		auto scrollUp()
