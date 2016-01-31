@@ -74,6 +74,8 @@ struct Window
 		import derelict.opengl3.gl3 : DerelictGL3;
 		DerelictGL3.reload();
 
+		setOpenGLDefaults();
+
 		glfwSetFramebufferSizeCallback(_handle, (window, width, height) { _currentWindow._frameBuffer.size = vec2ui(width, height); });
 		glfwSwapInterval(properties.vSync);
 
@@ -91,6 +93,12 @@ struct Window
 		mouse = null;
 		glfwDestroyWindow(_handle);
 		_currentWindow = null;
+	}
+
+	private void setOpenGLDefaults()
+	{
+		import kratos.graphics.gl;
+		gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	}
 
 	void updateInput()
