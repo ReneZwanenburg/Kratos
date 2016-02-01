@@ -2,7 +2,8 @@
 
 import core.time;
 import std.algorithm.comparison : min;
-import kratos.ecs.scene : SceneComponent;
+import kratos.ecs;
+import kratos.util : Event;
 import vibe.data.json : Json;
 
 final class Time : SceneComponent
@@ -77,5 +78,60 @@ final class Time : SceneComponent
 		representation["scale"] = scale;
 		representation["maxDelta"] = maxDelta;
 		return representation;
+	}
+}
+
+final class Timer : Component
+{
+	private
+	{
+		@dependency Time time;
+		float _endTime;
+		float _currTime;
+		bool _running;
+	}
+
+	Event!() onEnd;
+	Event!() onUpdate;
+
+	this(float endTime)
+	{
+		_endTime = endTime;
+	}
+
+	void start()
+	{
+		_currTime = 0;
+		_running = true;
+	}
+
+	void stop()
+	{
+		_running = false;
+	}
+
+	float phase()
+	{
+		return _currTime / _endTime;
+	}
+
+	void frameUpdate()
+	{
+		if(_running)
+		{
+			_currTime += time.delta;
+
+			if(_currTime >= _endTime)
+			{
+				_currTime = _endTime;
+				_running = false;
+				onUpdate.raise();
+				onEnd.raise();
+			}
+			else
+			{
+				onUpdate.raise();
+			}
+		}
 	}
 }
