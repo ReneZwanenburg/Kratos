@@ -121,7 +121,7 @@ class Mouse
 			_xAxis.update(pointerDelta.x);
 			_yAxis.update(pointerDelta.y);
 			_absolutePointer.position = currentPointer;
-			_clipPointer.position = currentPointer / (windowSize * 0.5f) - vec2(1, 1);
+			_clipPointer.position = vec2(currentPointer.x, windowSize.y - currentPointer.y) / (windowSize * 0.5f) - vec2(1, 1);
 		}
 
 		foreach(uint i, ref button; _buttons)
