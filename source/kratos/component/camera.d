@@ -6,6 +6,8 @@ import kratos.ecs.scene : SceneComponent;
 
 import kratos.component.transform;
 import kgl3n.matrix;
+import kgl3n.linearcomponent;
+import kgl3n.vector;
 import vibe.data.json;
 
 struct StandardProjection
@@ -76,6 +78,13 @@ final class Camera : Component
 		{
 			return _transform;
 		}
+	}
+
+	Ray createPickRay(vec2 clipCoords)
+	{
+		auto invProjection = projectionMatrix.inverse;
+		auto unprojectedDirection = (invProjection * vec4(clipCoords, -1, 1)).xy;
+		return Ray(transform.worldPosition, (transform.worldMatrix * vec4(unprojectedDirection, -1, 0)).xyz.normalized);
 	}
 
 	public void makeMainCamera()
