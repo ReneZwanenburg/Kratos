@@ -68,27 +68,6 @@ struct Frustum
         }
     }
 
-    /// Checks if the $(I aabb) intersects with the frustum.
-    /// Returns OUTSIDE (= 0), INSIDE (= 1) or INTERSECT (= 2).
-    bool intersects(AABB aabb)
-	{
-        auto hextent = aabb.halfExtent;
-        auto center = aabb.center;
-
-        foreach(plane; planes)
-		{
-            float d = dot(center, plane.p.xyz);
-            float r = dot(hextent, abs(plane.p.xyz));
-
-            if(d + r < -plane.p.w)
-			{
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     /// Returns true if the $(I aabb) intersects with the frustum or is inside it.
     bool opBinaryRight(string s : "in")(AABB aabb)
 	{
