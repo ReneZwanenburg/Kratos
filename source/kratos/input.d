@@ -80,7 +80,7 @@ class Mouse
 
 	private GLFWwindow* windowHandle;
 	private vec2 windowSize;
-	private double _yScroll;
+	private int _yScroll;
 
 	package this(ref Window window)
 	{
@@ -106,7 +106,7 @@ class Mouse
 	
 	private static extern(C) void scrollCallback(GLFWwindow* w, double x, double y) nothrow
 	{
-		mouse._yScroll = y;
+		mouse._yScroll += cast(int)y;
 	}
 
 	package void update()
@@ -131,7 +131,15 @@ class Mouse
 		
 		_scrollUp.update(_yScroll > 0);
 		_scrollDown.update(_yScroll < 0);
-		_yScroll = 0;
+		
+		if(_yScroll > 0)
+		{
+			--_yScroll;
+		}
+		if(_yScroll < 0)
+		{
+			++_yScroll;
+		}
 	}
 	
 	@property
