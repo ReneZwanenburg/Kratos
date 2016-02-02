@@ -91,8 +91,9 @@ final class Timer : Component
 		bool _running;
 	}
 
-	Event!() onEnd;
+	Event!() onStart;
 	Event!() onUpdate;
+	Event!() onEnd;
 
 	this(float endTime)
 	{
@@ -103,8 +104,9 @@ final class Timer : Component
 	{
 		_currTime = 0;
 		_running = true;
+		onStart.raise();
 	}
-
+	
 	void stop()
 	{
 		_running = false;
@@ -113,6 +115,12 @@ final class Timer : Component
 	float phase()
 	{
 		return _currTime / _endTime;
+	}
+	
+	float smoothPhase()
+	{
+		import kgl3n.math : smoothStep;
+		return smoothStep(0, 1, phase);
 	}
 
 	void frameUpdate()
