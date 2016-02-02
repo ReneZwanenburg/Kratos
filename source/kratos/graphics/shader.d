@@ -44,8 +44,8 @@ Program errorProgram()
 	static bool initialized = false;
 	if(!initialized)
 	{
-		auto vertexSource = "mat4 mvp; in vec3 position; void main() {gl_Position = mvp * vec4(position, 1); }";
-		auto fragmentSource = "void main() { gl_FragData[0] = vec4(1, 0, 1, 1); }";
+		auto vertexSource = "#version 330\n mat4 mvp; in vec3 position; void main() {gl_Position = mvp * vec4(position, 1); }";
+		auto fragmentSource = "#version 330\n void main() { gl_FragData[0] = vec4(1, 0, 1, 1); }";
 
 		errorProgram = program(
 			[
