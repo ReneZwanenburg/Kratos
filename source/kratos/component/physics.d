@@ -354,7 +354,7 @@ public final class PhysicsWorld : SceneComponent
 }
 
 
-
+/*
 shared static this()
 {
 	DerelictODE.load();
@@ -367,3 +367,4 @@ shared static ~this()
 	dCloseODE();
 	DerelictODE.unload();
 }
+*/
