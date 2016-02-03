@@ -1,15 +1,15 @@
 /**
     Extensions to `std.traits` module of Phobos. Some may eventually make it into Phobos,
-    some are dirty hacks that work only for vibe.d
+    some are dirty hacks that work only for kvibe.d
 
 	Copyright: © 2012 RejectedSoftware e.K.
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig, Михаил Страшун
 */
 
-module vibe.internal.meta.traits;
+module kvibe.internal.meta.traits;
 
-import vibe.internal.meta.typetuple;
+import kvibe.internal.meta.typetuple;
 
 
 /**

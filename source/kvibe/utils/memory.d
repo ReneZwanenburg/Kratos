@@ -8,7 +8,7 @@
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig
 */
-module vibe.utils.memory;
+module kvibe.utils.memory;
 
 import core.exception : OutOfMemoryError;
 import core.stdc.stdlib;
@@ -161,7 +161,7 @@ class LockAllocator : Allocator {
 }
 
 final class DebugAllocator : Allocator {
-	import vibe.utils.hashmap : HashMap;
+	import kvibe.utils.hashmap : HashMap;
 	private {
 		Allocator m_baseAlloc;
 		HashMap!(void*, size_t) m_blocks;

@@ -5,10 +5,10 @@
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig
 */
-module vibe.data.bson;
+module kvibe.data.bson;
 
 
-public import vibe.data.json;
+public import kvibe.data.json;
 
 import std.algorithm;
 import std.array;
@@ -993,7 +993,7 @@ Bson serializeToBson(T)(T value, ubyte[] buffer = null)
 /// private
 Bson serializeToBsonOld(T)(T value)
 {
-	import vibe.internal.meta.traits;
+	import kvibe.internal.meta.traits;
 
     alias Unqualified = Unqual!T;
 	static if (is(Unqualified == Bson)) return value;
@@ -1091,7 +1091,7 @@ template deserializeBson(T)
 /// private
 T deserializeBsonOld(T)(Bson src)
 {
-	import vibe.internal.meta.traits;
+	import kvibe.internal.meta.traits;
 
 	static if (is(T == Bson)) return src;
 	else static if (is(T == Json)) return src.toJson();
@@ -1355,10 +1355,10 @@ unittest { // issue #793
 /**
 	Serializes to an in-memory BSON representation.
 
-	See_Also: `vibe.data.serialization.serialize`, `vibe.data.serialization.deserialize`, `serializeToBson`, `deserializeBson`
+	See_Also: `kvibe.data.serialization.serialize`, `kvibe.data.serialization.deserialize`, `serializeToBson`, `deserializeBson`
 */
 struct BsonSerializer {
-	import vibe.utils.array : AllocAppender;
+	import kvibe.utils.array : AllocAppender;
 
 	private {
 		AllocAppender!(ubyte[]) m_dst;
@@ -1376,7 +1376,7 @@ struct BsonSerializer {
 
 	this(ubyte[] buffer)
 	{
-		import vibe.utils.memory;
+		import kvibe.utils.memory;
 		m_dst = AllocAppender!(ubyte[])(defaultAllocator(), buffer);
 	}
 

@@ -31,7 +31,7 @@ private Program loadProgram(ResourceIdentifier name)
 	{
 		foreach(string textureName, samplerJson; samplersJson)
 		{
-			import vibe.data.json : deserializeJson;
+			import kvibe.data.json : deserializeJson;
 			program.setSampler(textureName, sampler(samplerJson.deserializeJson!SamplerSettings));
 		}
 	}

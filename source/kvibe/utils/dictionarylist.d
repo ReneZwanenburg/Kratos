@@ -5,10 +5,10 @@
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig
 */
-module vibe.utils.dictionarylist;
+module kvibe.utils.dictionarylist;
 
-import vibe.utils.array : removeFromArrayIdx;
-import vibe.utils.string : icmp2;
+import kvibe.utils.array : removeFromArrayIdx;
+import kvibe.utils.string : icmp2;
 import std.exception : enforce;
 
 
@@ -17,8 +17,8 @@ import std.exception : enforce;
 	and multiple values per key are supported.
 
 	This kind of map is used for MIME headers (e.g. for HTTP, see
-	vibe.inet.message.InetHeaderMap), or for form data
-	(vibe.inet.webform.FormFields). Note that the map can contain fields with
+	kvibe.inet.message.InetHeaderMap), or for form data
+	(kvibe.inet.webform.FormFields). Note that the map can contain fields with
 	the same key multiple times if addField is used for insertion. Insertion
 	order is preserved.
 
@@ -46,7 +46,7 @@ struct DictionaryList(VALUE, bool case_sensitive = true, size_t NUM_STATIC_FIELD
 	*/
 	@property size_t length() const { return m_fieldCount + m_extendedFields.length; }
 
-	/// Supports serialization using vibe.data.serialization.
+	/// Supports serialization using kvibe.data.serialization.
 	static DictionaryList fromRepresentation(FieldTuple[] array)
 	{
 		DictionaryList ret;
@@ -282,8 +282,8 @@ unittest {
 }
 
 unittest {
-	import vibe.data.json;
-	import vibe.data.serialization;
+	import kvibe.data.json;
+	import kvibe.data.serialization;
 
 	static assert(isCustomSerializable!(DictionaryList!int));
 

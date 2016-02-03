@@ -5,12 +5,12 @@
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig
 */
-module vibe.utils.string;
+module kvibe.utils.string;
 
 public import std.string;
 
-import vibe.utils.array;
-import vibe.utils.memory;
+import kvibe.utils.array;
+import kvibe.utils.memory;
 
 import std.algorithm;
 import std.array;

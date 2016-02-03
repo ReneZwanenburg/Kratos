@@ -9,7 +9,7 @@
 	Authors: Михаил Страшун
  */
 
-module vibe.internal.meta.funcattr;
+module kvibe.internal.meta.funcattr;
 
 import std.traits : isInstanceOf, ReturnType;
 
@@ -452,7 +452,7 @@ private {
 	*/
 	template MergeParameterTypes(alias ParameterMeta, alias ParameterList)
 	{	
-		import vibe.internal.meta.typetuple : isGroup, Group;
+		import kvibe.internal.meta.typetuple : isGroup, Group;
 
 		static assert (isGroup!ParameterMeta);
 		static assert (isGroup!ParameterList);
@@ -485,7 +485,7 @@ private {
 	// normal
 	unittest
 	{
-		import vibe.internal.meta.typetuple : Group, Compare;
+		import kvibe.internal.meta.typetuple : Group, Compare;
 
 		alias meta = Group!(
 			Parameter("one", 2, "int"),
@@ -504,7 +504,7 @@ private {
 	// edge
 	unittest
 	{
-		import vibe.internal.meta.typetuple : Group, Compare;
+		import kvibe.internal.meta.typetuple : Group, Compare;
 
 		alias meta = Group!(
 			Parameter("one", 3, "int"),
@@ -523,7 +523,7 @@ private {
 	// out-of-index
 	unittest
 	{
-		import vibe.internal.meta.typetuple : Group;
+		import kvibe.internal.meta.typetuple : Group;
 
 		alias meta = Group!(
 			Parameter("one", 20, "int"),
@@ -558,7 +558,7 @@ struct AttributedFunction(alias Function, alias StoredArgTypes)
 {
 	import std.traits : isSomeFunction, ReturnType, FunctionTypeOf,
 		ParameterTypeTuple, ParameterIdentifierTuple;
-	import vibe.internal.meta.typetuple : Group, isGroup, Compare;
+	import kvibe.internal.meta.typetuple : Group, isGroup, Compare;
 	import std.functional : toDelegate;
 	import std.typetuple : Filter;
 
@@ -867,7 +867,7 @@ unittest
 */
 auto createAttributedFunction(alias Function, T...)(T args)
 {
-	import vibe.internal.meta.typetuple : Group;
+	import kvibe.internal.meta.typetuple : Group;
 
 	AttributedFunction!(Function, Group!T) result;
 	result.storeArgs(args);

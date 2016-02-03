@@ -6,7 +6,7 @@ import kgl3n.vector;
 import kgl3n.math;
 //import std.experimental.logger;
 
-import vibe.data.serialization : optional, byName;
+import kvibe.data.serialization : optional, byName;
 
 public import kratos.graphics.textureunit;
 

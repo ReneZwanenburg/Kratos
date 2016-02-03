@@ -5,7 +5,7 @@ import kratos.graphics.gl;
 import kgl3n.vector;
 import kratos.resource.resource : ResourceIdentifier;
 
-import vibe.data.serialization;
+import kvibe.data.serialization;
 
 struct RenderState
 {

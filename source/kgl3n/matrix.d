@@ -6,7 +6,7 @@ import std.traits : isFloatingPoint, isIntegral;
 import std.algorithm : reduce, min;
 import std.math : sin, cos, tan, PI;
 
-import vibe.data.serialization : optional;
+import kvibe.data.serialization : optional;
 
 version(NoReciprocalMul)
 {

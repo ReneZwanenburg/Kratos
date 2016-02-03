@@ -88,10 +88,10 @@
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig
 */
-module vibe.data.serialization;
+module kvibe.data.serialization;
 
-import vibe.internal.meta.traits;
-import vibe.internal.meta.uda;
+import kvibe.internal.meta.traits;
+import kvibe.internal.meta.uda;
 
 import std.array : Appender, appender;
 import std.conv : to;
@@ -106,7 +106,7 @@ import std.typetuple;
 	The serializer must have a value result for the first form
 	to work. Otherwise, use the range based form.
 
-	See_Also: vibe.data.json.JsonSerializer, vibe.data.json.JsonStringSerializer, vibe.data.bson.BsonSerializer
+	See_Also: kvibe.data.json.JsonSerializer, kvibe.data.json.JsonStringSerializer, kvibe.data.bson.BsonSerializer
 */
 auto serialize(Serializer, T, ARGS...)(T value, ARGS args)
 {
@@ -120,11 +120,11 @@ void serialize(Serializer, T)(ref Serializer serializer, T value)
 	serializeImpl!(Serializer, DefaultPolicy, T)(serializer, value);
 }
 
-/** Note that there is a convenience function `vibe.data.json.serializeToJson`
+/** Note that there is a convenience function `kvibe.data.json.serializeToJson`
 	that can be used instead of manually invoking `serialize`.
 */
 unittest {
-	import vibe.data.json;
+	import kvibe.data.json;
 
 	struct Test {
 		int value;
@@ -141,7 +141,7 @@ unittest {
 }
 
 unittest {
-	import vibe.data.json;
+	import kvibe.data.json;
 
 	// Make sure that immutable(char[]) works just like string
 	// (i.e., immutable(char)[]).
@@ -157,7 +157,7 @@ unittest {
 	The serializer must have a value result for the first form
 	to work. Otherwise, use the range based form.
 
-	See_Also: vibe.data.json.JsonSerializer, vibe.data.json.JsonStringSerializer, vibe.data.bson.BsonSerializer
+	See_Also: kvibe.data.json.JsonSerializer, kvibe.data.json.JsonStringSerializer, kvibe.data.bson.BsonSerializer
 */
 auto serializeWithPolicy(Serializer, alias Policy, T, ARGS...)(T value, ARGS args)
 {
@@ -194,7 +194,7 @@ version (unittest)
 
 ///
 unittest {
-	import vibe.data.json;
+	import kvibe.data.json;
 
 	static struct SizeI {
 		int x;
@@ -220,7 +220,7 @@ unittest {
 	serialized_data can be either an input range or a value containing
 	the serialized data, depending on the type of serializer used.
 
-	See_Also: vibe.data.json.JsonSerializer, vibe.data.json.JsonStringSerializer, vibe.data.bson.BsonSerializer
+	See_Also: kvibe.data.json.JsonSerializer, kvibe.data.json.JsonStringSerializer, kvibe.data.bson.BsonSerializer
 */
 T deserialize(Serializer, T, ARGS...)(ARGS args)
 {
@@ -228,11 +228,11 @@ T deserialize(Serializer, T, ARGS...)(ARGS args)
 	return deserializeImpl!(T, DefaultPolicy, Serializer)(deserializer);
 }
 
-/** Note that there is a convenience function `vibe.data.json.deserializeJson`
+/** Note that there is a convenience function `kvibe.data.json.deserializeJson`
 	that can be used instead of manually invoking `deserialize`.
 */
 unittest {
-	import vibe.data.json;
+	import kvibe.data.json;
 
 	struct Test {
 		int value;
@@ -254,7 +254,7 @@ unittest {
 	serialized_data can be either an input range or a value containing
 	the serialized data, depending on the type of serializer used.
 
-	See_Also: vibe.data.json.JsonSerializer, vibe.data.json.JsonStringSerializer, vibe.data.bson.BsonSerializer
+	See_Also: kvibe.data.json.JsonSerializer, kvibe.data.json.JsonStringSerializer, kvibe.data.bson.BsonSerializer
 */
 T deserializeWithPolicy(Serializer, alias Policy, T, ARGS...)(ARGS args)
 {
@@ -264,7 +264,7 @@ T deserializeWithPolicy(Serializer, alias Policy, T, ARGS...)(ARGS args)
 
 ///
 unittest {
-	import vibe.data.json;
+	import kvibe.data.json;
 	
 	static struct SizeI {
 		int x;
@@ -656,7 +656,7 @@ unittest {
 		@asArray Fields array;
 	}
 
-	import vibe.data.json;
+	import kvibe.data.json;
 	static assert(is(typeof(serializeToJson(Test()))));
 }
 
@@ -794,7 +794,7 @@ private template DefaultPolicy(T)
 	This trait has precedence over $(D isCustomSerializable),
 	$(D isISOExtStringSerializable) and $(D isStringSerializable).
 
-	See_Also: vibe.data.serialization.serializeWithPolicy
+	See_Also: kvibe.data.serialization.serializeWithPolicy
 */
 template isPolicySerializable(alias Policy, T)
 {
@@ -825,7 +825,7 @@ unittest {
 	functions. Policies are evaluated left-to-right according to
 	$(D isPolicySerializable).
 
-	See_Also: vibe.data.serialization.serializeWithPolicy 
+	See_Also: kvibe.data.serialization.serializeWithPolicy 
 */
 template ChainedPolicy(alias Primary, Fallbacks...)
 {
@@ -1135,7 +1135,7 @@ unittest { // custom serialization support
 
 unittest // Testing corner case: member function returning by ref
 {
-	import vibe.data.json;
+	import kvibe.data.json;
 
 	static struct S
 	{
@@ -1152,7 +1152,7 @@ unittest // Testing corner case: member function returning by ref
 
 unittest // Testing corner case: Variadic template constructors and methods
 {
-	import vibe.data.json;
+	import kvibe.data.json;
 
 	static struct S
 	{
@@ -1171,7 +1171,7 @@ unittest // Testing corner case: Variadic template constructors and methods
 
 unittest // Make sure serializing through properties still works
 {
-	import vibe.data.json;
+	import kvibe.data.json;
 
 	static struct S
 	{

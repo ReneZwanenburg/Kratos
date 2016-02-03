@@ -5,9 +5,9 @@
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig
 */
-module vibe.utils.validation;
+module kvibe.utils.validation;
 
-import vibe.utils.string;
+import kvibe.utils.string;
 
 import std.algorithm : canFind;
 import std.array : appender;

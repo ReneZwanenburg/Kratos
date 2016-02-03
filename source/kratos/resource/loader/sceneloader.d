@@ -5,7 +5,7 @@ import kratos.resource.cache;
 import kratos.resource.resource;
 import kratos.ecs;
 import kratos.graphics.mesh;
-import vibe.data.json;
+import kvibe.data.json;
 import derelict.assimp3.assimp;
 import kratos.graphics.renderstate;
 import kratos.resource.loader.renderstateloader;

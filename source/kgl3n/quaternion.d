@@ -3,7 +3,7 @@
 import kgl3n.vector;
 import kgl3n.matrix;
 
-import vibe.data.serialization : optional;
+import kvibe.data.serialization : optional;
 
 /// Base template for all quaternion-types.
 /// Params:

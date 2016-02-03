@@ -4,7 +4,7 @@ import kgl3n.util;
 import std.algorithm : min, max, among;
 import std.traits : isFloatingPoint;
 
-import vibe.data.serialization : optional;
+import kvibe.data.serialization : optional;
 
 /// Base template for all vector-types.
 /// Params:

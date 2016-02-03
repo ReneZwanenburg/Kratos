@@ -7,9 +7,9 @@ import std.experimental.logger;
 
 import kratos.util : Event;
 
-import vibe.data.json;
+import kvibe.data.json;
 
-public import vibe.data.serialization : asArray, byName, ignore, name, optional;
+public import kvibe.data.serialization : asArray, byName, ignore, name, optional;
 
 alias AllowDerived = Flag!"AllowDerived";
 private alias DefaultAllowDerived = AllowDerived.yes;
@@ -288,7 +288,7 @@ template ComponentInteraction(ComponentType)
 			ComponentInteraction!ParentType.resolveDependencies(component, taskRunner);
 		}
 		
-		import vibe.internal.meta.uda : findFirstUDA;
+		import kvibe.internal.meta.uda : findFirstUDA;
 
 		foreach(i, T; typeof(ComponentType.tupleof))
 		{
@@ -325,7 +325,7 @@ template ComponentInteraction(ComponentType)
 
 		foreach(i, T; typeof(ComponentType.tupleof))
 		{
-			import vibe.internal.meta.uda : findFirstUDA;
+			import kvibe.internal.meta.uda : findFirstUDA;
 			enum uda = findFirstUDA!(Dependency, ComponentType.tupleof[i]);
 			static if(uda.found)
 			{

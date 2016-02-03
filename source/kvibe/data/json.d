@@ -9,10 +9,10 @@
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig
 */
-module vibe.data.json;
+module kvibe.data.json;
 
 
-public import vibe.data.serialization;
+public import kvibe.data.serialization;
 
 public import std.json : JSONException;
 import std.algorithm : equal, min;
@@ -867,7 +867,7 @@ Json parseJson(R)(ref R range, int* line = null, string filename = null)
 	skipWhitespace(range, line);
 
 	version(JsonLineNumbers) {
-		import vibe.core.log;
+		import kvibe.core.log;
 		int curline = line ? *line : 0;
 	}
 
@@ -1026,7 +1026,7 @@ unittest {
 	The methods will have to be defined in pairs. The first pair that is implemented by
 	the type will be used for serialization (i.e. `toJson` overrides `toString`).
 
-	See_Also: `deserializeJson`, `vibe.data.serialization`
+	See_Also: `deserializeJson`, `kvibe.data.serialization`
 */
 Json serializeToJson(T)(T value)
 {
@@ -1074,7 +1074,7 @@ unittest {
 /**
 	Serializes the given value to a pretty printed JSON string.
 
-	See_also: `serializeToJson`, `vibe.data.serialization`
+	See_also: `serializeToJson`, `kvibe.data.serialization`
 */
 void serializeToPrettyJson(R, T)(R destination, T value)
 	if (isOutputRange!(R, char) || isOutputRange!(R, ubyte))
@@ -1112,7 +1112,7 @@ unittest {
 /// private
 Json serializeToJsonOld(T)(T value)
 {
-	import vibe.internal.meta.traits;
+	import kvibe.internal.meta.traits;
 
 	alias TU = Unqual!T;
 	static if (is(TU == Json)) return value;
@@ -1180,7 +1180,7 @@ Json serializeToJsonOld(T)(T value)
 
 	The same types as for `serializeToJson()` are supported and handled inversely.
 
-	See_Also: `serializeToJson`, `serializeToJsonString`, `vibe.data.serialization`
+	See_Also: `serializeToJson`, `serializeToJsonString`, `kvibe.data.serialization`
 */
 void deserializeJson(T)(ref T dst, Json src)
 {
@@ -1205,7 +1205,7 @@ T deserializeJson(T, R)(R input)
 /// private
 T deserializeJsonOld(T)(Json src)
 {
-	import vibe.internal.meta.traits;
+	import kvibe.internal.meta.traits;
 
 	static if( is(T == struct) || isSomeString!T || isIntegral!T || isFloatingPoint!T )
 		if( src.type == Json.Type.null_ ) return T.init;
@@ -1430,7 +1430,7 @@ unittest { // #840
 /**
 	Serializer for a plain Json representation.
 
-	See_Also: vibe.data.serialization.serialize, vibe.data.serialization.deserialize, serializeToJson, deserializeJson
+	See_Also: kvibe.data.serialization.serialize, kvibe.data.serialization.deserialize, serializeToJson, deserializeJson
 */
 struct JsonSerializer {
 	template isJsonBasicType(T) { enum isJsonBasicType = isNumeric!T || isBoolean!T || is(T == string) || is(T == typeof(null)) || isJsonSerializable!T; }
@@ -1518,7 +1518,7 @@ struct JsonSerializer {
 /**
 	Serializer for a range based plain JSON string representation.
 
-	See_Also: vibe.data.serialization.serialize, vibe.data.serialization.deserialize, serializeToJson, deserializeJson
+	See_Also: kvibe.data.serialization.serialize, kvibe.data.serialization.deserialize, serializeToJson, deserializeJson
 */
 struct JsonStringSerializer(R, bool pretty = false)
 	if (isInputRange!R || isOutputRange!(R, char))

@@ -6,9 +6,9 @@
 	Authors: Sönke Ludwig, Михаил Страшун
 */
 
-module vibe.internal.meta.uda;
+module kvibe.internal.meta.uda;
 
-//import vibe.internal.meta.traits;
+//import kvibe.internal.meta.traits;
 
 
 /**
@@ -79,7 +79,7 @@ template findNextUDA(alias UDA, alias Symbol, long idx, bool allow_types = false
 				} else enum extract = extract!(index + 1, list[1..$]);
 			} else {
 				static if (is(UDA) && is(typeof(list[0]) == UDA) || !is(UDA) && isInstanceOf!(UDA, typeof(list[0]))) {
-					import vibe.internal.meta.traits : isPropertyGetter;
+					import kvibe.internal.meta.traits : isPropertyGetter;
 					static if (isPropertyGetter!(list[0])) {
 						enum value = list[0];
 						enum extract = UdaSearchResult!(value)(true, index);
@@ -113,7 +113,7 @@ template findNextUDA(UDA, alias Symbol, long idx, bool allow_types = false)
 				} else enum extract = extract!(index + 1, list[1..$]);
 			} else {
 				static if (is(typeof(list[0]) == UDA)) {
-					import vibe.internal.meta.traits : isPropertyGetter;
+					import kvibe.internal.meta.traits : isPropertyGetter;
 					static if (isPropertyGetter!(list[0])) {
 						enum value = list[0];
 						enum extract = UdaSearchResult!(value)(true, index);

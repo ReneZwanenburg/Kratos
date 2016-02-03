@@ -5,9 +5,9 @@
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig
 */
-module vibe.utils.array;
+module kvibe.utils.array;
 
-import vibe.utils.memory;
+import kvibe.utils.memory;
 
 import std.algorithm;
 import std.range : isInputRange, isOutputRange;

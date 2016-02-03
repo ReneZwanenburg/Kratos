@@ -98,7 +98,7 @@ struct SerializableArray(T)
 	alias backingArray this;
 
 	//TODO: No need to go through Json. Serialize to and from dynamic array, works with Bson etc. too
-	import vibe.data.json;
+	import kvibe.data.json;
 	Json toRepresentation()
 	{
 		auto json = Json.emptyArray;

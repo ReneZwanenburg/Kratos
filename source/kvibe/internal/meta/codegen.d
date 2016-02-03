@@ -9,7 +9,7 @@
 	Authors: Sönke Ludwig, Михаил Страшун
 */
 
-module vibe.internal.meta.codegen;
+module kvibe.internal.meta.codegen;
 
 import std.traits : FunctionTypeOf, isSomeFunction;
 
@@ -156,7 +156,7 @@ unittest
 	// `Test` is an interface using single user type
 	enum imports = getRequiredImports!TestInterface;
 	static assert (imports.length == 1);
-	static assert (imports[0] == "vibe.internal.meta.codegen");
+	static assert (imports[0] == "kvibe.internal.meta.codegen");
 }
 
 /**
@@ -303,7 +303,7 @@ mixin template CloneFunction(alias Func, string body_, bool keepUDA = false, str
 	import std.string : format;
 	import std.traits : ReturnType;
 	import std.typetuple : TypeTuple;
-	import vibe.internal.meta.codegen : ParameterTuple, FuncAttributes;
+	import kvibe.internal.meta.codegen : ParameterTuple, FuncAttributes;
 	// Sadly this is not possible:
 	// class Test {
 	//   int foo(string par) pure @safe nothrow { /* ... */ }
@@ -367,7 +367,7 @@ mixin template CloneFunctionDecl(alias Func, bool keepUDA = true, string identif
 	import std.string : format;
 	import std.traits : ReturnType;
 	import std.typetuple : TypeTuple;
-	import vibe.internal.meta.codegen : ParameterTuple, FuncAttributes;
+	import kvibe.internal.meta.codegen : ParameterTuple, FuncAttributes;
 
 	static if (keepUDA)
 		private alias UDA = TypeTuple!(__traits(getAttributes, Func));

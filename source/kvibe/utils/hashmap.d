@@ -5,9 +5,9 @@
 	License: Subject to the terms of the MIT license, as written in the included LICENSE.txt file.
 	Authors: Sönke Ludwig
 */
-module vibe.utils.hashmap;
+module kvibe.utils.hashmap;
 
-import vibe.utils.memory;
+import kvibe.utils.memory;
 
 import std.conv : emplace;
 import std.traits;
@@ -43,7 +43,7 @@ struct DefaultHashMapTraits(Key) {
 
 struct HashMap(TKey, TValue, Traits = DefaultHashMapTraits!TKey)
 {
-	import vibe.internal.meta.traits : isOpApplyDg;
+	import kvibe.internal.meta.traits : isOpApplyDg;
 
 	alias Key = TKey;
 	alias Value = TValue;
