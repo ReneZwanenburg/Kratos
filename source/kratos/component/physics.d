@@ -353,12 +353,10 @@ public final class PhysicsWorld : SceneComponent
 	}
 }
 
-
-/*
 shared static this()
 {
 	DerelictODE.load();
-	//NOTE: Initializeing ODE in this way binds it to the main thread. Will cause breakage if the ECS becomes multithreaded 
+	//NOTE: Initializing ODE in this way binds it to the main thread. Will cause breakage if the ECS becomes multithreaded 
 	dInitODE();
 }
 
@@ -367,4 +365,3 @@ shared static ~this()
 	dCloseODE();
 	DerelictODE.unload();
 }
-*/
