@@ -10,24 +10,95 @@ import derelict.ode.ode;
 
 public final class RigidBody : Component
 {
+	private PhysicsWorld world;
 	private dBodyID bodyId;
-	private @dependency PhysicsWorld world;
+	
 	private @dependency(Dependency.Direction.Write) Transform transform;
+	
 	private Transformation previousStepTransformation;
 	private Transformation currentStepTransformation;
+	
+	//The ODE docs aren't quite clear how long I can keep these around..
 	private float[] positionStore;
 	private float[] rotationStore;
+	
+	this()
+	{
+		world = scene.components.firstOrAdd!PhysicsWorld;
+		bodyId = world.createBody();
+		dBodySetData(bodyId, cast(void*)this);
+		dBodySetMovedCallback(bodyId, &bodyMovedCallback);
+
+		positionStore = dBodyGetPosition(bodyId)[0 .. 3];
+		rotationStore = dBodyGetRotation(bodyId)[0 .. 4];
+	}
+	
+	~this()
+	{
+		//TODO: Destroy attached joints
+		dBodyDestroy(bodyId);
+	}
 
 	public void addForce(vec3 force)
 	{
 		dBodyAddForce(bodyId, force.x, force.y, force.z);
 	}
+	
+	public void addRelativeForce(vec3 force)
+	{
+		dBodyAddRelForce(bodyId, force.x, force.y, force.z);
+	}
+	
+	public void addForceAtWorldPosition(vec3 force, vec3 pos)
+	{
+		dBodyAddForceAtPos(bodyId, force.x, force.y, force.z, pos.x, pos.y, pos.z);
+	}
+	
+	public void addForceAtLocalPosition(vec3 force, vec3 pos)
+	{
+		dBodyAddForceAtRelPos(bodyId, force.x, force.y, force.z, pos.x, pos.y, pos.z);
+	}
+	
+	public void addRelativeForceAtWorldPosition(vec3 force, vec3 pos)
+	{
+		dBodyAddRelForceAtPos(bodyId, force.x, force.y, force.z, pos.x, pos.y, pos.z);
+	}
+	
+	public void addRelativeForceAtRelativePosition(vec3 force, vec3 pos)
+	{
+		dBodyAddRelForceAtRelPos(bodyId, force.x, force.y, force.z, pos.x, pos.y, pos.z);
+	}
+	
+	public void addTorque(vec3 torque)
+	{
+		dBodyAddTorque(bodyId, torque.x, torque.y, torque.z);
+	}
 
+	void setForce(vec3 force)
+	{
+		dBodySetForce(bodyId, force.x, force.y, force.z);
+	}
+	
+	void setTorque(vec3 torque)
+	{
+		dBodySetTorque(bodyId, torque.x, torque.y, torque.z);
+	}
+	
 	@property
 	{
+		vec3 force()
+		{
+			return vec3(dBodyGetForce(bodyId)[0..3]);
+		}
+		
+		vec3 torque()
+		{
+			return vec3(dBodyGetTorque(bodyId)[0..3]);
+		}
+	
 		bool kinematic()
 		{
-			return dBodyIsKinematic(bodyId) != 0;
+			return !!dBodyIsKinematic(bodyId);
 		}
 
 		void kinematic(bool isKinematic)
@@ -37,7 +108,7 @@ public final class RigidBody : Component
 
 		bool enabled()
 		{
-			return dBodyIsEnabled(bodyId) != 0;
+			return !!dBodyIsEnabled(bodyId);
 		}
 
 		void enabled(bool isEnabled)
@@ -47,29 +118,65 @@ public final class RigidBody : Component
 
 		bool autoDisable()
 		{
-			return dBodyGetAutoDisableFlag(bodyId) != 0;
+			return !!dBodyGetAutoDisableFlag(bodyId);
 		}
 
 		void autoDisable(bool autoDisable)
 		{
 			dBodySetAutoDisableFlag(bodyId, autoDisable);
 		}
+		
+		float autoDisableLinearThreshold()
+		{
+			return dBodyGetAutoDisableLinearThreshold(bodyId);
+		}
+		
+		void autoDisableLinearThreshold(float threshold)
+		{
+			dBodySetAutoDisableLinearThreshold(bodyId, threshold);
+		}
+		
+		float autoDisableAngularThreshold()
+		{
+			return dBodyGetAutoDisableAngularThreshold(bodyId);
+		}
+		
+		void autoDisableAngularThreshold(float threshold)
+		{
+			dBodySetAutoDisableAngularThreshold(bodyId, threshold);
+		}
+		
+		float autoDisableTime()
+		{
+			return dBodyGetAutoDisableTime(bodyId);
+		}
+		
+		void autoDisableTime(float time)
+		{
+			dBodySetAutoDisableTime(bodyId, time);
+		}
+		
+		bool affectedByGravity()
+		{
+			return !!dBodyGetGravityMode(bodyId);
+		}
+		
+		void affectedByGravity(bool affectedByGravity)
+		{
+			dBodySetGravityMode(bodyId, affectedByGravity);
+		}
 	}
 
 	public void initialize()
 	{
-		bodyId = world.createBody();
-		dBodySetData(bodyId, cast(void*)this);
-		dBodySetMovedCallback(bodyId, &bodyMovedCallback);
+		assert(transform.isRoot, "Rigid body transforms should be root");
+	
 		previousStepTransformation = currentStepTransformation = transform.localTransformation;
 
 		auto position = currentStepTransformation.position;
 		auto rotation = currentStepTransformation.rotation;
 		dBodySetPosition(bodyId, position.x, position.y, position.z);
 		dBodySetQuaternion(bodyId, rotation.quaternion.wxyz.vector);
-
-		positionStore = dBodyGetPosition(bodyId)[0 .. 3];
-		rotationStore = dBodyGetRotation(bodyId)[0 .. 4];
 	}
 
 	public void frameUpdate()
@@ -110,7 +217,7 @@ public final class PhysicsWorld : SceneComponent
 	SteppingMode steppingMode = SteppingMode.Fast;
 
 	private @dependency Time time;
-	private float accumulator;
+	private float accumulator = 0;
 
 	this()
 	{
@@ -127,10 +234,7 @@ public final class PhysicsWorld : SceneComponent
 
 	public void initialize()
 	{
-		if(accumulator is typeof(accumulator).init)
-		{
-			accumulator = _stepSize;
-		}
+		
 	}
 
 	public void frameUpdate()
@@ -200,12 +304,12 @@ public final class PhysicsWorld : SceneComponent
 			return !!dWorldGetAutoDisableFlag(worldId);
 		}
 
-		void autoDisableLinearTreshold(float treshold)
+		void autoDisableLinearThreshold(float treshold)
 		{
 			dWorldSetAutoDisableLinearThreshold(worldId, treshold);
 		}
 
-		float autoDisableLinearTreshold()
+		float autoDisableLinearThreshold()
 		{
 			return dWorldGetAutoDisableLinearThreshold(worldId);
 		}

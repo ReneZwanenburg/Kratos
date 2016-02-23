@@ -82,6 +82,11 @@ final class Transform : Component
 			return _parent;
 		}
 		
+		bool isRoot() const
+		{
+			return parent is null;
+		}
+		
 		void parent(Transform parent)
 		{
 			//TODO: update dispatcher chain, invalidate depth
