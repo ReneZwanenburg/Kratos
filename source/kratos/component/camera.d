@@ -84,7 +84,7 @@ final class Camera : Component
 	{
 		auto invProjection = projectionMatrix.inverse;
 		auto unprojectedDirection = (invProjection * vec4(clipCoords, -1, 1)).xy;
-		return Ray(transform.worldPosition, (transform.worldMatrix * vec4(unprojectedDirection, -1, 0)).xyz.normalized);
+		return Ray(transform.worldTransformation.position, (transform.worldMatrix * vec4(unprojectedDirection, -1, 0)).xyz.normalized);
 	}
 
 	public void makeMainCamera()
