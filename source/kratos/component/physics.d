@@ -2,7 +2,7 @@
 
 import kratos.ecs.scene : SceneComponent;
 import kratos.ecs.entity : Component;
-import kratos.ecs.component : Dependency, dependency, byName;
+import kratos.ecs.component : Dependency, dependency, byName, optional, ignore;
 import kratos.component.time : Time;
 import kratos.component.transform : Transform, Transformation;
 import kgl3n.vector : vec2, vec3, vec4;
@@ -192,6 +192,10 @@ public final class RigidBody : Component
 
 	private void onMoved()
 	{
+		import std.stdio;
+		writeln(positionStore);
+		writeln(rotationStore);
+	
 		currentStepTransformation.position.vector[] = positionStore[];
 		currentStepTransformation.rotation.quaternion = vec4(rotationStore).yzwx;
 	}
@@ -203,25 +207,88 @@ public final class RigidBody : Component
 	}
 }
 
-abstract class PlaceableCollisionGeometry : Component
+private struct PhysicsMaterialProperties
 {
-	protected @dependency Transform transform;
-	private Transform.ChangedRegistration transformChanged;
+	@optional:
+
+	float friction = 1;
+	float bounciness = 0;
 	
-	protected dGeomID geomId;
-	
-	private vec3 _offsetPosition;
-	private quat _offsetRotation;
-	private bool hasRigidBody;
-	
-	protected this(dGeomID id)
+	@property
 	{
-		this.geomId = id;
+		int flags() const nothrow @nogc
+		{
+			return
+				//dContactFDir1							| // Auto generate friction direction for now
+				(dContactBounce * (bounciness != 0));
+		}
 	}
 	
+	private dSurfaceParameters toOdeParams() const nothrow @nogc
+	{
+		dSurfaceParameters params;
+		params.mode = flags;
+		params.mu = friction;
+		params.rho = 0;
+		params.rho2 = 0;
+		params.rhoN = 0;
+		params.bounce = bounciness;
+		return params;
+	}
+	
+	static PhysicsMaterialProperties combine(PhysicsMaterialProperties m1, PhysicsMaterialProperties m2) nothrow @nogc
+	{
+		import std.algorithm.comparison : max;
+	
+		return PhysicsMaterialProperties
+		(
+			(m1.friction + m2.friction) * 0.5f,
+			max(m1.bounciness, m2.bounciness)
+		);
+	}
+}
+
+final class PhysicsMaterial : Component
+{
+	private PhysicsMaterialProperties properties;
+	
+	static PhysicsMaterial fromRepresentation(PhysicsMaterialProperties properties)
+	{
+		auto material = new PhysicsMaterial;
+		material.properties = properties;
+		return material;
+	}
+	
+	PhysicsMaterialProperties toRepresentation()
+	{
+		return properties;
+	}
+}
+
+abstract class CollisionGeometry : Component
+{
+	private @dependency PhysicsMaterial material;
+	private dGeomID _geomId;
+	protected RigidBody rigidBody; // Can be null
+
 	~this()
 	{
-		dGeomDestroy(geomId);
+		dGeomDestroy(_geomId);
+	}
+	
+	protected @ignore @property
+	{
+		dGeomID geomId()
+		{
+			return _geomId;
+		}
+		
+		void geomId(dGeomID id)
+		{
+			assert(_geomId is null);
+			_geomId = id;
+			dGeomSetData(_geomId, cast(void*)this);
+		}
 	}
 	
 	//For use in subclass constructors..
@@ -229,6 +296,18 @@ abstract class PlaceableCollisionGeometry : Component
 	{
 		return scene.components.firstOrAdd!CollisionWorld.spaceId;
 	}
+}
+
+abstract class PlaceableCollisionGeometry : CollisionGeometry
+{
+	@optional:
+
+	protected @dependency Transform transform;
+	private Transform.ChangedRegistration transformChanged;
+	
+	private vec3 _offsetPosition;
+	private quat _offsetRotation;
+	
 	
 	public final @property
 	{
@@ -241,7 +320,7 @@ abstract class PlaceableCollisionGeometry : Component
 		{
 			_offsetPosition = offset;
 			
-			if(hasRigidBody)
+			if(rigidBody !is null)
 			{
 				dGeomSetOffsetPosition(geomId, offset.x, offset.y, offset.z);
 			}
@@ -256,7 +335,7 @@ abstract class PlaceableCollisionGeometry : Component
 		{
 			_offsetRotation = offset;
 			
-			if(hasRigidBody)
+			if(rigidBody !is null)
 			{
 				auto rot = offset.quaternion.wxyz.vector;
 				dGeomSetOffsetQuaternion(geomId, rot);
@@ -266,7 +345,7 @@ abstract class PlaceableCollisionGeometry : Component
 
 	private void initialize()
 	{
-		auto rigidBody = owner.components.first!RigidBody;
+		rigidBody = owner.components.first!RigidBody;
 		
 		if(rigidBody is null)
 		{
@@ -275,9 +354,8 @@ abstract class PlaceableCollisionGeometry : Component
 		else
 		{
 			dGeomSetBody(geomId, rigidBody.bodyId);
-			hasRigidBody = true;
 			
-			// The setter will now pass it through to ODE due to hasRigidBody
+			// The setter will now pass it through to ODE due to rigidBody !is null
 			offsetPosition = offsetPosition;
 			offsetRotation = offsetRotation;
 		}
@@ -295,9 +373,11 @@ abstract class PlaceableCollisionGeometry : Component
 
 final class CollisionSphere : PlaceableCollisionGeometry
 {
+	@optional:
+
 	this()
 	{
-		super(dCreateSphere(worldCollisionSpaceId, 1));
+		geomId = dCreateSphere(worldCollisionSpaceId, 1);
 	}
 	
 	@property
@@ -316,9 +396,11 @@ final class CollisionSphere : PlaceableCollisionGeometry
 
 final class CollisionBox : PlaceableCollisionGeometry
 {
+	@optional:
+
 	this()
 	{
-		super(dCreateBox(worldCollisionSpaceId, 1, 1, 1));
+		geomId = dCreateBox(worldCollisionSpaceId, 1, 1, 1);
 	}
 	
 	@property
@@ -340,11 +422,13 @@ final class CollisionBox : PlaceableCollisionGeometry
 
 final class CollisionCapsule : PlaceableCollisionGeometry
 {
+	@optional:
+
 	private vec2 rl = vec2(1, 1);
 
 	this()
 	{
-		super(dCreateCapsule(worldCollisionSpaceId, rl.x, rl.y));
+		geomId = dCreateCapsule(worldCollisionSpaceId, rl.x, rl.y);
 	}
 	
 	@property
@@ -375,11 +459,13 @@ final class CollisionCapsule : PlaceableCollisionGeometry
 
 final class CollisionCylinder : PlaceableCollisionGeometry
 {
+	@optional:
+
 	private vec2 rl = vec2(1, 1);
 
 	this()
 	{
-		super(dCreateCylinder(worldCollisionSpaceId, rl.x, rl.y));
+		geomId = dCreateCylinder(worldCollisionSpaceId, rl.x, rl.y);
 	}
 	
 	@property
@@ -423,7 +509,6 @@ public final class PhysicsWorld : SceneComponent
 	SteppingMode steppingMode = SteppingMode.Fast;
 
 	private @dependency Time time;
-	private @dependency CollisionWorld collisionWorld;
 	private float accumulator = 0;
 
 	this()
@@ -661,32 +746,38 @@ public final class PhysicsWorld : SceneComponent
 
 final class CollisionWorld : SceneComponent
 {
+	private @dependency(Dependency.Direction.Unordered) PhysicsWorld physicsWorld;
+
 	private dSpaceID spaceId;
+	private dJointGroupID contactJointGroupId;
 	
 	this()
 	{
 		//TODO: Support QuadTreeSpace
 		spaceId = dHashSpaceCreate(null);
+		contactJointGroupId = dJointGroupCreate(0);
 	}
 	
 	~this()
 	{
+		dJointGroupDestroy(contactJointGroupId);
 		dSpaceDestroy(spaceId);
 	}
 	
 	void physicsPreStepUpdate()
 	{
-		dSpaceCollide(spaceId, null, &geometryNearCallback);
+		dSpaceCollide(spaceId, cast(void*)this, &geometryNearCallback);
 	}
 	
 	void physicsPostStepUpdate()
 	{
-		//TODO: Clear contact joints
+		dJointGroupEmpty(contactJointGroupId);
 	}
 	
 	private static extern(C) void geometryNearCallback(void* data, dGeomID geom1, dGeomID geom2) nothrow @nogc
 	{
 		//TODO: Support nested spaces.
+		auto _this = cast(CollisionWorld)data;
 		
 		//TODO: I have no idea if this is a sensible amount..
 		enum MaxContacts = 3;
@@ -697,8 +788,29 @@ final class CollisionWorld : SceneComponent
 		
 		foreach(contact; contacts[0 .. actualContacts])
 		{
-			
+			_this.createContactJoint(contact);
 		}
+	}
+	
+	private void createContactJoint(dContactGeom contactGeom) nothrow @nogc
+	{
+		auto geom1 = cast(CollisionGeometry)dGeomGetData(contactGeom.g1);
+		auto geom2 = cast(CollisionGeometry)dGeomGetData(contactGeom.g2);
+		
+		auto combinedMaterial = PhysicsMaterialProperties.combine(geom1.material.properties, geom2.material.properties);
+	
+		auto contact = dContact
+		(
+			combinedMaterial.toOdeParams,
+			contactGeom
+		);
+		
+		auto joint = dJointCreateContact(physicsWorld.worldId, contactJointGroupId, &contact);
+		
+		auto bodyId1 = geom1.rigidBody is null ? null : geom1.rigidBody.bodyId;
+		auto bodyId2 = geom2.rigidBody is null ? null : geom2.rigidBody.bodyId;
+		
+		dJointAttach(joint, bodyId1, bodyId2);
 	}
 }
 
