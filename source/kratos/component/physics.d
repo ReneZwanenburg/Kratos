@@ -5,7 +5,8 @@ import kratos.ecs.entity : Component;
 import kratos.ecs.component : Dependency, dependency, byName;
 import kratos.component.time : Time;
 import kratos.component.transform : Transform, Transformation;
-import kgl3n.vector : vec3, vec4;
+import kgl3n.vector : vec2, vec3, vec4;
+import kgl3n.quaternion : quat;
 import derelict.ode.ode;
 
 public final class RigidBody : Component
@@ -202,6 +203,211 @@ public final class RigidBody : Component
 	}
 }
 
+abstract class PlaceableCollisionGeometry : Component
+{
+	protected @dependency Transform transform;
+	private Transform.ChangedRegistration transformChanged;
+	
+	protected dGeomID geomId;
+	
+	private vec3 _offsetPosition;
+	private quat _offsetRotation;
+	private bool hasRigidBody;
+	
+	protected this(dGeomID id)
+	{
+		this.geomId = id;
+	}
+	
+	~this()
+	{
+		dGeomDestroy(geomId);
+	}
+	
+	//For use in subclass constructors..
+	protected final @property worldCollisionSpaceId()
+	{
+		return scene.components.firstOrAdd!CollisionWorld.spaceId;
+	}
+	
+	public final @property
+	{
+		vec3 offsetPosition() const
+		{
+			return _offsetPosition;
+		}
+		
+		void offsetPosition(vec3 offset)
+		{
+			_offsetPosition = offset;
+			
+			if(hasRigidBody)
+			{
+				dGeomSetOffsetPosition(geomId, offset.x, offset.y, offset.z);
+			}
+		}
+		
+		quat offsetRotation() const
+		{
+			return _offsetRotation;
+		}
+		
+		void offsetRotation(quat offset)
+		{
+			_offsetRotation = offset;
+			
+			if(hasRigidBody)
+			{
+				auto rot = offset.quaternion.wxyz.vector;
+				dGeomSetOffsetQuaternion(geomId, rot);
+			}
+		}
+	}
+
+	private void initialize()
+	{
+		auto rigidBody = owner.components.first!RigidBody;
+		
+		if(rigidBody is null)
+		{
+			transformChanged = transform.onWorldTransformChanged.register(&updateGeomTransform);
+		}
+		else
+		{
+			dGeomSetBody(geomId, rigidBody.bodyId);
+			hasRigidBody = true;
+			
+			// The setter will now pass it through to ODE due to hasRigidBody
+			offsetPosition = offsetPosition;
+			offsetRotation = offsetRotation;
+		}
+	}
+	
+	private void updateGeomTransform(Transform transform)
+	{
+		auto transformation = transform.worldTransformation;
+		auto pos = transformation.position;
+		dGeomSetPosition(geomId, pos.x, pos.y, pos.z);
+		auto rot = transformation.rotation.quaternion.wxyz.vector;
+		dGeomSetQuaternion(geomId, rot);
+	}
+}
+
+final class CollisionSphere : PlaceableCollisionGeometry
+{
+	this()
+	{
+		super(dCreateSphere(worldCollisionSpaceId, 1));
+	}
+	
+	@property
+	{
+		float radius()
+		{
+			return dGeomSphereGetRadius(geomId);
+		}
+		
+		void radius(float radius)
+		{
+			dGeomSphereSetRadius(geomId, radius);
+		}
+	}
+}
+
+final class CollisionBox : PlaceableCollisionGeometry
+{
+	this()
+	{
+		super(dCreateBox(worldCollisionSpaceId, 1, 1, 1));
+	}
+	
+	@property
+	{
+		vec3 extent()
+		{
+			vec4 result;
+			dGeomBoxGetLengths(geomId, result.vector);
+			return result.xyz * 0.5f;
+		}
+		
+		void extent(vec3 extent)
+		{
+			extent *= 2;
+			dGeomBoxSetLengths(geomId, extent.x, extent.y, extent.z);
+		}
+	}
+}
+
+final class CollisionCapsule : PlaceableCollisionGeometry
+{
+	private vec2 rl = vec2(1, 1);
+
+	this()
+	{
+		super(dCreateCapsule(worldCollisionSpaceId, rl.x, rl.y));
+	}
+	
+	@property
+	{
+		float radius() const
+		{
+			return rl.x;
+		}
+		
+		void radius(float r)
+		{
+			rl.x = r;
+			dGeomCapsuleSetParams(geomId, r, rl.y);
+		}
+		
+		float length() const
+		{
+			return rl.y;
+		}
+		
+		void length(float l)
+		{
+			rl.y = l;
+			dGeomCapsuleSetParams(geomId, rl.x, l);
+		}
+	}
+}
+
+final class CollisionCylinder : PlaceableCollisionGeometry
+{
+	private vec2 rl = vec2(1, 1);
+
+	this()
+	{
+		super(dCreateCylinder(worldCollisionSpaceId, rl.x, rl.y));
+	}
+	
+	@property
+	{
+		float radius() const
+		{
+			return rl.x;
+		}
+		
+		void radius(float r)
+		{
+			rl.x = r;
+			dGeomCylinderSetParams(geomId, r, rl.y);
+		}
+		
+		float length() const
+		{
+			return rl.y;
+		}
+		
+		void length(float l)
+		{
+			rl.y = l;
+			dGeomCylinderSetParams(geomId, rl.x, l);
+		}
+	}
+}
+
 public final class PhysicsWorld : SceneComponent
 {
 	enum SteppingMode
@@ -217,6 +423,7 @@ public final class PhysicsWorld : SceneComponent
 	SteppingMode steppingMode = SteppingMode.Fast;
 
 	private @dependency Time time;
+	private @dependency CollisionWorld collisionWorld;
 	private float accumulator = 0;
 
 	this()
@@ -230,11 +437,6 @@ public final class PhysicsWorld : SceneComponent
 	~this()
 	{
 		dWorldDestroy(worldId);
-	}
-
-	public void initialize()
-	{
-		
 	}
 
 	public void frameUpdate()
@@ -454,6 +656,49 @@ public final class PhysicsWorld : SceneComponent
 	private dBodyID createBody()
 	{
 		return dBodyCreate(worldId);
+	}
+}
+
+final class CollisionWorld : SceneComponent
+{
+	private dSpaceID spaceId;
+	
+	this()
+	{
+		//TODO: Support QuadTreeSpace
+		spaceId = dHashSpaceCreate(null);
+	}
+	
+	~this()
+	{
+		dSpaceDestroy(spaceId);
+	}
+	
+	void physicsPreStepUpdate()
+	{
+		dSpaceCollide(spaceId, null, &geometryNearCallback);
+	}
+	
+	void physicsPostStepUpdate()
+	{
+		//TODO: Clear contact joints
+	}
+	
+	private static extern(C) void geometryNearCallback(void* data, dGeomID geom1, dGeomID geom2) nothrow @nogc
+	{
+		//TODO: Support nested spaces.
+		
+		//TODO: I have no idea if this is a sensible amount..
+		enum MaxContacts = 3;
+		static assert(MaxContacts < ushort.max);
+		dContactGeom[MaxContacts] contacts;
+		
+		auto actualContacts = dCollide(geom1, geom2, contacts.length, contacts.ptr, dContactGeom.sizeof);
+		
+		foreach(contact; contacts[0 .. actualContacts])
+		{
+			
+		}
 	}
 }
 
