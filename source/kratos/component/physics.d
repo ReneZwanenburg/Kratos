@@ -192,10 +192,6 @@ public final class RigidBody : Component
 
 	private void onMoved()
 	{
-		import std.stdio;
-		writeln(positionStore);
-		writeln(rotationStore);
-	
 		currentStepTransformation.position.vector[] = positionStore[];
 		currentStepTransformation.rotation.quaternion = vec4(rotationStore).yzwx;
 	}
