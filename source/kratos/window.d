@@ -76,7 +76,7 @@ struct Window
 
 		setOpenGLDefaults();
 
-		glfwSetFramebufferSizeCallback(_handle, (window, width, height) { _currentWindow._frameBuffer.size = vec2ui(width, height); });
+		//glfwSetFramebufferSizeCallback(_handle, (window, width, height) { _currentWindow._frameBuffer.size = vec2ui(width, height); });
 		glfwSwapInterval(properties.vSync);
 
 		_activeProperties = properties;
