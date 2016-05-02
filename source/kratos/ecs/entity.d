@@ -19,7 +19,7 @@ public abstract class Component
 		}
 	}
 
-	package static auto resolveDependency(FieldType, Dependency dependency)(Entity owner)
+	static auto resolveDependency(FieldType, Dependency dependency)(Entity owner)
 	{
 		enum allowDerived = dependency.allowDerived;
 

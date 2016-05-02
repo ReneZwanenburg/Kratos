@@ -22,7 +22,7 @@ public abstract class SceneComponent
 		}
 	}
 
-	package static auto resolveDependency(FieldType, Dependency dependency)(Scene owner)
+	static auto resolveDependency(FieldType, Dependency dependency)(Scene owner)
 	{
 		static if(is(FieldType : SceneComponent))
 		{

@@ -254,7 +254,7 @@ package mixin template ComponentBasicImpl(OwnerType)
 		}
 	}
 	
-	package alias ComponentBaseType = Unqual!(typeof(this));
+	alias ComponentBaseType = Unqual!(typeof(this));
 }
 
 template ComponentInteraction(ComponentType)

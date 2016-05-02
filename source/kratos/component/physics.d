@@ -339,7 +339,7 @@ abstract class PlaceableCollisionGeometry : CollisionGeometry
 		}
 	}
 
-	private void initialize()
+	public final void initialize()
 	{
 		rigidBody = owner.components.first!RigidBody;
 		
