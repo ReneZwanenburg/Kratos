@@ -3,6 +3,7 @@
 import kgl3n.aabb;
 import kgl3n.frustum;
 import kgl3n.linearcomponent;
+import kgl3n.math : abs;
 import kgl3n.vector;
 
 import std.algorithm.comparison : min, max;

@@ -3,7 +3,7 @@
 import kgl3n.vector;
 import kgl3n.util;
 import std.traits : isFloatingPoint, isIntegral;
-import std.algorithm : reduce, min;
+import std.algorithm : reduce, min, max;
 import std.math : sin, cos, tan, PI;
 
 import kvibe.data.serialization : optional;

@@ -7,7 +7,7 @@ License: MIT
 
 module kgl3n.util;
 
-import std.typecons : TypeTuple;
+import std.meta : AliasSeq;
 
 
 template TupleRange(int from, int to)
@@ -15,10 +15,10 @@ if (from <= to)
 {
     static if (from >= to)
 	{
-        alias TupleRange = TypeTuple!();
+        alias TupleRange = AliasSeq!();
     }
 	else
 	{
-        alias TupleRange = TypeTuple!(from, TupleRange!(from + 1, to));
+        alias TupleRange = AliasSeq!(from, TupleRange!(from + 1, to));
     }
 }

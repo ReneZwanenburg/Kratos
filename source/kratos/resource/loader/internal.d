@@ -1,6 +1,8 @@
 ﻿module kratos.resource.loader.internal;
 
+public import kvibe.data.json : Json;
 public import kratos.resource.loader.jsonloader;
+
 public import kratos.resource.filesystem;
 
 package @property auto lowerCaseExtension(string path)

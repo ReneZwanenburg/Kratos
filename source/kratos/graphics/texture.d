@@ -189,6 +189,8 @@ enum DefaultTextureFormat : TextureFormat
 // Determines if mipmaps are included based on buffer length. Generates mipmaps when not present.
 Texture texture(TextureFormat format, vec2ui resolution, const(void)[] buffer, string name = null)
 {
+	import std.conv : text;
+
 	const handle = gl.genTexture();
 	auto texture = Texture(handle, resolution, format, name ? name : handle.text);
 	texture.update(buffer);

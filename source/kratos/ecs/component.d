@@ -2,10 +2,7 @@
 
 import std.container : Array;
 import std.typecons : Flag;
-import std.traits : ReturnType, Unqual;
 import std.experimental.logger;
-
-import kratos.util : Event;
 
 import kvibe.data.json;
 
@@ -198,6 +195,8 @@ struct ComponentContainer(ComponentBaseType)
 package mixin template ComponentBasicImpl(OwnerType)
 {
 	import std.uuid : UUID, randomUUID, md5UUID, UUIDParsingException;
+	import std.traits : Unqual;
+	import kratos.util : Event;
 
 	package static OwnerType constructingOwner;
 
