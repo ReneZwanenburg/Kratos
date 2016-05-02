@@ -8,7 +8,7 @@ import kratos.component.transform;
 import kgl3n.matrix;
 import kgl3n.linearcomponent;
 import kgl3n.vector;
-import kvibe.data.json;
+import vibe.data.json;
 
 struct StandardProjection
 {

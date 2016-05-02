@@ -4,7 +4,7 @@ import core.time;
 import std.algorithm.comparison : min;
 import kratos.ecs;
 import kratos.util : Event;
-import kvibe.data.json : Json;
+import vibe.data.json : Json;
 
 final class Time : SceneComponent
 {

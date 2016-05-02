@@ -4,7 +4,7 @@ import kgl3n.vector;
 import kgl3n.matrix;
 import kgl3n.math : sin, cos;
 
-import kvibe.data.serialization : optional;
+import vibe.data.serialization : optional;
 
 /// Base template for all quaternion-types.
 /// Params:

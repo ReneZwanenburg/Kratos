@@ -3,7 +3,7 @@
 import derelict.glfw3.glfw3;
 import std.exception : enforce, assumeWontThrow;
 import kratos.input;
-import kvibe.data.serialization : optional;
+import vibe.data.serialization : optional;
 import kratos.graphics.rendertarget;
 import kgl3n.vector : vec2ui; 
 

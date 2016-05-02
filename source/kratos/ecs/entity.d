@@ -3,7 +3,7 @@
 import kratos.ecs.component;
 import kratos.ecs.scene;
 
-import kvibe.data.json;
+import vibe.data.json;
 
 import std.experimental.logger;
 

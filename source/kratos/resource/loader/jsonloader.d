@@ -3,7 +3,7 @@ module kratos.resource.loader.jsonloader;
 import kratos.resource.filesystem;
 import kratos.resource.resource;
 
-import kvibe.data.json : Json, parseJsonString;
+import vibe.data.json : Json, parseJsonString;
 
 /// Uncached JSON loader. The idea is that the resource reprsented by
 /// the JSON document will be cached, so there's no need to cache the

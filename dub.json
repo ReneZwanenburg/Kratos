@@ -34,6 +34,8 @@
 
 	"dependencies":
 	{
+		"vibe-d:utils": "~>0.7.28",
+		"vibe-d:data": "~>0.7.28",
 		"derelict-gl3": "~>1.0",
 		"derelict-glfw3": "~>1.0",
 		"derelict-assimp3": "~>1.0.1",

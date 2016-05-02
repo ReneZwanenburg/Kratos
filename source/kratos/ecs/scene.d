@@ -6,7 +6,7 @@ import kratos.ecs.component;
 import kratos.ecs.entity;
 import kratos.ecs.eventdispatcher;
 
-import kvibe.data.json;
+import vibe.data.json;
 
 import std.experimental.logger;
 

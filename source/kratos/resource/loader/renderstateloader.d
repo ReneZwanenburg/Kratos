@@ -4,7 +4,7 @@ import kratos.resource.loader.internal;
 import kratos.resource.cache;
 import kratos.resource.resource;
 import kratos.graphics.renderstate;
-import kvibe.data.json;
+import vibe.data.json;
 import kratos.resource.loader.shaderloader;
 import kratos.resource.loader.textureloader;
 import kratos.graphics.textureunit;

@@ -14,7 +14,7 @@ private __gshared FileSystem _activeFileSystem;
 		import std.file;
 		if(exists("LoadOrder.json"))
 		{
-			import kvibe.data.json;
+			import vibe.data.json;
 			auto json = parseJsonString(readText("LoadOrder.json"));
 
 			auto mfs = new MultiFileSystem();

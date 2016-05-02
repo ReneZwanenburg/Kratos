@@ -1,7 +1,7 @@
 ﻿module kratos.configuration;
 
 import kratos.resource.filesystem;
-import kvibe.data.json;
+import vibe.data.json;
 
 import kratos.window : WindowProperties;
 
