@@ -304,9 +304,10 @@ template ComponentInteraction(ComponentType)
 	private void callInitializer(ComponentType component, InitializationTaskRunner taskRunner)
 	{
 		//TODO: Type and arg checking, make reusable
-		//TODO: Make sure we're not picking up base class members
-		import std.traits : hasMember;
-		static if(hasMember!(ComponentType, "initialize"))
+		import std.algorithm.searching : canFind;
+		import std.range : only;
+		
+		static if(only(__traits(derivedMembers, ComponentType)).canFind("initialize"))
 		{
 			auto initializePtr = &__traits(getMember, component, "initialize");
 			initializePtr();
