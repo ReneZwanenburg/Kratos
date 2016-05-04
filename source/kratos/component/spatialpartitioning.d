@@ -1,16 +1,13 @@
 ﻿module kratos.component.spatialpartitioning;
 
 import kratos.ecs.scene : SceneComponent;
-import kgl3n.frustum : Frustum;
-import kgl3n.intersect : testIntersection;
-import std.algorithm.iteration : filter, map;
-import std.range : repeat, zip;
+import std.container.array : Array;
 
 public final class SpatialPartitioning(ComponentType) : SceneComponent
 {
 	enum hasBounds = is(typeof(ComponentType.init.worldSpaceBound));
 	
-	private ComponentType[] _components;
+	private Array!ComponentType _components;
 	
 	auto all()
 	{
@@ -22,6 +19,10 @@ public final class SpatialPartitioning(ComponentType) : SceneComponent
 		auto intersecting(T)(T shape)
 		{
 			// Looks a bit roundabout, but avoids allocating a closure.
+			import std.algorithm.iteration : filter, map;
+			import std.range : repeat, zip;
+			import kgl3n.intersect : testIntersection;
+			
 			return 
 				zip(all, repeat(shape))
 				.filter!(a => testIntersection(a[1], a[0].worldSpaceBound))
@@ -31,15 +32,14 @@ public final class SpatialPartitioning(ComponentType) : SceneComponent
 	
 	void register(ComponentType component)
 	{
-		_components ~= component;
+		_components.insertBack(component);
 	}
 	
 	void deregister(ComponentType component)
 	{
-		import std.algorithm.searching : countUntil;
-		import std.algorithm.mutation : remove, SwapStrategy;
+		import kratos.util : linearRemove;
 		
-		_components = _components.remove!(SwapStrategy.unstable)(_components.countUntil(component));
-		_components.assumeSafeAppend();
+		// This potentially has terrible performance when all components are destructed in front to back order..
+		linearRemove(_components, component);
 	}
 }

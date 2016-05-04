@@ -4,7 +4,7 @@ import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
 import kratos.graphics.texture;
-import kratos.util : backInserter, StaticString;
+import kratos.util : backInserter, StaticString, linearRemove;
 
 import std.algorithm : copy, find, map;
 import std.array : array;
@@ -74,7 +74,7 @@ private struct Program_Impl
 	{
 		foreach(shader; shaders)
 		{
-			shader.compileCallbacks.linearRemove(shader.compileCallbacks[].find(&invalidate).take(1));
+			linearRemove(shader.compileCallbacks, &invalidate);
 		}
 
 		gl.DeleteProgram(handle);

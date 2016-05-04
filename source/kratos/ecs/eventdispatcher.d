@@ -2,9 +2,8 @@
 
 import std.container.array : Array;
 
-import std.traits : hasMember;
 import std.algorithm.searching : canFind, find;
-import std.range : only, take;
+import std.range : only;
 
 public final class RootDispatcher
 {
@@ -158,8 +157,8 @@ private final class DefaultComponentManager(ComponentType) : ComponentManager!Co
 
 	private void componentDestructionEventHandler(ComponentType.ComponentBaseType component)
 	{
-		auto rangeToRemove = components[].find(component).take(1);
-		components.linearRemove(rangeToRemove);
+		import kratos.util : linearRemove;
+		linearRemove(components, component);
 	}
 
 	static if(hasFrameUpdate)

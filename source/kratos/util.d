@@ -31,9 +31,7 @@ struct Event(Args...)
 	
 	void opOpAssign(string op)(CallbackType callback) if(op == "-")
 	{
-		import std.algorithm.searching : find;
-		import std.range : take;
-		callbacks.linearRemove(callbacks[].find(callback).take(1));
+		linearRemove(callbacks, callback);
 	}
 
 	RegistrationType register(CallbackType callback)
@@ -90,6 +88,18 @@ auto backInserter(T)(ref Array!T array)
 	}
 	
 	return Inserter(&array);
+}
+
+void linearRemoveAt(T)(ref Array!T array, size_t index)
+{
+	array.linearRemove(array[index .. index + 1]);
+}
+
+void linearRemove(T, U)(ref Array!T array, auto ref U element)
+if(is(T : U) || is(U : T))
+{
+	import std.algorithm.searching : countUntil;
+	array.linearRemoveAt(array[].countUntil(element));
 }
 
 struct SerializableArray(T)
@@ -171,6 +181,7 @@ T readFront(T)(ref inout(void)[] buffer)
 	buffer = buffer[T.sizeof .. $];
 	return value;
 }
+
 struct RawFileWriter
 {
 	import std.stdio : File;
