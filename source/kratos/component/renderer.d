@@ -14,7 +14,7 @@ import kratos.graphics.rendertarget : RenderTarget, FrameBuffer;
 import kratos.graphics.renderstate : RenderState;
 import kratos.graphics.shadervariable : UniformRef;
 import kratos.graphics.renderablemesh : RenderableMesh, renderableMesh;
-import kratos.graphics.mesh : Mesh, quad2D;
+import kratos.graphics.mesh : Mesh, MeshManager, quad2D;
 import kratos.graphics.bo : VBO, IBO;
 
 import kgl3n.vector : vec2, vec2ui, vec3, vec4;
@@ -167,8 +167,9 @@ final class Renderer : SceneComponent
 		{
 			renderState.apply();
 			vao.bind();
+			auto meshImpl = MeshManager.getConcreteResource(mesh);
 			import kratos.graphics.gl;
-			gl.DrawElements(GL_TRIANGLES, mesh.ibo.numIndices, mesh.ibo.indexType, null);
+			gl.DrawElements(GL_TRIANGLES, meshImpl.ibo.numIndices, meshImpl.ibo.indexType, null);
 		}
 	}
 
@@ -185,7 +186,7 @@ final class Renderer : SceneComponent
 			directionalLightRenderableMesh.renderState.shader["depth"] = gBuffer.frameBuffer["depth"];
 		}
 
-		this.directionalLightRenderableMesh = renderableMesh(quad, RenderStateCache.get("RenderStates/DeferredRenderer/DirectionalLight.renderstate"));
+		this.directionalLightRenderableMesh = renderableMesh(quad, RenderStateLoader.get("RenderStates/DeferredRenderer/DirectionalLight.renderstate"));
 		setGBufferInputs(this.directionalLightRenderableMesh);
 	}
 

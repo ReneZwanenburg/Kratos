@@ -32,11 +32,13 @@ struct RenderableMesh
 
 		import kgl3n.vector : vec3;
 		static struct Vertex { vec3 position; }
+		
+		auto meshImpl = MeshManager.getConcreteResource(_mesh);
 
-		if(_mesh.vbo.isValidCustomFormat!Vertex)
+		if(meshImpl.vbo.isValidCustomFormat!Vertex)
 		{
 			import std.algorithm.iteration : map;
-			_modelSpaceBound = AABB.fromPoints(mesh.vbo.getCustom!Vertex.map!(a => a.position));
+			_modelSpaceBound = AABB.fromPoints(meshImpl.vbo.getCustom!Vertex.map!(a => a.position));
 		}
 	}
 

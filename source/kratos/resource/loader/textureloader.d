@@ -1,16 +1,15 @@
 ﻿module kratos.resource.loader.textureloader;
 
+import kratos.resource.manager;
 import kratos.resource.loader.internal;
-import kratos.resource.cache;
-import kratos.resource.resource;
 import kratos.graphics.texture;
 import derelict.devil.il;
 import kgl3n.vector : vec2ui;
 import kratos.resource.format : KratosTexture;
 
-alias TextureCache = Cache!(Texture, ResourceIdentifier, id => loadTexture(id));
+alias TextureLoader = Loader!(Texture_Impl, (string name) => loadTexture(name), true);
 
-public Texture loadTexture(ResourceIdentifier name, uint lod = 0, bool forceCompression = false)
+Texture_Impl loadTexture(string name, uint lod = 0, bool forceCompression = false)
 {
 	auto buffer = activeFileSystem.get(name);
 	
@@ -26,7 +25,7 @@ public Texture loadTexture(ResourceIdentifier name, uint lod = 0, bool forceComp
 	}
 }
 
-private Texture loadTextureKst(string name, const(void)[] buffer, uint lod, bool forceCompression)
+private Texture_Impl loadTextureKst(string name, const(void)[] buffer, uint lod, bool forceCompression)
 {
 	auto ksm = KratosTexture.fromBuffer(buffer);
 	
@@ -44,7 +43,7 @@ private Texture loadTextureKst(string name, const(void)[] buffer, uint lod, bool
 	auto lodResolution = getMipmapLevelResolution(ksm.resolution, lod);
 	auto lodBufferLength = getMipmapsBufferLength(format, lodResolution);
 	
-	return texture
+	return new Texture_Impl
 	(
 		format,
 		lodResolution,
@@ -53,7 +52,7 @@ private Texture loadTextureKst(string name, const(void)[] buffer, uint lod, bool
 	);
 }
 
-private Texture loadTextureIl(string name, const(void)[] buffer, string extension, uint lod, bool forceCompression)
+private Texture_Impl loadTextureIl(string name, const(void)[] buffer, string extension, uint lod, bool forceCompression)
 {
 	assert(lod == 0);
 
@@ -74,7 +73,7 @@ private Texture loadTextureIl(string name, const(void)[] buffer, string extensio
 	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL)*8 == format.bitsPerPixel);
 	assert(ilGetInteger(IL_IMAGE_TYPE) == format.type);
 	
-	return texture(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bitsPerPixel/8], name);
+	return new Texture_Impl(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bitsPerPixel/8], name);
 }
 
 shared static this()

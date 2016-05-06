@@ -1,5 +1,6 @@
 ﻿module kratos.resource.loader;
 
+public import kratos.resource.loader.jsonloader;
 public import kratos.resource.loader.meshloader;
 public import kratos.resource.loader.renderstateloader;
 public import kratos.resource.loader.sceneloader;

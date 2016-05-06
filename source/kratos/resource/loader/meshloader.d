@@ -1,40 +1,36 @@
 ﻿module kratos.resource.loader.meshloader;
 
+import kratos.resource.manager;
 import kratos.resource.loader.internal;
-import kratos.resource.cache;
-import kratos.resource.resource;
 import kratos.graphics.mesh;
 import kratos.util : readFront;
 
-alias MeshCache = Cache!(Mesh, ResourceIdentifier, id => loadMesh(id));
 
-private Mesh loadMesh(ResourceIdentifier name)
+alias MeshLoader = Loader!(Mesh_Impl, loadMesh, true);
+
+
+Mesh_Impl loadMesh(string name)
 {
 	auto extension = name.lowerCaseExtension;
 	auto data = activeFileSystem.get(name);
 
-	if(extension == ".ksm")
-	{
-		auto mesh = loadMeshKratos(data);
-		mesh.id = name;
-		return mesh;
-	}
-	else
-	{
-		auto mesh = loadMeshAssimp(data, extension);
-		mesh.id = name;
-		return mesh;
-	}
+	auto mesh = extension == ".ksm"
+		? loadMeshKratos(data)
+		: loadMeshAssimp(data, extension);
+	
+	mesh.name = name;
+	
+	return mesh;
 }
 
-private Mesh loadMeshKratos(immutable (void)[] data)
+private Mesh_Impl loadMeshKratos(immutable (void)[] data)
 {
 	import kratos.resource.format : KratosMesh;
 	import kratos.graphics.bo;
 	
 	auto importedMesh = KratosMesh.fromBuffer(data);
 
-	return Mesh(
+	return new Mesh_Impl(
 		IBO(importedMesh.indexBuffer, importedMesh.indexType),
 		VBO(importedMesh.vertexBuffer, importedMesh.vertexAttributes)
 	);
@@ -43,7 +39,7 @@ private Mesh loadMeshKratos(immutable (void)[] data)
 /////////
 version(KratosDisableAssimp)
 {
-	private Mesh loadMeshAssimp(immutable void[] data, string extension)
+	private Mesh_Impl loadMeshAssimp(immutable void[] data, string extension)
 	{
 		assert(false, "Assimp mesh loading has been disabled. Build Kratos with Assimp support to load non-ksm meshes");
 	}
@@ -52,7 +48,7 @@ else
 {
 	import derelict.assimp3.assimp;
 	
-	private Mesh loadMeshAssimp(immutable void[] data, string extension)
+	private Mesh_Impl loadMeshAssimp(immutable void[] data, string extension)
 	{
 		import std.string;
 		import std.exception;
@@ -126,11 +122,11 @@ else
 		if(vertices.data.length < ushort.max)
 		{
 			import std.conv;
-			return Mesh(IBO(indices.data.to!(ushort[])), VBO(vertices.data));
+			return new Mesh_Impl(IBO(indices.data.to!(ushort[])), VBO(vertices.data));
 		}
 		else
 		{
-			return Mesh(IBO(indices.data), VBO(vertices.data));
+			return new Mesh_Impl(IBO(indices.data), VBO(vertices.data));
 		}
 	}
 }

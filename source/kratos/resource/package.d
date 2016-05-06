@@ -1,0 +1,1 @@
+module kratos.resource;

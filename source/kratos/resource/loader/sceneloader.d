@@ -1,8 +1,6 @@
 ﻿module kratos.resource.loader.sceneloader;
 
 import kratos.resource.loader.internal;
-import kratos.resource.cache;
-import kratos.resource.resource;
 import kratos.ecs;
 import kratos.graphics.mesh;
 import vibe.data.json;
@@ -12,7 +10,7 @@ import kratos.resource.loader.renderstateloader;
 import kgl3n.vector;
 //import std.experimental.logger;
 
-public Scene loadScene(ResourceIdentifier name)
+Scene loadScene(string name)
 {
 	auto extension = name.lowerCaseExtension;
 	import std.algorithm : among;
@@ -26,21 +24,21 @@ public Scene loadScene(ResourceIdentifier name)
 	}
 }
 
-private Scene loadSceneKratos(ResourceIdentifier name)
+private Scene loadSceneKratos(string name)
 {
 	return Scene.deserialize(loadJson(name), &loadJson);
 }
 
 version(KratosDisableAssimp)
 {
-	private void loadSceneAssimp(ResourceIdentifier name, Scane scene)
+	private void loadSceneAssimp(string name, Scane scene)
 	{
 		assert(false, "Assimp support has been disabled, enable to load non-ksm meshes");
 	}
 }
 else
 {
-	private Scene loadSceneAssimp(ResourceIdentifier name)
+	private Scene loadSceneAssimp(string name)
 	{
 		import std.path : baseName;
 		auto scene = new Scene(name.baseName);
@@ -169,13 +167,13 @@ private Mesh loadMesh(const aiMesh* mesh)
 	}
 	
 	auto ibo = mesh.mNumVertices < ushort.max ? createIndices!ushort : createIndices!uint;
-	return Mesh(ibo, vbo);
+	return MeshManager.create(ibo, vbo);
 }
 
 private RenderState loadMaterial(const aiMaterial* material)
 {
 	import kratos.resource.loader.textureloader;
-	RenderState renderState = RenderStateCache.get("RenderStates/DefaultImport.renderstate");
+	RenderState renderState = RenderStateLoader.get("RenderStates/DefaultImport.renderstate");
 
 	static struct TextureProperties
 	{
@@ -193,11 +191,11 @@ private RenderState loadMaterial(const aiMaterial* material)
 		aiString path;
 		if(aiGetMaterialTexture(material, properties.textureType, 0, &path) == aiReturn_SUCCESS)
 		{
-			renderState.shader[properties.uniformName] = TextureCache.get(path.data[0..path.length].idup);
+			renderState.shader[properties.uniformName] = TextureLoader.get(path.data[0..path.length].idup);
 		}
 		else
 		{
-			renderState.shader[properties.uniformName] = TextureCache.get(properties.defaultTexture);
+			renderState.shader[properties.uniformName] = TextureLoader.get(properties.defaultTexture);
 		}
 	}
 

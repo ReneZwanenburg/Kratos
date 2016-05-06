@@ -1,17 +1,16 @@
 ﻿module kratos.resource.loader.renderstateloader;
 
+import kratos.resource.manager;
 import kratos.resource.loader.internal;
-import kratos.resource.cache;
-import kratos.resource.resource;
 import kratos.graphics.renderstate;
 import vibe.data.json;
 import kratos.resource.loader.shaderloader;
 import kratos.resource.loader.textureloader;
 import kratos.graphics.textureunit;
 
-alias RenderStateCache = Cache!(RenderState, ResourceIdentifier, id => loadRenderState(id));
+alias RenderStateLoader = Loader!(RenderState, loadRenderState, false);
 
-private RenderState loadRenderState(ResourceIdentifier name)
+RenderState loadRenderState(string name)
 {
 	auto json = loadJson(name);
 
@@ -34,7 +33,7 @@ private RenderState loadRenderState(ResourceIdentifier name)
 			
 			static if(is(T == Shader))
 			{
-				field = Shader(ProgramCache.get(stateJson["program"].get!string));
+				field = Shader(ProgramLoader.get(stateJson["program"].get!string));
 				loadUniforms(renderState, stateJson["uniforms"]);
 			}
 			else
@@ -47,7 +46,7 @@ private RenderState loadRenderState(ResourceIdentifier name)
 	}
 	else
 	{
-		auto renderState = RenderStateCache.get(json["parent"].get!ResourceIdentifier);
+		auto renderState = RenderStateLoader.get(json["parent"].get!string);
 		loadUniforms(renderState, json["uniforms"]);
 		return renderState;
 	}
@@ -61,7 +60,7 @@ private void loadUniforms(ref RenderState renderState, Json uniforms)
 		{
 			if(value.type == Json.Type.String)
 			{
-				renderState.shader[name] = TextureCache.get(value.get!string);
+				renderState.shader[name] = TextureLoader.get(value.get!string);
 			}
 			else
 			{

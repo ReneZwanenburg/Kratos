@@ -1,7 +1,6 @@
 ﻿module kratos.resource.filesystem;
 
 import std.exception : assumeUnique;
-import kratos.resource.resource : ResourceIdentifier;
 import std.experimental.logger;
 
 private __gshared FileSystem _activeFileSystem;
@@ -51,30 +50,30 @@ private __gshared FileSystem _activeFileSystem;
 
 interface FileSystem
 {
-	bool				has(ResourceIdentifier name);
+	bool				has(string name);
 
 	protected
-	immutable(void)[]	getImpl(ResourceIdentifier name);
+	immutable(void)[]	getImpl(string name);
 
 	final
-	immutable(void)[]	get(ResourceIdentifier name)
+	immutable(void)[]	get(string name)
 	{
 		assert(has(name), "File '" ~ name ~ "' does not exist");
 		return getImpl(name);
 	}
 
-	immutable(T)[]		get(T)(ResourceIdentifier name)
+	immutable(T)[]		get(T)(string name)
 	{
 		return cast(immutable (T)[])get(name);
 	}
 
 	final
-	auto				getText(ResourceIdentifier name)
+	auto				getText(string name)
 	{
 		return get!char(name);
 	}
 
-	void				write(ResourceIdentifier name, const void[] data);
+	void				write(string name, const void[] data);
 
 	@property bool 		writable() const;
 }
@@ -84,13 +83,13 @@ class MultiFileSystem : FileSystem
 	private FileSystem[] _fileSystems;
 	private FileSystem _writableFileSystem;
 
-	override bool has(ResourceIdentifier name)
+	override bool has(string name)
 	{
 		import std.algorithm : any;
 		return _fileSystems.any!(a => a.has(name));
 	}
 
-	override immutable(void[]) getImpl(ResourceIdentifier name)
+	override immutable(void[]) getImpl(string name)
 	{
 		import std.algorithm : find;
 		import std.array : front;
@@ -111,7 +110,7 @@ class MultiFileSystem : FileSystem
 		return _writableFileSystem !is null;
 	}
 
-	override void write(ResourceIdentifier name, const void[] data)
+	override void write(string name, const void[] data)
 	{
 		assert(writable);
 		_writableFileSystem.write(name, data);
@@ -132,20 +131,20 @@ class NormalFileSystem : FileSystem
 		this._basePath = basePath;
 	}
 
-	override bool has(ResourceIdentifier name)
+	override bool has(string name)
 	{
 		auto path = buildPath(name);
 		return path.exists && path.isFile;
 	}
 
-	override immutable(void)[] getImpl(ResourceIdentifier name)
+	override immutable(void)[] getImpl(string name)
 	{
 		auto path = buildPath(name);
 		info("Reading ", path);
 		return path.read().assumeUnique;
 	}
 
-	private const(char[]) buildPath(ResourceIdentifier name)
+	private const(char[]) buildPath(string name)
 	{
 		_pathBuilder.clear();
 		_pathBuilder ~= _basePath;
@@ -158,7 +157,7 @@ class NormalFileSystem : FileSystem
 		return true;
 	}
 
-	override void write(ResourceIdentifier name, const void[] data) {
+	override void write(string name, const void[] data) {
 		auto path = buildPath(name);
 		mkdirRecurse(dirName(path));
 		std.file.write(path, data);
@@ -203,12 +202,12 @@ class PackFileSystem : FileSystem
 		}
 	}
 
-	override bool has(ResourceIdentifier name)
+	override bool has(string name)
 	{
 		return !!(md5Of(name) in _fileMap);
 	}
 	
-	override immutable(void)[] getImpl(ResourceIdentifier name)
+	override immutable(void)[] getImpl(string name)
 	{
 		info("Reading ", _fileName, " : ", name);
 		auto offset = _fileMap[md5Of(name)];
@@ -220,7 +219,7 @@ class PackFileSystem : FileSystem
 		return false;
 	}
 
-	override void write(ResourceIdentifier name, const void[] data)
+	override void write(string name, const void[] data)
 	{
 		assert(false);
 	}

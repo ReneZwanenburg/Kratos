@@ -121,7 +121,7 @@ final class FrameBuffer
 		{
 			auto format = description.format;
 
-			auto tex = texture(format, resolution, null, description.name);
+			auto tex = TextureManager.create(format, resolution, null, description.name);
 			textures ~= tex;
 
 			GLenum attachment;
@@ -138,7 +138,7 @@ final class FrameBuffer
 				assert(attachment <= maxColorAttachment);
 			}
 
-			gl.FramebufferTexture(GL_DRAW_FRAMEBUFFER, attachment, tex.handle, 0);
+			gl.FramebufferTexture(GL_DRAW_FRAMEBUFFER, attachment, TextureManager.getConcreteResource(tex).handle, 0);
 		}
 
 		static immutable drawBuffers = [

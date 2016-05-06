@@ -1,8 +1,8 @@
 ﻿module kratos.graphics.bo;
 
-import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
+import kratos.resource.manager : Handle;
 
 import std.experimental.logger;
 

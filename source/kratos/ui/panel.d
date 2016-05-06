@@ -78,7 +78,7 @@ public final class Panel : UiComponent
 		_mesh = renderableMesh
 		(
 			quad2D(-halfSize + offset, halfSize + offset),
-			RenderStateCache.get(renderState)
+			RenderStateLoader.get(renderState)
 		);
 	}
 }
@@ -209,14 +209,14 @@ public final class TextPanel : UiComponent
 				cast(uint)(screenResolution.y * size.y * 0.5f)
 			);
 			
-			_texture = texture(DefaultTextureFormat.R, texSize, null, owner.name ~ " TextPanel");
+			_texture = TextureManager.create(DefaultTextureFormat.R, texSize, null, owner.name ~ " TextPanel");
 			_texelBuffer = new ubyte[texSize.x * texSize.y];
 			
 			auto halfSize = size / 2;
 			_mesh = renderableMesh
 			(
 				quad2D(-halfSize + offset, halfSize + offset, vec2(0, 1), vec2(1, 0)),
-				RenderStateCache.get(renderState)
+				RenderStateLoader.get(renderState)
 			);
 
 			_mesh.renderState.shader.uniforms["texture"] = _texture;
@@ -263,6 +263,7 @@ public final class TextPanel : UiComponent
 			
 			auto bitmap = _face.glyph.bitmap;
 			auto offset = vec2i(_face.glyph.bitmap_left, -_face.glyph.bitmap_top);
+			auto resolution = TextureManager.getConcreteResource(_texture).resolution;
 			
 			foreach(y; 0..bitmap.rows)
 			{
@@ -270,19 +271,19 @@ public final class TextPanel : UiComponent
 				{
 					auto pixelPos = position + offset + vec2i(x, y);
 					
-					if(pixelPos.x < 0 || pixelPos.x >= _texture.resolution.x || pixelPos.y < 0 || pixelPos.y >= _texture.resolution.y)
+					if(pixelPos.x < 0 || pixelPos.x >= resolution.x || pixelPos.y < 0 || pixelPos.y >= resolution.y)
 					{
 						continue;
 					}
 					
-					_texelBuffer[pixelPos.x + pixelPos.y * _texture.resolution.x] = bitmap.buffer[x + y * bitmap.width];
+					_texelBuffer[pixelPos.x + pixelPos.y * resolution.x] = bitmap.buffer[x + y * bitmap.width];
 				}
 			}
 			
 			position += vec2i(_face.glyph.advance.x, _face.glyph.advance.y) / 64;
 		}
 		
-		_texture.update(_texelBuffer);
+		TextureManager.getConcreteResource(_texture).load(_texelBuffer);
 	}
 }
 

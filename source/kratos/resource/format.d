@@ -47,7 +47,7 @@ struct KratosMesh
 struct KratosTexture
 {
 	import kgl3n.vector : vec2ui;
-	import kratos.graphics.texture : TextureFormat, DefaultTextureFormat, getMipmapsBufferLength, getMipmapBufferLength;
+	import kratos.graphics.texture : TextureFormat, DefaultTextureFormat, getMipmapsBufferLength, getTexelBufferLength;
 	
 	enum Format : uint
 	{
@@ -79,7 +79,7 @@ struct KratosTexture
 		);
 		
 		auto format = getTextureFormat(retVal.format);
-		assert(data.length == getMipmapsBufferLength(format, retVal.resolution) || data.length == getMipmapBufferLength(format, retVal.resolution));
+		assert(data.length == getMipmapsBufferLength(format, retVal.resolution) || data.length == getTexelBufferLength(format, retVal.resolution));
 		retVal.texelBuffer = data;
 		
 		return retVal;

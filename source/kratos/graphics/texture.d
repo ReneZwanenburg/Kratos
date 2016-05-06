@@ -1,14 +1,22 @@
 ﻿module kratos.graphics.texture;
 
-import kratos.resource.resource;
 import kratos.graphics.gl;
 import kgl3n.vector;
 import kgl3n.math;
 //import std.experimental.logger;
+import kratos.resource.manager;
 
 import vibe.data.serialization : optional, byName;
 
 public import kratos.graphics.textureunit;
+
+
+alias TextureManager = Manager!Texture_Impl;
+alias Texture = TextureManager.Handle;
+
+alias SamplerManager = Manager!Sampler_Impl;
+alias SamplerLoader = Loader!(Sampler_Impl, (SamplerSettings a) => new Sampler_Impl(a), true);
+alias Sampler = SamplerLoader.StoredResource;
 
 
 enum SamplerMinFilter : GLenum
@@ -59,41 +67,28 @@ struct SamplerAnisotropy
 	private int _level = 1;
 }
 
-Sampler sampler(SamplerSettings settings)
-{
-	import kratos.resource.cache;
-
-	auto createSampler = 
-		(SamplerSettings settings)
-		{
-			auto sampler = Sampler(gl.genSampler, settings);
-			gl.SamplerParameteri(sampler.handle, GL_TEXTURE_MIN_FILTER, settings.minFilter);
-			gl.SamplerParameteri(sampler.handle, GL_TEXTURE_MAG_FILTER, settings.magFilter);
-			gl.SamplerParameteri(sampler.handle, GL_TEXTURE_WRAP_S, settings.xWrap);
-			gl.SamplerParameteri(sampler.handle, GL_TEXTURE_WRAP_T, settings.yWrap);
-			gl.SamplerParameteri(sampler.handle, GL_TEXTURE_MAX_ANISOTROPY_EXT, settings.anisotropy);
-			return sampler;
-	};
-
-	alias SamplerCache = Cache!(Sampler, SamplerSettings, createSampler);
-	return SamplerCache.get(settings);
-}
-
 Sampler defaultSampler()
 {
-	return sampler(SamplerSettings.init);
+	return SamplerLoader.get(SamplerSettings.init);
 }
 
-alias Sampler = Handle!Sampler_Impl;
-
-private struct Sampler_Impl
+private class Sampler_Impl
 {
-	const:
-	private GLuint		handle;
-	SamplerSettings		settings;
+	private const GLuint		handle;
+	const SamplerSettings		settings;
 
-	alias settings this;
-
+	this(SamplerSettings settings)
+	{
+		handle = gl.genSampler;
+		this.settings = settings;
+		
+		gl.SamplerParameteri(handle, GL_TEXTURE_MIN_FILTER, settings.minFilter);
+		gl.SamplerParameteri(handle, GL_TEXTURE_MAG_FILTER, settings.magFilter);
+		gl.SamplerParameteri(handle, GL_TEXTURE_WRAP_S, settings.xWrap);
+		gl.SamplerParameteri(handle, GL_TEXTURE_WRAP_T, settings.yWrap);
+		gl.SamplerParameteri(handle, GL_TEXTURE_MAX_ANISOTROPY_EXT, settings.anisotropy);
+	}
+	
 	~this()
 	{
 		gl.DeleteSamplers(1, &handle);
@@ -186,132 +181,20 @@ enum DefaultTextureFormat : TextureFormat
 	Depth	= TextureFormat(GL_DEPTH_COMPONENT,	GL_DEPTH_COMPONENT,	GL_FLOAT,			32)
 }
 
-// Determines if mipmaps are included based on buffer length. Generates mipmaps when not present.
-Texture texture(TextureFormat format, vec2ui resolution, const(void)[] buffer, string name = null)
-{
-	import std.conv : text;
-
-	const handle = gl.genTexture();
-	auto texture = Texture(handle, resolution, format, name ? name : handle.text);
-	texture.update(buffer);
-
-	return texture;
-}
-
-public void update(Texture texture, const(void)[] buffer)
-{
-	with(texture)
-	{
-		const mipmapsLength = getMipmapsBufferLength(format, resolution);
-		const bufferContainsMipmaps = buffer.length == mipmapsLength;
-		
-		assert(buffer.ptr == null || bufferContainsMipmaps || buffer.length == getMipmapBufferLength(format, resolution));
-
-		ScratchTextureUnit.makeActiveScratch(texture);
-
-		if(bufferContainsMipmaps)
-		{
-			import std.range : iota, retro;
-			
-			auto remainingBuffer = buffer;
-			
-			foreach(level; getRequiredMipmapLevels(resolution).iota.retro)
-			{
-				auto levelResolution = getMipmapLevelResolution(resolution, level);
-				auto sliceLength = getMipmapBufferLength(format, levelResolution);
-				
-				uploadMipmapLevel(format, levelResolution, level, remainingBuffer[0 .. sliceLength]);
-				remainingBuffer = remainingBuffer[sliceLength .. $];
-			}
-			
-			assert(remainingBuffer.length == 0);
-		}
-		else
-		{
-			uploadMipmapLevel(format, resolution, 0, buffer);
-			gl.GenerateMipmap(GL_TEXTURE_2D);
-		}
-	}
-}
-
-void[] downloadTextureBuffer(Texture texture, bool includeMipmaps = true)
-{
-	// TODO:
-	assert(includeMipmaps);
-	assert(texture.format.internalFormatIsCompressed);
-	
-	auto downloadFormat = texture.format.asDownloadFormat;
-	
-	auto texelBuffer = new void[](getMipmapsBufferLength(downloadFormat, texture.resolution));
-	
-	import std.range : iota, retro;
-		
-	auto remainingBuffer = texelBuffer;
-	
-	foreach(level; getRequiredMipmapLevels(texture.resolution).iota.retro)
-	{
-		auto levelResolution = getMipmapLevelResolution(texture.resolution, level);
-		auto sliceLength = getMipmapBufferLength(downloadFormat, levelResolution);
-		
-		import std.conv : to;
-		gl.GetCompressedTextureImage(texture.handle, level, remainingBuffer.length.to!GLsizei, remainingBuffer.ptr);
-		remainingBuffer = remainingBuffer[sliceLength .. $];
-	}
-	
-	return texelBuffer;
-}
-
-private void uploadMipmapLevel(TextureFormat format, vec2ui resolution, int level, const(void)[] buffer)
-{
-	if(format.bufferFormatIsCompressed)
-	{
-		assert(format.internalFormat == format.bufferFormat);
-		
-		import std.conv : to;
-		
-		gl.CompressedTexImage2D(
-			GL_TEXTURE_2D,
-			level,
-			format.internalFormat,
-			resolution.x,
-			resolution.y,
-			0,
-			buffer.length.to!GLsizei,
-			buffer.ptr
-		);
-	}
-	else
-	{
-		gl.TexImage2D(
-			GL_TEXTURE_2D, 
-			level, 
-			format.internalFormat,
-			resolution.x,
-			resolution.y,
-			0,
-			format.bufferFormat,
-			format.type,
-			buffer.ptr
-		);
-	}
-}
-
 uint getMipmapsBufferLength(TextureFormat format, vec2ui resolution)
 {
-	const requiredMipMapLevels = getRequiredMipmapLevels(resolution);
+	import std.range : iota;
+	import std.algorithm.iteration : map, sum;
 	
-	uint mipmapsLengthInBytes = 0;
-	
-	foreach(level; 0 .. requiredMipMapLevels)
-	{
-		mipmapsLengthInBytes += getMipmapBufferLength(format, resolution);
-		resolution = getNextMipmapLevelResolution(resolution);
-	}
-	
-	return mipmapsLengthInBytes;
+	return
+		getRequiredMipmapLevels(resolution)
+		.iota()
+		.map!(level => getMipmapLevelResolution(resolution, level))
+		.map!(levelResolution => getTexelBufferLength(format, levelResolution))
+		.sum;
 }
 
-uint getMipmapBufferLength(TextureFormat format, vec2ui resolution)
+uint getTexelBufferLength(TextureFormat format, vec2ui resolution)
 {
 	if(format.bufferFormatIsCompressed)
 	{
@@ -328,16 +211,9 @@ uint getMipmapBufferLength(TextureFormat format, vec2ui resolution)
 
 vec2ui getMipmapLevelResolution(vec2ui baseResolution, uint level)
 {
-	foreach(_; 0..level) baseResolution = getNextMipmapLevelResolution(baseResolution);
-	return baseResolution;
-}
-
-private vec2ui getNextMipmapLevelResolution(vec2ui resolution)
-{
-	resolution /= 2;
-	resolution.x = max(resolution.x, 1);
-	resolution.y = max(resolution.y, 1);
-	return resolution;
+	assert(level < typeof(baseResolution.x).sizeof * 8);
+	
+	return componentMax(vec2ui(1, 1), vec2ui(baseResolution.x >> level, baseResolution.y >> level));
 }
 
 uint getRequiredMipmapLevels(vec2ui resolution)
@@ -348,9 +224,8 @@ uint getRequiredMipmapLevels(vec2ui resolution)
 Texture defaultTexture()
 {
 	static Texture texture;
-	static bool initialized = false;
 	
-	if(!initialized)
+	if(!texture.refCountedStore.isInitialized)
 	{
 		ubyte[] data = [
 			255, 0, 255, 255,
@@ -358,25 +233,132 @@ Texture defaultTexture()
 			127, 0, 127, 255,
 			255, 0, 255, 255
 		];
-		texture = .texture(DefaultTextureFormat.RGBA, vec2ui(2, 2), data, "Default Texture");
-		initialized = true;
+		texture = TextureManager.create(DefaultTextureFormat.RGBA, vec2ui(2, 2), data, "Default Texture");
 	}
 	return texture;
 }
 
-alias Texture = Handle!Texture_Impl;
-
-struct Texture_Impl
+class Texture_Impl
 {
-	const:
-	package GLuint	handle;
-	vec2ui			resolution;
-	TextureFormat	format;
-	string			name;
+	const
+	{	
+		package GLuint	handle;
+		vec2ui			resolution;
+		TextureFormat	format;
+		string			name;
+	}
+	
+	this(TextureFormat format, vec2ui resolution, const(void)[] buffer, string name = null)
+	{
+		import std.conv : text;
+
+		handle = gl.genTexture();
+		this.resolution = resolution;
+		this.format = format;
+		this.name = name ? name : handle.text;
+		load(buffer);
+	}
 
 	~this()
 	{
 		gl.DeleteTextures(1, &handle);
+	}
+	
+	// Determines if mipmaps are included based on buffer length. Generates mipmaps when not present.
+	// Mipmaps are ordered high to low level in the buffer, so starting with the lowest resolution.
+	void load(const(void)[] buffer)
+	{
+		const mipmapsLength = getMipmapsBufferLength(format, resolution);
+		const bufferContainsMipmaps = buffer.length == mipmapsLength;
+		
+		assert(buffer.ptr == null || bufferContainsMipmaps || buffer.length == getTexelBufferLength(format, resolution));
+
+		ScratchTextureUnit.makeActiveScratch(this);
+
+		if(bufferContainsMipmaps)
+		{
+			import std.range : iota, retro;
+			
+			auto remainingBuffer = buffer;
+			
+			foreach(level; getRequiredMipmapLevels(resolution).iota.retro)
+			{
+				auto levelResolution = getMipmapLevelResolution(resolution, level);
+				auto sliceLength = getTexelBufferLength(format, levelResolution);
+				
+				uploadMipmapLevel(levelResolution, level, remainingBuffer[0 .. sliceLength]);
+				remainingBuffer = remainingBuffer[sliceLength .. $];
+			}
+			
+			assert(remainingBuffer.length == 0);
+		}
+		else
+		{
+			uploadMipmapLevel(resolution, 0, buffer);
+			gl.GenerateMipmap(GL_TEXTURE_2D);
+		}
+	}
+	
+	private void uploadMipmapLevel(vec2ui resolution, int level, const(void)[] buffer)
+	{
+		if(format.bufferFormatIsCompressed)
+		{
+			assert(format.internalFormat == format.bufferFormat);
+			
+			import std.conv : to;
+			
+			gl.CompressedTexImage2D(
+				GL_TEXTURE_2D,
+				level,
+				format.internalFormat,
+				resolution.x,
+				resolution.y,
+				0,
+				buffer.length.to!GLsizei,
+				buffer.ptr
+			);
+		}
+		else
+		{
+			gl.TexImage2D(
+				GL_TEXTURE_2D, 
+				level, 
+				format.internalFormat,
+				resolution.x,
+				resolution.y,
+				0,
+				format.bufferFormat,
+				format.type,
+				buffer.ptr
+			);
+		}
+	}
+
+	void[] downloadTexelBuffer(bool includeMipmaps = true)
+	{
+		// TODO:
+		assert(includeMipmaps);
+		assert(format.internalFormatIsCompressed);
+		
+		auto downloadFormat = format.asDownloadFormat;
+		
+		auto texelBuffer = new void[](getMipmapsBufferLength(downloadFormat, resolution));
+		
+		import std.range : iota, retro;
+			
+		auto remainingBuffer = texelBuffer;
+		
+		foreach(level; getRequiredMipmapLevels(resolution).iota.retro)
+		{
+			auto levelResolution = getMipmapLevelResolution(resolution, level);
+			auto sliceLength = getTexelBufferLength(downloadFormat, levelResolution);
+			
+			import std.conv : to;
+			gl.GetCompressedTextureImage(handle, level, remainingBuffer.length.to!GLsizei, remainingBuffer.ptr);
+			remainingBuffer = remainingBuffer[sliceLength .. $];
+		}
+		
+		return texelBuffer;
 	}
 }
 
@@ -386,34 +368,42 @@ struct TextureUnits
 {
 	static
 	{
-		private Texture[TextureUnit.Size] units;
-		private Sampler[TextureUnit.Size] samplers;
+		// OpenGL Texture handles. Can't store TextureManager Handles, underlying texture can change.
+		// Can't store Texture_Impl either, they can be destroyed by the TextureManager.
+		private GLuint[TextureUnit.Size] units;
+		// Ditto
+		private GLuint[TextureUnit.Size] samplers;
 		private size_t current = 0;
 	}
 }
 
-private void makeActiveScratch(TextureUnit unit, ref Texture texture)
+private void makeActiveScratch(TextureUnit unit, Texture_Impl texture)
 {
 	// Ensure the scratch unit is active, or consecutive updates to
 	// the same texture may fail if another unit is activated in the mean time
 	unit.makeCurrent();
-	unit.set(texture, TextureUnits.samplers[unit.index]);
+	unit.set(texture.handle, TextureUnits.samplers[unit.index]);
 }
 
 void set(TextureUnit unit, ref Texture texture, ref Sampler sampler)
 {
-	if(TextureUnits.units[unit.index] !is texture)
+	set(unit, TextureManager.getConcreteResource(texture).handle, SamplerManager.getConcreteResource(sampler).handle);
+}
+
+private void set(TextureUnit unit, GLuint textureHandle, GLuint samplerHandle)
+{
+	if(TextureUnits.units[unit.index] !is textureHandle)
 	{
 		unit.makeCurrent();
 		//trace("Binding Texture ", texture.name, " to unit ", unit.index);
-		gl.BindTexture(GL_TEXTURE_2D, texture.handle);
-		TextureUnits.units[unit.index] = texture;
+		gl.BindTexture(GL_TEXTURE_2D, textureHandle);
+		TextureUnits.units[unit.index] = textureHandle;
 	}
 	
-	if(TextureUnits.samplers[unit.index] !is sampler)
+	if(TextureUnits.samplers[unit.index] !is samplerHandle)
 	{
-		gl.BindSampler(unit.index, sampler.handle);
-		TextureUnits.samplers[unit.index] = sampler;
+		gl.BindSampler(unit.index, samplerHandle);
+		TextureUnits.samplers[unit.index] = samplerHandle;
 	}
 }
 

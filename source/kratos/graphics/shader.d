@@ -1,63 +1,46 @@
 ﻿module kratos.graphics.shader;
 
-import kratos.resource.resource;
 import kratos.graphics.gl;
 import kratos.graphics.shadervariable;
 import kratos.graphics.texture;
 import kratos.util : backInserter, StaticString, linearRemove;
+import kratos.resource.manager;
 
 import std.algorithm : copy, find, map;
 import std.array : array;
 import std.container : Array;
 import std.conv : to;
+import std.exception : assumeUnique;
 import std.range : isInputRange, take, repeat;
 import std.experimental.logger;
 
 
-alias Program = Handle!Program_Impl;
+alias ProgramManager = Manager!Program_Impl;
+alias Program = ProgramManager.Handle;
 
-Program program(Range)(Range shaders, string name = null)
-	//if(isInputRange!Range && is(ElementType!Range == ShaderModule)) // TODO re-enable contraint. DMD bug, fixed in 2.066
-{
-	import std.conv : text;
-
-	auto program	= initialized!Program;
-	program.handle	= gl.CreateProgram();
-	program._name	= name ? name : program.handle.text;
-	info("Created Shader Program ", program.name);
-	shaders.copy(program.shaders.backInserter);
-
-	foreach(shader; shaders)
-	{
-		gl.AttachShader(program.handle, shader.handle);
-		shader.compileCallbacks.insertBack(&program.invalidate);
-	}
-	
-	program.link();
-	
-	return program;
-}
+alias ShaderModuleManager = Manager!ShaderModule_Impl;
+alias ShaderModule = ShaderModuleManager.Handle;
 
 Program errorProgram()
 {
 	static Program errorProgram;
-	static bool initialized = false;
-	if(!initialized)
+	
+	if(!errorProgram.refCountedStore.isInitialized)
 	{
 		auto vertexSource = "#version 330\n mat4 mvp; in vec3 position; void main() {gl_Position = mvp * vec4(position, 1); }";
 		auto fragmentSource = "#version 330\n void main() { gl_FragData[0] = vec4(1, 0, 1, 1); }";
 
-		errorProgram = program(
+		errorProgram = ProgramManager.create(
 			[
-				shaderModule(ShaderModule.Type.Vertex, vertexSource, "Error Vertex Shader"),
-				shaderModule(ShaderModule.Type.Fragment, fragmentSource, "Error Fragment Shader")
+				ShaderModuleManager.create(ShaderStage.Vertex, vertexSource, "Error Vertex Shader"),
+				ShaderModuleManager.create(ShaderStage.Fragment, fragmentSource, "Error Fragment Shader")
 			]
 			, "Error Program");
 	}
 	return errorProgram;
 }
 
-private struct Program_Impl
+class Program_Impl
 {
 	private	string				_name;
 	private GLuint				handle;
@@ -65,31 +48,21 @@ private struct Program_Impl
 	private	VertexAttributes	_attributes;
 	private Uniforms			_uniforms;
 	private Array!Sampler		_samplers;
-	private	const(GLchar)[]		_errorLog;
-	private	bool				_linked;
 	
-	@disable this(this);
-	
-	~this()
+	this(Range)(Range modules, string name = null)
 	{
-		foreach(shader; shaders)
+		import std.conv : text;
+
+		handle	= gl.CreateProgram();
+		_name	= name ? name : handle.text;
+		info("Created Shader Program ", this.name);
+		modules.copy(this.shaders.backInserter);
+
+		foreach(shader; modules)
 		{
-			linearRemove(shader.compileCallbacks, &invalidate);
+			auto shaderImpl = ShaderModuleManager.getConcreteResource(shader);
+			gl.AttachShader(handle, shaderImpl.handle);
 		}
-
-		gl.DeleteProgram(handle);
-		info("Deleted Shader Program ", name);
-	}
-
-	/// Create an array of Uniforms for use with this Program
-	Uniforms createUniforms()
-	{
-		return _uniforms;
-	}
-
-	void link()
-	{
-		if(_linked) return;
 
 		info("Linking Program ", name);
 
@@ -105,76 +78,16 @@ private struct Program_Impl
 
 			auto log = new GLchar[](logLength);
 			gl.GetProgramInfoLog(handle, cast(GLsizei)log.length, null, log.ptr);
-			this._errorLog = log;
-
-			error("Linking Program", name, " failed:\n", log);
-
-			return;
+			
+			throw new Exception(log.assumeUnique);
 		}
 
 		info("Linking Program ", name, " successful");
-		this._errorLog = null;
-		_linked = true;
+		
 
-		updateAttributes();
-		updateUniforms();
-		_samplers = typeof(_samplers)(defaultSampler.repeat(_uniforms.textureCount));
+		gl.GetProgramiv(handle, GL_ACTIVE_ATTRIBUTES, &_attributes.count);
 
-		use();
-		_uniforms.initializeSamplerIndices();
-
-		//TODO: Update Shaders using this Program
-	}
-
-	void setSampler(string name, Sampler sampler)
-	{
-		if(auto indexPtr = _uniforms.getSamplerIndex(name))
-		{
-			_samplers[*indexPtr] = sampler;
-		}
-	}
-
-	void use() const
-	{
-		static GLuint current = 0;
-
-		if(current != handle)
-		{
-			//trace("Binding Program ", name);
-			gl.UseProgram(handle);
-			current = handle;
-		}
-	}
-
-	@property bool hasErrors() const
-	{
-		return !!_errorLog.length;
-	}
-
-	private void invalidate()
-	{
-		info("Invalidating Program ", name);
-		_linked = false;
-	}
-
-	package void updateUniformValues(ref Uniforms uniforms)
-	{
-		_uniforms.apply(uniforms, _samplers);
-	}
-
-	@property const
-	{
-		auto attributes()	{ return _attributes; }
-		auto errorLog()		{ return _errorLog; }
-	}
-
-	private void updateAttributes()
-	{
-		VertexAttributes attributes;
-
-		gl.GetProgramiv(handle, GL_ACTIVE_ATTRIBUTES, &attributes.count);
-
-		foreach(i; 0 .. attributes.count)
+		foreach(i; 0 .. _attributes.count)
 		{
 			VertexAttribute attribute;
 
@@ -199,15 +112,11 @@ private struct Program_Impl
 				attribute.name.data.ptr
 			);
 
-			assert(0 <= location && location < attributes.count);
-			attributes[location] = attribute;
+			assert(0 <= location && location < _attributes.count);
+			_attributes[location] = attribute;
 		}
-
-		this._attributes = attributes;
-	}
-
-	private void updateUniforms()
-	{
+		
+		
 		Uniform[] allUniforms;
 
 		{
@@ -220,7 +129,6 @@ private struct Program_Impl
 		{
 			GLint maxNameLength;
 			gl.GetProgramiv(handle, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxNameLength);
-			nameBuffer.assumeSafeAppend;
 			nameBuffer.length = maxNameLength;
 		}
 
@@ -247,11 +155,56 @@ private struct Program_Impl
 		}
 
 		this._uniforms = Uniforms(allUniforms);
+		
+		_samplers = typeof(_samplers)(defaultSampler.repeat(_uniforms.textureCount));
+
+		use();
+		_uniforms.initializeSamplerIndices();
+
+		//TODO: Update Shaders using this Program
+	}
+	
+	~this()
+	{
+		gl.DeleteProgram(handle);
+		info("Deleted Shader Program ", name);
 	}
 
-	@property string name() const
+	/// Create an array of Uniforms for use with this Program
+	Uniforms createUniforms()
 	{
-		return _name;
+		return _uniforms;
+	}
+
+	void setSampler(string name, Sampler sampler)
+	{
+		if(auto indexPtr = _uniforms.getSamplerIndex(name))
+		{
+			_samplers[*indexPtr] = sampler;
+		}
+	}
+
+	void use() const
+	{
+		static GLuint current = 0;
+
+		if(current != handle)
+		{
+			//trace("Binding Program ", name);
+			gl.UseProgram(handle);
+			current = handle;
+		}
+	}
+
+	package void updateUniformValues(ref Uniforms uniforms)
+	{
+		_uniforms.apply(uniforms, _samplers);
+	}
+
+	@property const
+	{
+		auto attributes()	{ return _attributes;	}
+		string name() 		{ return _name;			}
 	}
 }
 
@@ -294,68 +247,33 @@ unittest
 }
 
 
-alias ShaderModule = Handle!ShaderModule_Impl;
-
-ShaderModule shaderModule(ShaderModule.Type type, const(GLchar)[] shaderSource, string name = null)
+enum ShaderStage : GLenum
 {
-	import std.conv : text;
-
-	auto shader = initialized!ShaderModule;
-	shader.type = type;
-	shader.handle = gl.CreateShader(type);
-	shader._name = name ? name : shader.handle.text;
-
-	info("Created ", type, " Shader ", shader.name);
-
-	shader.source = shaderSource;
-	shader.compile();
-	
-	return shader;
+	Vertex		= GL_VERTEX_SHADER,
+	Geometry	= GL_GEOMETRY_SHADER,
+	Fragment	= GL_FRAGMENT_SHADER
 }
 
-private struct ShaderModule_Impl
+class ShaderModule_Impl
 {
-	enum Type : GLenum
-	{
-		Vertex		= GL_VERTEX_SHADER,
-		Geometry	= GL_GEOMETRY_SHADER,
-		Fragment	= GL_FRAGMENT_SHADER
-	}
-
 	private string			_name;
 	private GLuint			handle;
-	private Type			type;
-	// Used to mark programs as dirty. Use delegates because of lack of weak references to RefCounted
-	Array!(void delegate())	compileCallbacks;
-	private const(GLchar)[]	errorLog;
-	private bool			compiled;
+	private ShaderStage		type;
 	
-	@disable this(this);
-	
-	~this()
+	this(ShaderStage type, const(GLchar)[] shaderSource, string name = null)
 	{
-		gl.DeleteShader(handle);
-		info("Deleted ", type, " Shader ", name);
-	}
+		import std.conv : text;
 
-	@property void source(const(GLchar)[] source)
-	{
-		info("Updating Shader ", name, " source");
-		const srcPtr = source.ptr;
-		const srcLength = source.length.to!GLint;
+		this.type = type;
+		handle = gl.CreateShader(type);
+		_name = name ? name : handle.text;
+
+		info("Created ", type, " Shader ", this.name);
+
+		const srcPtr = shaderSource.ptr;
+		const srcLength = shaderSource.length.to!GLint;
 		gl.ShaderSource(handle, 1, &srcPtr, &srcLength);
-		compiled = false;
-	}
-
-	@property bool hasErrors() const
-	{
-		return !!errorLog.length;
-	}
-
-	void compile()
-	{
-		if(compiled) return;
-
+		
 		info("Compiling Shader ", name);
 		gl.CompileShader(handle);
 
@@ -370,17 +288,19 @@ private struct ShaderModule_Impl
 			
 			auto log = new GLchar[](logLength);
 			gl.GetShaderInfoLog(handle, cast(GLsizei)log.length, null, log.ptr);
-			this.errorLog = log;
-
-			error("Compiling Shader ", name, " failed:\n", log);
+			
+			throw new Exception(log.assumeUnique);
 		}
 		else
 		{
 			info("Compiling Shader ", name, " successful");
-			compiled = true;
-			errorLog = null;
-			foreach(callback; compileCallbacks) callback();
 		}
+	}
+	
+	~this()
+	{
+		gl.DeleteShader(handle);
+		info("Deleted ", type, " Shader ", name);
 	}
 
 	@property string name() const

@@ -36,11 +36,13 @@ final class MeshRenderer : Component
 
 	this(string meshFileName, string renderStateFileName)
 	{
-		import kratos.resource.loader;
+		import kratos.resource.loader.meshloader;
+		import kratos.resource.loader.renderstateloader;
+		
 		this(renderableMesh
 		(
-			MeshCache.get(meshFileName),
-			RenderStateCache.get(renderStateFileName)
+			MeshLoader.get(meshFileName),
+			RenderStateLoader.get(renderStateFileName)
 		));
 	}
 
@@ -87,9 +89,11 @@ final class MeshRenderer : Component
 
 	string[string] toRepresentation()
 	{
+		import kratos.graphics.mesh : MeshManager;
+	
 		return [
-			"mesh": mesh.mesh.id,
-			"renderState": mesh.renderState.id
+			"mesh": MeshManager.getConcreteResource(mesh.mesh).name,
+			"renderState": mesh.renderState.name
 		];
 	}
 

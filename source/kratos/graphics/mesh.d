@@ -1,25 +1,26 @@
 ﻿module kratos.graphics.mesh;
 
-import kgl3n.vector : vec2;
+import kgl3n.vector : vec2, vec3;
 import kratos.graphics.bo;
-import kratos.resource.resource : ResourceIdentifier;
+
+import kratos.resource.manager : Manager;
+
+alias MeshManager = Manager!Mesh_Impl;
+alias Mesh = MeshManager.Handle;
 
 Mesh emptyMesh()
 {
-	static Mesh emptyMesh = void;
-	static bool initialized = false;
+	static Mesh emptyMesh;
 
-	if(!initialized)
+	if(!emptyMesh.refCountedStore.isInitialized)
 	{
-		import kgl3n.vector;
-		import std.conv : emplace;
 		static struct S{ vec3 position; }
 		S[] sArr;
 		uint[] iArr;
-
-		emplace!Mesh(&emptyMesh, IBO(iArr), VBO(sArr));
-		initialized = true;
+		
+		emptyMesh = MeshManager.create(IBO(iArr), VBO(sArr));
 	}
+	
 	return emptyMesh;
 }
 
@@ -38,7 +39,7 @@ Mesh quad2D(vec2 from, vec2 to, vec2 texFrom = vec2(0, 0), vec2 texTo = vec2(1, 
 			Vertex(vec2(to.x,	from.y),	vec2(texTo.x,	texFrom.y)	)
 		]);
 	
-	return Mesh(quadIBO, vbo);
+	return MeshManager.create(quadIBO, vbo);
 }
 
 private IBO quadIBO()
@@ -57,9 +58,9 @@ private IBO quadIBO()
 	return ibo;
 }
 
-struct Mesh
+class Mesh_Impl
 {
-	ResourceIdentifier id;
+	string name;
 
 	this(IBO ibo, VBO vbo)
 	{
@@ -72,7 +73,6 @@ struct Mesh
 		auto ibo() inout { return _ibo; }
 		auto vbo() inout { return _vbo; }
 	}
-
 
 	private	IBO	_ibo;
 	private	VBO	_vbo;

@@ -3,7 +3,6 @@
 //import std.experimental.logger;
 import kratos.graphics.gl;
 import kgl3n.vector;
-import kratos.resource.resource : ResourceIdentifier;
 
 import vibe.data.serialization;
 
@@ -16,7 +15,7 @@ struct RenderState
 		UI
 	}
 
-	ResourceIdentifier id;
+	string name;
 	Queue queue = Queue.Opaque;
 	RenderStateCollection states;
 	alias states this;
@@ -308,16 +307,17 @@ struct Shader
 	{
 		//info("Creating Shader from Program ", program.name);
 		_program = program;
-		_uniforms = program.createUniforms();
+		_uniforms = ProgramManager.getConcreteResource(program).createUniforms();
 	}
 
 	void apply()
 	{
-		_program.use();
-		_program.updateUniformValues(_uniforms);
+		auto programImpl = ProgramManager.getConcreteResource(_program);
+		programImpl.use();
+		programImpl.updateUniformValues(_uniforms);
 	}
 	
-	@property const auto program()
+	@property auto program()
 	{
 		return _program;
 	}
@@ -325,11 +325,6 @@ struct Shader
 	@property ref Uniforms uniforms()
 	{
 		return _uniforms;
-	}
-	
-	@property string name() const
-	{
-		return _program.name;
 	}
 
 	private static struct Current { }
