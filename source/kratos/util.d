@@ -95,11 +95,23 @@ void linearRemoveAt(T)(ref Array!T array, size_t index)
 	array.linearRemove(array[index .. index + 1]);
 }
 
+void unstableRemoveAt(T)(ref T[] array, size_t index)
+{
+	import std.algorithm.mutation : remove, SwapStrategy;
+	array = array.remove!(SwapStrategy.unstable)(index);
+}
+
 void linearRemove(T, U)(ref Array!T array, auto ref U element)
 if(is(T : U) || is(U : T))
 {
 	import std.algorithm.searching : countUntil;
 	array.linearRemoveAt(array[].countUntil(element));
+}
+
+void unstableRemove(T)(ref T[] array, auto ref T element)
+{
+	import std.algorithm.searching : countUntil;
+	array.unstableRemoveAt(array.countUntil(element));
 }
 
 struct SerializableArray(T)

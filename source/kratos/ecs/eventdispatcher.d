@@ -131,7 +131,7 @@ private final class DefaultComponentManager(ComponentType) : ComponentManager!Co
 	private enum hasPhysicsPreStepUpdate = derivedMembers.canFind("physicsPreStepUpdate");
 	private enum hasPhysicsPostStepUpdate = derivedMembers.canFind("physicsPostStepUpdate");
 
-	private Array!ComponentType components;
+	private ComponentType[] components;
 
 	void registerOptionals(RootDispatcher rootDispatcher)
 	{
@@ -151,14 +151,15 @@ private final class DefaultComponentManager(ComponentType) : ComponentManager!Co
 
 	override void add(ComponentType component)
 	{
-		components.insertBack(component);
+		components ~= component;
 		component.onDestruction += &componentDestructionEventHandler;
 	}
 
 	private void componentDestructionEventHandler(ComponentType.ComponentBaseType component)
 	{
-		import kratos.util : linearRemove;
-		linearRemove(components, component);
+		import kratos.util : unstableRemove, staticCast;
+		unstableRemove(components, component.staticCast!ComponentType);
+		components.assumeSafeAppend();
 	}
 
 	static if(hasFrameUpdate)
