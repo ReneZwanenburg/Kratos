@@ -9,5 +9,5 @@ import vibe.data.json : Json, parseJsonString;
 /// document itself
 Json loadJson(string name)
 {
-	return activeFileSystem.get!char(name).parseJsonString();
+	return activeFileSystem.get(name).asText.parseJsonString();
 }

@@ -10,8 +10,11 @@ alias ShaderModuleLoader = Loader!(ShaderModule_Impl, loadShaderModule, true);
 
 ShaderModule_Impl loadShaderModule(string name)
 {
-	auto buffer = activeFileSystem.get!char(name);
-	return new ShaderModule_Impl(shaderExtensionType[name.lowerCaseExtension], buffer, name);
+	import std.path : extension;
+	import std.uni : toLower;
+
+	auto buffer = activeFileSystem.get(name).asText;
+	return new ShaderModule_Impl(shaderExtensionType[name.extension.toLower], buffer, name);
 }
 
 Program_Impl loadProgram(string name)

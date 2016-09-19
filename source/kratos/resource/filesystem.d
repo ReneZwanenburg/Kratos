@@ -47,35 +47,49 @@ private __gshared FileSystem _activeFileSystem;
 	_activeFileSystem = fileSystem;
 }
 
+struct RawFileData
+{
+	string name;
+	string extension;
+	immutable(void)[] data;
+	
+	@disable this();
+	
+	this(string name, string extension, immutable(void)[] data)
+	{
+		import std.uni : toLower;
+		
+		this.name = name;
+		this.extension = (extension.length && extension[0] == '.' ? extension[1 .. $] : extension).toLower;
+		this.data = data;
+	}
+	
+	@property T[] as(T)()
+	{
+		return cast(T[]) data;
+	}
+	
+	@property string asText()
+	{
+		return as!(immutable char);
+	}
+}
 
 interface FileSystem
 {
-	bool				has(string name);
+	bool has(string name);
 
-	protected
-	immutable(void)[]	getImpl(string name);
+	protected RawFileData	getImpl(string name);
 
-	final
-	immutable(void)[]	get(string name)
+	final RawFileData	get(string name)
 	{
 		assert(has(name), "File '" ~ name ~ "' does not exist");
 		return getImpl(name);
 	}
 
-	immutable(T)[]		get(T)(string name)
-	{
-		return cast(immutable (T)[])get(name);
-	}
+	void write(RawFileData data);
 
-	final
-	auto				getText(string name)
-	{
-		return get!char(name);
-	}
-
-	void				write(string name, const void[] data);
-
-	@property bool 		writable() const;
+	@property bool writable() const;
 }
 
 class MultiFileSystem : FileSystem
@@ -89,7 +103,7 @@ class MultiFileSystem : FileSystem
 		return _fileSystems.any!(a => a.has(name));
 	}
 
-	override immutable(void[]) getImpl(string name)
+	override RawFileData getImpl(string name)
 	{
 		import std.algorithm : find;
 		import std.array : front;
@@ -110,10 +124,10 @@ class MultiFileSystem : FileSystem
 		return _writableFileSystem !is null;
 	}
 
-	override void write(string name, const void[] data)
+	override void write(RawFileData data)
 	{
 		assert(writable);
-		_writableFileSystem.write(name, data);
+		_writableFileSystem.write(data);
 	}
 }
 
@@ -121,29 +135,49 @@ class NormalFileSystem : FileSystem
 {
 	import std.file;
 	import std.array;
-	import std.path : dirName;
+	import std.path;
 
 	private string _basePath;
 	private Appender!(char[]) _pathBuilder;
 
+	//TODO: Protect against escapting the base path
+	
 	this(string basePath)
 	{
-		this._basePath = basePath;
+		this._basePath = buildNormalizedPath(basePath);
 	}
 
 	override bool has(string name)
 	{
-		auto path = buildPath(name);
-		return path.exists && path.isFile;
+		return !findByName(name).empty;
 	}
 
-	override immutable(void)[] getImpl(string name)
+	override RawFileData getImpl(string name)
 	{
-		auto path = buildPath(name);
+		auto path = findByName(name);
 		info("Reading ", path);
-		return path.read().assumeUnique;
+		return RawFileData(name, path.extension, path.read.assumeUnique);
+	}
+	
+	private string findByName(string name)
+	{
+		import std.algorithm.iteration : filter;
+	
+		auto pattern = buildNormalizedPath(_basePath, name);
+		auto entries = 
+			dirEntries(dirName(pattern), baseName(pattern) ~ ".*", SpanMode.shallow)
+			.filter!(a => a.isFile)
+			.filter!(a => a.baseName == name);
+		
+		if(entries.empty) return null;
+		
+		auto firstEntry = entries.front;
+		entries.popFront;
+		if(!entries.empty) warningf("%s: Multipe entries for %s", _basePath, name);
+		return firstEntry;
 	}
 
+	/*
 	private const(char[]) buildPath(string name)
 	{
 		_pathBuilder.clear();
@@ -151,16 +185,17 @@ class NormalFileSystem : FileSystem
 		_pathBuilder ~= name;
 		return _pathBuilder.data;
 	}
+	*/
 
 	@property override bool writable() const
 	{
 		return true;
 	}
 
-	override void write(string name, const void[] data) {
-		auto path = buildPath(name);
+	override void write(RawFileData data) {
+		auto path = buildNormalizedPath(_basePath, data.name ~ '.' ~ data.extension);
 		mkdirRecurse(dirName(path));
-		std.file.write(path, data);
+		std.file.write(path, data.data);
 	}
 
 }
@@ -168,50 +203,51 @@ class NormalFileSystem : FileSystem
 class PackFileSystem : FileSystem
 {
 	import std.mmfile;
-	import std.digest.md;
-
-	alias FileHash = ubyte[digestLength!MD5];
-
-	static struct FileOffset
-	{
-		ulong startOffset;
-		ulong endOffset;
-	}
-
-	static struct FileInfo
-	{
-		FileHash	hash;
-		FileOffset	offset;
-	}
 
 	private MmFile					_pack;
-	private FileOffset[FileHash]	_fileMap;
-	private string					_fileName;
+	private RawFileData[string]		_fileMap;
+	private string					_packName;
 
 	this(string packFile)
 	{
-		_fileName = packFile;
+		_packName = packFile;
 		_pack = new MmFile(packFile);
 
 		import std.bitmanip;
 		uint numFiles = (cast(uint[])_pack[0..uint.sizeof])[0];
-
-		foreach(file; cast(FileInfo[])_pack[uint.sizeof .. uint.sizeof + numFiles * FileInfo.sizeof])
+	
+		static struct FileOffset
 		{
-			_fileMap[file.hash] = file.offset;
+			ulong startOffset;
+			ulong endOffset;
+		}
+		
+		import std.algorithm.iteration : splitter;
+		
+		auto fileInfos = cast(FileOffset[])_pack[uint.sizeof .. uint.sizeof + numFiles * FileOffset.sizeof];
+		auto fileNamesInfo = fileInfos[0];
+		auto fileNames = (cast(string)_pack[fileNamesInfo.startOffset .. fileNamesInfo.endOffset]).splitter('\0');
+		
+		import std.range : zip;
+	
+		foreach(fileInfo, name; zip(fileInfos[1 .. $], fileNames))
+		{
+			import std.path : extension, stripExtension;
+		
+			auto data = RawFileData(name.stripExtension, name.extension, _pack[fileInfo.startOffset .. fileInfo.endOffset].assumeUnique);
+			_fileMap[data.name] = data;
 		}
 	}
 
 	override bool has(string name)
 	{
-		return !!(md5Of(name) in _fileMap);
+		return !!(name in _fileMap);
 	}
 	
-	override immutable(void)[] getImpl(string name)
+	override RawFileData getImpl(string name)
 	{
-		info("Reading ", _fileName, " : ", name);
-		auto offset = _fileMap[md5Of(name)];
-		return _pack[offset.startOffset .. offset.endOffset].assumeUnique;
+		info("Reading ", _packName, " : ", name);
+		return _fileMap[name];
 	}
 
 	@property override bool writable() const
@@ -219,7 +255,7 @@ class PackFileSystem : FileSystem
 		return false;
 	}
 
-	override void write(string name, const void[] data)
+	override void write(RawFileData)
 	{
 		assert(false);
 	}

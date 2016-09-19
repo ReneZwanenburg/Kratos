@@ -11,23 +11,21 @@ alias TextureLoader = Loader!(Texture_Impl, (string name) => loadTexture(name), 
 
 Texture_Impl loadTexture(string name, uint lod = 0, bool forceCompression = false)
 {
-	auto buffer = activeFileSystem.get(name);
+	auto data = activeFileSystem.get(name);
 	
-	auto extension = name.lowerCaseExtension;
-	
-	if(extension == ".kst")
+	if(data.extension == "kst")
 	{
-		return loadTextureKst(name, buffer, lod, forceCompression);
+		return loadTextureKst(data, lod, forceCompression);
 	}
 	else
 	{
-		return loadTextureIl(name, buffer, extension, lod, forceCompression);
+		return loadTextureIl(data, lod, forceCompression);
 	}
 }
 
-private Texture_Impl loadTextureKst(string name, const(void)[] buffer, uint lod, bool forceCompression)
+private Texture_Impl loadTextureKst(RawFileData data, uint lod, bool forceCompression)
 {
-	auto ksm = KratosTexture.fromBuffer(buffer);
+	auto ksm = KratosTexture.fromBuffer(data.data);
 	
 	auto format = KratosTexture.getTextureFormat(ksm.format);
 	if(forceCompression)
@@ -48,18 +46,18 @@ private Texture_Impl loadTextureKst(string name, const(void)[] buffer, uint lod,
 		format,
 		lodResolution,
 		ksm.texelBuffer[0 .. lodBufferLength],
-		name
+		data.name
 	);
 }
 
-private Texture_Impl loadTextureIl(string name, const(void)[] buffer, string extension, uint lod, bool forceCompression)
+private Texture_Impl loadTextureIl(RawFileData data, uint lod, bool forceCompression)
 {
 	assert(lod == 0);
 
 	auto handle = ilGenImage();
 	scope(exit) ilDeleteImage(handle);
 	ilBindImage(handle);
-	ilLoadL(imageExtensionFormat[name.lowerCaseExtension], buffer.ptr, cast(uint)buffer.length);
+	ilLoadL(imageExtensionFormat[data.extension], data.data.ptr, cast(uint)data.data.length);
 	
 	auto dataPtr = ilGetData();
 	auto resolution = vec2ui(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
@@ -73,7 +71,7 @@ private Texture_Impl loadTextureIl(string name, const(void)[] buffer, string ext
 	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL)*8 == format.bitsPerPixel);
 	assert(ilGetInteger(IL_IMAGE_TYPE) == format.type);
 	
-	return new Texture_Impl(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bitsPerPixel/8], name);
+	return new Texture_Impl(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bitsPerPixel/8], data.name);
 }
 
 shared static this()
@@ -98,36 +96,36 @@ private immutable TextureFormat[ILint] ilTextureFormat;
 shared static this()
 {
 	imageExtensionFormat = [
-		".bmp"	: IL_BMP,
-		".cut"	: IL_CUT,
-		".dds"	: IL_DDS,
-		".gif"	: IL_GIF,
-		".ico"	: IL_ICO,
-		".cur"	: IL_ICO,
-		".jpg"	: IL_JPG,
-		".jpe"	: IL_JPG,
-		".jpeg"	: IL_JPG,
-		".lbm"	: IL_ILBM,
-		".lif"	: IL_LIF,
-		".mdl"	: IL_MDL,
-		".mng"	: IL_MNG,
-		".pcd"	: IL_PCD,
-		".pcx"	: IL_PCX,
-		".pic"	: IL_PIC,
-		".png"	: IL_PNG,
-		".pbm"	: IL_PNM,
-		".pgm"	: IL_PNM,
-		".ppm"	: IL_PNM,
-		".pnm"	: IL_PNM,
-		".psd"	: IL_PSD,
-		".sgi"	: IL_SGI,
-		".bw"	: IL_SGI,
-		".rgb"	: IL_SGI,
-		".rgba"	: IL_SGI,
-		".tga"	: IL_TGA,
-		".tif"	: IL_TIF,
-		".tiff"	: IL_TIF,
-		".wal"	: IL_WAL
+		"bmp"	: IL_BMP,
+		"cut"	: IL_CUT,
+		"dds"	: IL_DDS,
+		"gif"	: IL_GIF,
+		"ico"	: IL_ICO,
+		"cur"	: IL_ICO,
+		"jpg"	: IL_JPG,
+		"jpe"	: IL_JPG,
+		"jpeg"	: IL_JPG,
+		"lbm"	: IL_ILBM,
+		"lif"	: IL_LIF,
+		"mdl"	: IL_MDL,
+		"mng"	: IL_MNG,
+		"pcd"	: IL_PCD,
+		"pcx"	: IL_PCX,
+		"pic"	: IL_PIC,
+		"png"	: IL_PNG,
+		"pbm"	: IL_PNM,
+		"pgm"	: IL_PNM,
+		"ppm"	: IL_PNM,
+		"pnm"	: IL_PNM,
+		"psd"	: IL_PSD,
+		"sgi"	: IL_SGI,
+		"bw"	: IL_SGI,
+		"rgb"	: IL_SGI,
+		"rgba"	: IL_SGI,
+		"tga"	: IL_TGA,
+		"tif"	: IL_TIF,
+		"tiff"	: IL_TIF,
+		"wal"	: IL_WAL
 	];
 
 	ilTextureFormat = [

@@ -229,7 +229,7 @@ public final class TextPanel : UiComponent
 
 			//TODO: Error checks
 			FT_Done_Face(_face);
-			_faceBuffer = activeFileSystem.get!ubyte(font);
+			_faceBuffer = activeFileSystem.get(font).as!ubyte;
 			FT_New_Memory_Face(freeType, _faceBuffer.ptr, cast(int)_faceBuffer.length, 0, &_face);
 			// Size is in clip space, so -1 to 1. Therefore, multiply final size by 0.5.
 			_pixelSize = cast(int)(renderer.screenResolution.y * fontSize * 0.5f);

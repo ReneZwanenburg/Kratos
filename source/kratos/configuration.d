@@ -17,7 +17,7 @@ private struct ConfigurationImpl
 
 shared static this()
 {
-	auto jsonString = activeFileSystem.getText("Kratos.json");
+	auto jsonString = activeFileSystem.get("Kratos.json").asText;
 	Configuration = jsonString.parseJson().deserializeJson!ConfigurationImpl;
 }
 

@@ -1,5 +1,5 @@
 ﻿module kratos.resource.loader.meshloader;
-
+ 
 import kratos.resource.manager;
 import kratos.resource.loader.internal;
 import kratos.graphics.mesh;
@@ -11,24 +11,23 @@ alias MeshLoader = Loader!(Mesh_Impl, loadMesh, true);
 
 Mesh_Impl loadMesh(string name)
 {
-	auto extension = name.lowerCaseExtension;
 	auto data = activeFileSystem.get(name);
 
-	auto mesh = extension == ".ksm"
+	auto mesh = data.extension == "ksm"
 		? loadMeshKratos(data)
-		: loadMeshAssimp(data, extension);
+		: loadMeshAssimp(data);
 	
 	mesh.name = name;
 	
 	return mesh;
 }
 
-private Mesh_Impl loadMeshKratos(immutable (void)[] data)
+private Mesh_Impl loadMeshKratos(RawFileData data)
 {
 	import kratos.resource.format : KratosMesh;
 	import kratos.graphics.bo;
 	
-	auto importedMesh = KratosMesh.fromBuffer(data);
+	auto importedMesh = KratosMesh.fromBuffer(data.data);
 
 	return new Mesh_Impl(
 		IBO(importedMesh.indexBuffer, importedMesh.indexType),
@@ -39,7 +38,7 @@ private Mesh_Impl loadMeshKratos(immutable (void)[] data)
 /////////
 version(KratosDisableAssimp)
 {
-	private Mesh_Impl loadMeshAssimp(immutable void[] data, string extension)
+	private Mesh_Impl loadMeshAssimp(RawFileData data)
 	{
 		assert(false, "Assimp mesh loading has been disabled. Build Kratos with Assimp support to load non-ksm meshes");
 	}
@@ -48,7 +47,7 @@ else
 {
 	import derelict.assimp3.assimp;
 	
-	private Mesh_Impl loadMeshAssimp(immutable void[] data, string extension)
+	private Mesh_Impl loadMeshAssimp(RawFileData data)
 	{
 		import std.string;
 		import std.exception;
@@ -61,8 +60,8 @@ else
 		aiSetImportPropertyFloat(properties, AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 45f);
 		
 		auto scene = aiImportFileFromMemoryWithProperties(
-			data.ptr,
-			cast(uint)data.length,
+			data.data.ptr,
+			cast(uint)data.data.length,
 			aiProcess_CalcTangentSpace		|
 			aiProcess_JoinIdenticalVertices	|
 			aiProcess_Triangulate			|
@@ -71,7 +70,7 @@ else
 			aiProcess_ImproveCacheLocality	|
 			aiProcess_FindInvalidData		|
 			aiProcess_FindInstances,
-			extension.toStringz,
+			data.extension.toStringz,
 			properties
 			);
 		

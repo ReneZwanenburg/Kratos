@@ -12,39 +12,38 @@ import kgl3n.vector;
 
 Scene loadScene(string name)
 {
-	auto extension = name.lowerCaseExtension;
+	auto data = activeFileSystem.get(name);
+	
 	import std.algorithm : among;
-	if(extension.among(".scene", ".entity"))
+	if(data.extension.among("scene", "entity"))
 	{
-		return loadSceneKratos(name);
+		return loadSceneKratos(data);
 	}
 	else
 	{
-		return loadSceneAssimp(name);
+		return loadSceneAssimp(data);
 	}
 }
 
-private Scene loadSceneKratos(string name)
+private Scene loadSceneKratos(RawFileData data)
 {
-	return Scene.deserialize(loadJson(name), &loadJson);
+	return Scene.deserialize(parseJsonString(data.asText), &loadJson);
 }
 
 version(KratosDisableAssimp)
 {
-	private void loadSceneAssimp(string name, Scane scene)
+	private void loadSceneAssimp(RawFileData data)
 	{
 		assert(false, "Assimp support has been disabled, enable to load non-ksm meshes");
 	}
 }
 else
 {
-	private Scene loadSceneAssimp(string name)
+	private Scene loadSceneAssimp(RawFileData data)
 	{
-		import std.path : baseName;
-		auto scene = new Scene(name.baseName);
-		auto data = activeFileSystem.get(name);
+		auto scene = new Scene(data.name);
 		
-		import std.string : toStringz;
+		import std.string : toStringz, toLower;
 		import std.exception : enforce;
 		import std.container : Array;
 		import kgl3n.matrix;
@@ -56,8 +55,8 @@ else
 		//info("Importing Scene ", name);
 
 		auto importedScene = aiImportFileFromMemory(
-			data.ptr,
-			cast(uint)data.length,
+			data.data.ptr,
+			cast(uint)data.data.length,
 			aiProcess_CalcTangentSpace		|
 			aiProcess_JoinIdenticalVertices	|
 			aiProcess_Triangulate			|
@@ -67,7 +66,7 @@ else
 			aiProcess_GenUVCoords			|
 			aiProcess_FindInstances
 			,
-			name.lowerCaseExtension.toStringz
+			data.extension.toLower.toStringz
 			);
 		
 		enforce(importedScene, "Error while loading scene");
