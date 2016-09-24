@@ -12,9 +12,13 @@ alias MeshLoader = Loader!(Mesh_Impl, loadMesh, true);
 Mesh_Impl loadMesh(string name)
 {
 	auto data = activeFileSystem.get(name);
+	
+	// This is a nasty little hack to work around a DMD ICE
+	// when building in release mode, current version is 2.071.2
+	static kratosMeshLoader = &loadMeshKratos;
 
 	auto mesh = data.extension == "ksm"
-		? loadMeshKratos(data)
+		? kratosMeshLoader(data)
 		: loadMeshAssimp(data);
 	
 	mesh.name = name;
