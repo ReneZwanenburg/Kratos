@@ -13,7 +13,7 @@
 
 	"Shader":
 	{
-		"program": "ShaderPrograms/DeferredRenderer/DirectionalLight.prog",
+		"program": "ShaderPrograms/DeferredRenderer/DirectionalLight",
 		
 		"uniforms":
 		{

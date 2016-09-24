@@ -12,12 +12,12 @@
 
 	"Shader":
 	{
-		"program": "ShaderPrograms/UI/TextPanel.prog",
+		"program": "ShaderPrograms/UI/TextPanel",
 		
 		"uniforms":
 		{
 			"color": [1, 1, 1],
-			"texture": "Textures/White.png"
+			"texture": "Textures/White"
 		}
 	}
 }

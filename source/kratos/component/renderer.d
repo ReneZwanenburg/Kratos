@@ -186,7 +186,7 @@ final class Renderer : SceneComponent
 			directionalLightRenderableMesh.renderState.shader["depth"] = gBuffer.frameBuffer["depth"];
 		}
 
-		this.directionalLightRenderableMesh = renderableMesh(quad, RenderStateLoader.get("RenderStates/DeferredRenderer/DirectionalLight.renderstate"));
+		this.directionalLightRenderableMesh = renderableMesh(quad, RenderStateLoader.get("RenderStates/DeferredRenderer/DirectionalLight"));
 		setGBufferInputs(this.directionalLightRenderableMesh);
 	}
 

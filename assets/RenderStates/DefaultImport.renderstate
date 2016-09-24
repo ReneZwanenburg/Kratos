@@ -14,9 +14,9 @@
 			"specularColor": [1, 1, 1, 1],
 			"emissiveColor": [0, 0, 0],
 			
-			"diffuseTexture": "Textures/White.png",
-			"specularTexture": "Textures/White.png",
-			"emissiveTexture": "Textures/Black.png"
+			"diffuseTexture": "Textures/White",
+			"specularTexture": "Textures/White",
+			"emissiveTexture": "Textures/Black"
 		}
 	}
 }
