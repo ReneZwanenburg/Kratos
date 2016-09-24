@@ -225,12 +225,12 @@ class PackFileSystem : FileSystem
 		import std.algorithm.iteration : splitter;
 		
 		auto fileInfos = cast(FileOffset[])_pack[uint.sizeof .. uint.sizeof + numFiles * FileOffset.sizeof];
-		auto fileNamesInfo = fileInfos[0];
+		auto fileNamesInfo = fileInfos[$-1];
 		auto fileNames = (cast(string)_pack[fileNamesInfo.startOffset .. fileNamesInfo.endOffset]).splitter('\0');
 		
 		import std.range : zip;
 	
-		foreach(fileInfo, name; zip(fileInfos[1 .. $], fileNames))
+		foreach(fileInfo, name; zip(fileInfos[0 .. $-1], fileNames))
 		{
 			import std.path : extension, stripExtension;
 		
