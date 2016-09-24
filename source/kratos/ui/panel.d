@@ -280,7 +280,7 @@ public final class TextPanel : UiComponent
 				}
 			}
 			
-			position += vec2i(_face.glyph.advance.x, _face.glyph.advance.y) / 64;
+			position += vec2i(cast(int)_face.glyph.advance.x, cast(int)_face.glyph.advance.y) / 64;
 		}
 		
 		TextureManager.getConcreteResource(_texture).load(_texelBuffer);
