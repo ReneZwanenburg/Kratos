@@ -163,11 +163,15 @@ class NormalFileSystem : FileSystem
 	{
 		import std.algorithm.iteration : filter;
 	
-		auto pattern = buildNormalizedPath(_basePath, name);
+		auto targetDir = buildNormalizedPath(_basePath, dirName(name));
+		auto targetBaseName = baseName(name);
+		
+		if(!exists(targetDir) || !isDir(targetDir)) return null;
+		
 		auto entries = 
-			dirEntries(dirName(pattern), baseName(pattern) ~ ".*", SpanMode.shallow)
+			dirEntries(targetDir, targetBaseName ~ ".*", SpanMode.shallow)
 			.filter!(a => a.isFile)
-			.filter!(a => a.baseName == name);
+			.filter!(a => a.baseName.stripExtension == targetBaseName);
 		
 		if(entries.empty) return null;
 		
@@ -176,16 +180,6 @@ class NormalFileSystem : FileSystem
 		if(!entries.empty) warningf("%s: Multipe entries for %s", _basePath, name);
 		return firstEntry;
 	}
-
-	/*
-	private const(char[]) buildPath(string name)
-	{
-		_pathBuilder.clear();
-		_pathBuilder ~= _basePath;
-		_pathBuilder ~= name;
-		return _pathBuilder.data;
-	}
-	*/
 
 	@property override bool writable() const
 	{
