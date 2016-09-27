@@ -181,9 +181,9 @@ final class Renderer : SceneComponent
 
 		void setGBufferInputs(ref RenderableMesh mesh)
 		{
-			directionalLightRenderableMesh.renderState.shader["albedo"] = gBuffer.frameBuffer["albedo"];
-			directionalLightRenderableMesh.renderState.shader["normal"] = gBuffer.frameBuffer["normal"];
-			directionalLightRenderableMesh.renderState.shader["depth"] = gBuffer.frameBuffer["depth"];
+			mesh.renderState.shader["albedo"] = gBuffer.frameBuffer["albedo"];
+			mesh.renderState.shader["normal"] = gBuffer.frameBuffer["normal"];
+			mesh.renderState.shader["depth"] = gBuffer.frameBuffer["depth"];
 		}
 
 		this.directionalLightRenderableMesh = renderableMesh(quad, RenderStateLoader.get("RenderStates/DeferredRenderer/DirectionalLight"));
