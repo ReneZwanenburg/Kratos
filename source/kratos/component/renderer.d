@@ -42,6 +42,7 @@ final class Renderer : SceneComponent
 		RenderTarget gBuffer;
 		RenderTarget screen;
 
+		RenderableMesh selfIlluminationRenderableMesh = void;
 		RenderableMesh directionalLightRenderableMesh = void;
 		RenderableMesh pointLightRenderableMesh = void;
 
@@ -133,6 +134,8 @@ final class Renderer : SceneComponent
 
 	private void renderLights(Camera camera)
 	{
+		render(selfIlluminationRenderableMesh);
+	
 		directionalLightUniforms.projectionMatrixInverse = camera.projectionMatrix.inverse;
 
 		foreach(light; directionalLights.all)
@@ -140,7 +143,6 @@ final class Renderer : SceneComponent
 			with(directionalLightUniforms)
 			{
 				color = light.color;
-				ambientColor = light.ambientColor;
 				viewspaceDirection = (camera.viewMatrix * vec4(light.direction.normalized, 0)).xyz;
 			}
 
@@ -183,11 +185,15 @@ final class Renderer : SceneComponent
 		{
 			mesh.renderState.shader["albedo"] = gBuffer.frameBuffer["albedo"];
 			mesh.renderState.shader["normal"] = gBuffer.frameBuffer["normal"];
+			mesh.renderState.shader["surfaceParameters"] = gBuffer.frameBuffer["surfaceParameters"];
 			mesh.renderState.shader["depth"] = gBuffer.frameBuffer["depth"];
 		}
 
 		this.directionalLightRenderableMesh = renderableMesh(quad, RenderStateLoader.get("RenderStates/DeferredRenderer/DirectionalLight"));
 		setGBufferInputs(this.directionalLightRenderableMesh);
+		
+		this.selfIlluminationRenderableMesh = renderableMesh(quad, RenderStateLoader.get("RenderStates/DeferredRenderer/SelfIllumination"));
+		setGBufferInputs(this.selfIlluminationRenderableMesh);
 	}
 
 	private void initUniformRefs()
@@ -200,8 +206,9 @@ final class Renderer : SceneComponent
 		import kratos.graphics.texture : DefaultTextureFormat;
 
 		static bufferDescriptions = [
-			FrameBuffer.BufferDescription("albedo", DefaultTextureFormat.RGBA),
-			FrameBuffer.BufferDescription("normal", DefaultTextureFormat.RGBA16),
+			FrameBuffer.BufferDescription("albedo", DefaultTextureFormat.RGBA),				// [RGB albedo, A diffusion level]
+			FrameBuffer.BufferDescription("normal", DefaultTextureFormat.RGBA16),			// [RGB normal, A emission level / 1024]
+			FrameBuffer.BufferDescription("surfaceParameters", DefaultTextureFormat.RG),	// [R Specular power / 128, G specular level]
 			FrameBuffer.BufferDescription("depth", DefaultTextureFormat.Depth)
 		];
 
@@ -257,7 +264,6 @@ private struct RenderQueue
 private struct DirectionalLightUniforms
 {
 	UniformRef!vec3 color;
-	UniformRef!vec3 ambientColor;
 	UniformRef!vec3 viewspaceDirection;
 	UniformRef!mat4 projectionMatrixInverse;
 }

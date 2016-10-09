@@ -1,0 +1,17 @@
+{
+	"DepthTest":
+	{
+		"read": false,
+		"write": false
+	},
+
+	"Shader":
+	{
+		"program": "ShaderPrograms/DeferredRenderer/SelfIllumination",
+		
+		"uniforms":
+		{
+			"ambientColor": [0.5, 0.5, 0.5]
+		}
+	}
+}

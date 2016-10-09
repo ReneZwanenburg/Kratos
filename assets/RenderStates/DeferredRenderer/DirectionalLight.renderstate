@@ -1,8 +1,11 @@
 {
 	"Blend":
 	{
-		"srcFunction": "One",
-		"dstFunction": "One"
+		"enabled": true,
+		"srcRgbFunction": "One",
+		"dstRgbFunction": "One",
+		"srcAlphaFunction": "One",
+		"dstAlphaFunction": "One"
 	},
 	
 	"DepthTest":

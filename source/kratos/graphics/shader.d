@@ -289,7 +289,7 @@ class ShaderModule_Impl
 			auto log = new GLchar[](logLength);
 			gl.GetShaderInfoLog(handle, cast(GLsizei)log.length, null, log.ptr);
 			
-			throw new Exception(log.assumeUnique);
+			throw new Exception(name ~ ": " ~ log.assumeUnique);
 		}
 		else
 		{

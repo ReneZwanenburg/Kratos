@@ -2,7 +2,7 @@
 	"modules":
 	[
 		"Shaders/DeferredRenderer/VertexPassThrough.vert",
-		"Shaders/DeferredRenderer/DirectionalLight.frag"
+		"Shaders/DeferredRenderer/SelfIllumination.frag"
 	],
 	
 	"samplers":
@@ -16,22 +16,6 @@
 		},
 		
 		"normal":
-		{
-			"minFilter": "Nearest",
-			"magFilter": "Nearest",
-			"xWrap": "Clamp",
-			"yWrap": "Clamp"
-		},
-		
-		"surfaceParameters":
-		{
-			"minFilter": "Nearest",
-			"magFilter": "Nearest",
-			"xWrap": "Clamp",
-			"yWrap": "Clamp"
-		},
-		
-		"depth":
 		{
 			"minFilter": "Nearest",
 			"magFilter": "Nearest",

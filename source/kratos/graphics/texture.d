@@ -174,7 +174,7 @@ struct TextureFormat
 enum DefaultTextureFormat : TextureFormat
 {
 	R		= TextureFormat(GL_RED,				GL_RED,				GL_UNSIGNED_BYTE,	8),
-	//RG		= TextureFormat(GL_RG,				GL_RG8,				GL_UNSIGNED_BYTE,	16),
+	RG		= TextureFormat(GL_RG,				GL_RG8,				GL_UNSIGNED_BYTE,	16),
 	RGB		= TextureFormat(GL_RGB,				GL_RGB8,			GL_UNSIGNED_BYTE,	24),
 	RGBA	= TextureFormat(GL_RGBA,			GL_RGBA8,			GL_UNSIGNED_BYTE,	32),
 	RGBA16	= TextureFormat(GL_RGBA,			GL_RGBA16,			GL_UNSIGNED_SHORT,	64),
