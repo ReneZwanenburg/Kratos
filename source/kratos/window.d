@@ -61,9 +61,11 @@ struct Window
 			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT,	debugContext);
 			glfwWindowHint(GLFW_REFRESH_RATE,			refreshRate);
 
+			import std.string : toStringz;
+			
 			this._handle = glfwCreateWindow(
 				width, height,
-				title.ptr,
+				title.toStringz,
 				fullScreen ? glfwGetPrimaryMonitor() : null,
 				null
 			);
