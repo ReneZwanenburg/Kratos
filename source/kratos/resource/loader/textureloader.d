@@ -6,6 +6,7 @@ import kratos.graphics.texture;
 import derelict.devil.il;
 import kgl3n.vector : vec2ui;
 import kratos.resource.format : KratosTexture;
+import std.typecons : tuple;
 
 alias TextureLoader = Loader!(Texture_Impl, (string name) => loadTexture(name), true);
 
@@ -61,7 +62,12 @@ private Texture_Impl loadTextureIl(RawFileData data, uint lod, bool forceCompres
 	
 	auto dataPtr = ilGetData();
 	auto resolution = vec2ui(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
-	TextureFormat format = ilTextureFormat[ilGetInteger(IL_IMAGE_FORMAT)];
+	
+	import std.path : extension;
+	auto nameExtension = data.name.extension;
+	auto assumeSrgb = nameExtension.length == 0 || nameExtension == ".d";
+	
+	TextureFormat format = ilTextureFormat[tuple(cast(uint)ilGetInteger(IL_IMAGE_FORMAT), assumeSrgb)];
 	
 	if(forceCompression)
 	{
@@ -91,7 +97,7 @@ shared static ~this()
 
 //Sigh, for some reason DevIL doesn't provide this..
 private immutable ILenum[string] imageExtensionFormat;
-private immutable TextureFormat[ILint] ilTextureFormat;
+private immutable TextureFormat[typeof(tuple(IL_LUMINANCE, true))] ilTextureFormat;
 
 shared static this()
 {
@@ -129,8 +135,11 @@ shared static this()
 	];
 
 	ilTextureFormat = [
-		IL_LUMINANCE	: DefaultTextureFormat.R,
-		IL_RGB			: DefaultTextureFormat.RGB,
-		IL_RGBA			: DefaultTextureFormat.RGBA
+		tuple(IL_LUMINANCE, false)	: DefaultTextureFormat.R,
+		tuple(IL_RGB, false)		: DefaultTextureFormat.RGB,
+		tuple(IL_RGBA, false)		: DefaultTextureFormat.RGBA,
+		tuple(IL_LUMINANCE, true)	: DefaultTextureFormat.R,
+		tuple(IL_RGB, true)			: DefaultTextureFormat.SRGB,
+		tuple(IL_RGBA, true)		: DefaultTextureFormat.SRGBA
 	];
 }

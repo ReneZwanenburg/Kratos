@@ -167,7 +167,14 @@ struct TextureFormat
 	private static bool isCompressedFormat(GLenum format)
 	{
 		import std.algorithm.comparison : among;
-		return format.among(GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT) != 0;
+		return format.among(
+				GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
+				GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+				GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+				GL_COMPRESSED_SRGB_S3TC_DXT1_EXT,
+				GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT,
+				GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT,
+				GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT) != 0;
 	}
 }
 
@@ -176,7 +183,9 @@ enum DefaultTextureFormat : TextureFormat
 	R		= TextureFormat(GL_RED,				GL_RED,				GL_UNSIGNED_BYTE,	8),
 	RG		= TextureFormat(GL_RG,				GL_RG8,				GL_UNSIGNED_BYTE,	16),
 	RGB		= TextureFormat(GL_RGB,				GL_RGB8,			GL_UNSIGNED_BYTE,	24),
+	SRGB	= TextureFormat(GL_RGB,				GL_SRGB8,			GL_UNSIGNED_BYTE,	24),
 	RGBA	= TextureFormat(GL_RGBA,			GL_RGBA8,			GL_UNSIGNED_BYTE,	32),
+	SRGBA	= TextureFormat(GL_RGBA,			GL_SRGB8_ALPHA8,	GL_UNSIGNED_BYTE,	32),
 	RGBA16	= TextureFormat(GL_RGBA,			GL_RGBA16,			GL_UNSIGNED_SHORT,	64),
 	Depth	= TextureFormat(GL_DEPTH_COMPONENT,	GL_DEPTH_COMPONENT,	GL_FLOAT,			32)
 }

@@ -206,7 +206,7 @@ final class Renderer : SceneComponent
 		import kratos.graphics.texture : DefaultTextureFormat;
 
 		static bufferDescriptions = [
-			FrameBuffer.BufferDescription("albedo", DefaultTextureFormat.RGBA),				// [RGB albedo, A diffusion level]
+			FrameBuffer.BufferDescription("albedo", DefaultTextureFormat.SRGBA),			// [SRGB albedo, A diffusion level]
 			FrameBuffer.BufferDescription("normal", DefaultTextureFormat.RGBA16),			// [RGB normal, A emission level / 1024]
 			FrameBuffer.BufferDescription("surfaceParameters", DefaultTextureFormat.RG),	// [R Specular power / 128, G specular level]
 			FrameBuffer.BufferDescription("depth", DefaultTextureFormat.Depth)

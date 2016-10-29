@@ -99,6 +99,7 @@ struct Window
 	{
 		import kratos.graphics.gl;
 		gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		gl.setEnabled(GL_FRAMEBUFFER_SRGB, true);
 	}
 
 	void updateInput()
