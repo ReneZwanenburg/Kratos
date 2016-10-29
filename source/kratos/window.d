@@ -22,7 +22,7 @@ struct WindowProperties
 	bool	resizable		= false;
 
 	int		msaa			= 0;
-	bool	sRGB			= false;
+	bool	sRGB			= true;
 	int		refreshRate		= 60;
 	bool	debugContext	= false;
 	bool	vSync			= true;
