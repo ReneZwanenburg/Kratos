@@ -54,11 +54,6 @@ VAO vao(Mesh mesh, Program program)
 	return vao;
 }
 
-void* offsetToVoidPtr(GLsizei offset)
-{
-	return cast(void*) offset;
-}
-
 private struct VAO_Impl
 {
 	private GLuint handle;
