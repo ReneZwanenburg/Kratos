@@ -144,7 +144,8 @@ shared static this()
 	foreach(B; GLTypes)
 	{
 		import std.algorithm : max;
-		auto size = cast(GLenum)max(B.nativeType.sizeof, 4);
+		import std.conv : to;
+		auto size = max(B.nativeType.sizeof, 4).to!GLenum;
 		assert(size % 4 == 0, "GL Types should have four byte alignment");
 		GLTypeSize[B.glType] = size;
 	}

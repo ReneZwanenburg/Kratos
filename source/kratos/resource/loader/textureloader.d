@@ -58,7 +58,8 @@ private Texture_Impl loadTextureIl(RawFileData data, uint lod, bool forceCompres
 	auto handle = ilGenImage();
 	scope(exit) ilDeleteImage(handle);
 	ilBindImage(handle);
-	ilLoadL(imageExtensionFormat[data.extension], data.data.ptr, cast(uint)data.data.length);
+	import std.conv : to;
+	ilLoadL(imageExtensionFormat[data.extension], data.data.ptr, data.data.length.to!uint);
 	
 	auto dataPtr = ilGetData();
 	auto resolution = vec2ui(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
@@ -67,7 +68,7 @@ private Texture_Impl loadTextureIl(RawFileData data, uint lod, bool forceCompres
 	auto nameExtension = data.name.extension;
 	auto assumeSrgb = nameExtension.length == 0 || nameExtension == ".d";
 	
-	TextureFormat format = ilTextureFormat[tuple(cast(uint)ilGetInteger(IL_IMAGE_FORMAT), assumeSrgb)];
+	TextureFormat format = ilTextureFormat[tuple(ilGetInteger(IL_IMAGE_FORMAT).to!uint, assumeSrgb)];
 	
 	if(forceCompression)
 	{

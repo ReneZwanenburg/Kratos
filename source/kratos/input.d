@@ -2,6 +2,7 @@
 
 import kratos.window;
 import derelict.glfw3.glfw3;
+import std.conv : to;
 
 struct Axis
 {
@@ -106,7 +107,7 @@ class Mouse
 	
 	private static extern(C) void scrollCallback(GLFWwindow* w, double x, double y) nothrow
 	{
-		mouse._yScroll += cast(int)y;
+		mouse._yScroll += y.to!int;
 	}
 
 	package void update()

@@ -77,7 +77,7 @@ class Program_Impl
 			assert(logLength > 0);
 
 			auto log = new GLchar[](logLength);
-			gl.GetProgramInfoLog(handle, cast(GLsizei)log.length, null, log.ptr);
+			gl.GetProgramInfoLog(handle, log.length.to!GLsizei, null, log.ptr);
 			
 			throw new Exception(log.assumeUnique);
 		}
@@ -105,7 +105,7 @@ class Program_Impl
 			);
 
 			assert(size == 1, "Attribute arrays not supported yet");
-			attribute.name.length = cast(typeof(attribute.name.length))nameLength;
+			attribute.name.length = nameLength.to!(typeof(attribute.name.length));
 
 			auto location = gl.GetAttribLocation(
 				handle,
@@ -140,7 +140,7 @@ class Program_Impl
 			gl.GetActiveUniform(
 				handle,
 				i,
-				cast(GLsizei)nameBuffer.length,
+				nameBuffer.length.to!GLsizei,
 				&nameLength,
 				&uniform.size,
 				&uniform.type,
@@ -287,7 +287,7 @@ class ShaderModule_Impl
 			assert(logLength > 0);
 			
 			auto log = new GLchar[](logLength);
-			gl.GetShaderInfoLog(handle, cast(GLsizei)log.length, null, log.ptr);
+			gl.GetShaderInfoLog(handle, log.length.to!GLsizei, null, log.ptr);
 			
 			throw new Exception(name ~ ": " ~ log.assumeUnique);
 		}

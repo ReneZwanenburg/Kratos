@@ -51,12 +51,13 @@ else
 		import kratos.component.camera;
 		import kratos.component.meshrenderer;
 		import std.algorithm : map;
+		import std.conv : to;
 
 		//info("Importing Scene ", name);
 
 		auto importedScene = aiImportFileFromMemory(
 			data.data.ptr,
-			cast(uint)data.data.length,
+			data.data.length.to!uint,
 			aiProcess_CalcTangentSpace		|
 			aiProcess_JoinIdenticalVertices	|
 			aiProcess_Triangulate			|

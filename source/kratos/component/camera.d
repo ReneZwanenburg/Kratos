@@ -9,6 +9,7 @@ import kgl3n.matrix;
 import kgl3n.linearcomponent;
 import kgl3n.vector;
 import vibe.data.json;
+import std.conv : to;
 
 struct StandardProjection
 {
@@ -62,7 +63,7 @@ final class Camera : Component
 
 			import kratos.window;
 			auto aspect = projection.aspectRatio <= 0 ? 
-				(Window.activeProperties.width / cast(float)Window.activeProperties.height) : 
+				(Window.activeProperties.width / to!float(Window.activeProperties.height) : 
 				projection.aspectRatio;
 
 			_projectionMatrix = perspectiveProjection(aspect, 1, projection.fov, projection.nearPlane, projection.farPlane);

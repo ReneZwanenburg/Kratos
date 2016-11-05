@@ -58,6 +58,7 @@ else
 		import kgl3n.vector;
 		import kgl3n.matrix;
 		import std.array;
+		import std.conv : to;
 		
 		auto properties = aiCreatePropertyStore();
 		scope(exit) aiReleasePropertyStore(properties);
@@ -65,7 +66,7 @@ else
 		
 		auto scene = aiImportFileFromMemoryWithProperties(
 			data.data.ptr,
-			cast(uint)data.data.length,
+			data.data.length.to!uint,
 			aiProcess_CalcTangentSpace		|
 			aiProcess_JoinIdenticalVertices	|
 			aiProcess_Triangulate			|
