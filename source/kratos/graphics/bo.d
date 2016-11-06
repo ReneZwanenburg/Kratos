@@ -158,7 +158,7 @@ struct IBO
 	this(void[] data, IndexType type, bool dynamic = false)
 	{
 		_buffer = bo!GL_ELEMENT_ARRAY_BUFFER(data, dynamic);
-		import std.to;
+		import std.conv : to;
 		_numIndices = to!GLint(data.length / indexSize[type]);
 		_indexType = type;
 	}

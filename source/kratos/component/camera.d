@@ -63,7 +63,7 @@ final class Camera : Component
 
 			import kratos.window;
 			auto aspect = projection.aspectRatio <= 0 ? 
-				(Window.activeProperties.width / to!float(Window.activeProperties.height) : 
+				(Window.activeProperties.width / to!float(Window.activeProperties.height)) : 
 				projection.aspectRatio;
 
 			_projectionMatrix = perspectiveProjection(aspect, 1, projection.fov, projection.nearPlane, projection.farPlane);
