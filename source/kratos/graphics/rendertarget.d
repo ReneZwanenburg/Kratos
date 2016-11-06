@@ -81,7 +81,7 @@ final class FrameBuffer
 	static struct BufferDescription
 	{
 		string name;
-		TextureFormat format;
+		ImageFormat format;
 	}
 
 	private static GLuint activeHandle;
@@ -121,12 +121,12 @@ final class FrameBuffer
 		{
 			auto format = description.format;
 
-			auto tex = TextureManager.create(format, resolution, null, description.name);
+			auto tex = TextureManager.create(Image(format, resolution, description.name));
 			textures ~= tex;
 
 			GLenum attachment;
 			//TODO: Support DepthStencil / Stencil formats
-			if(format == DefaultTextureFormat.Depth)
+			if(format == StandardImageFormat.Depth)
 			{
 				assert(!depthProvided);
 				depthProvided = true;

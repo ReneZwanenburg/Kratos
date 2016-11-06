@@ -203,13 +203,13 @@ final class Renderer : SceneComponent
 
 	private static FrameBuffer createGBuffer(vec2ui size)
 	{
-		import kratos.graphics.texture : DefaultTextureFormat;
+		import kratos.resource.image : StandardImageFormat;
 
 		static bufferDescriptions = [
-			FrameBuffer.BufferDescription("albedo", DefaultTextureFormat.SRGBA),			// [SRGB albedo, A diffusion level]
-			FrameBuffer.BufferDescription("normal", DefaultTextureFormat.RGBA16),			// [RGB normal, A emission level / 1024]
-			FrameBuffer.BufferDescription("surfaceParameters", DefaultTextureFormat.RG),	// [R Specular power / 128, G specular level]
-			FrameBuffer.BufferDescription("depth", DefaultTextureFormat.Depth)
+			FrameBuffer.BufferDescription("albedo", StandardImageFormat.SRGBA),			// [SRGB albedo, A diffusion level]
+			FrameBuffer.BufferDescription("normal", StandardImageFormat.RGBA16),			// [RGB normal, A emission level / 1024]
+			FrameBuffer.BufferDescription("surfaceParameters", StandardImageFormat.RG),	// [R Specular power / 128, G specular level]
+			FrameBuffer.BufferDescription("depth", StandardImageFormat.Depth)
 		];
 
 		return new FrameBuffer(size, bufferDescriptions);

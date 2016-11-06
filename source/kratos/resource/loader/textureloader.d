@@ -28,7 +28,7 @@ private Texture_Impl loadTextureKst(RawFileData data, uint lod, bool forceCompre
 {
 	auto ksm = KratosTexture.fromBuffer(data.data);
 	
-	auto format = KratosTexture.getTextureFormat(ksm.format);
+	auto format = KratosTexture.getImageFormat(ksm.format);
 	if(forceCompression)
 	{
 		format = format.asCompressed;
@@ -37,18 +37,18 @@ private Texture_Impl loadTextureKst(RawFileData data, uint lod, bool forceCompre
 	assert(ksm.flags & KratosTexture.Flags.MipmapsIncluded || lod == 0);
 	
 	import std.algorithm.comparison : min;
-	lod = min(lod, getRequiredMipmapLevels(ksm.resolution)-1);
+	lod = min(lod, mipmapLevelCount(ksm.resolution)-1);
 	
-	auto lodResolution = getMipmapLevelResolution(ksm.resolution, lod);
-	auto lodBufferLength = getMipmapsBufferLength(format, lodResolution);
+	auto lodResolution = mipmapLevelResolution(ksm.resolution, lod);
+	auto lodBufferLength = mipmappedPixelBufferLength(format, lodResolution);
 	
 	return new Texture_Impl
-	(
+	(Image(
 		format,
 		lodResolution,
-		ksm.texelBuffer[0 .. lodBufferLength],
+		cast(immutable(ubyte)[])ksm.texelBuffer[0 .. lodBufferLength],
 		data.name
-	);
+	));
 }
 
 private Texture_Impl loadTextureIl(RawFileData data, uint lod, bool forceCompression)
@@ -68,7 +68,7 @@ private Texture_Impl loadTextureIl(RawFileData data, uint lod, bool forceCompres
 	auto nameExtension = data.name.extension;
 	auto assumeSrgb = nameExtension.length == 0 || nameExtension == ".d";
 	
-	TextureFormat format = ilTextureFormat[tuple(ilGetInteger(IL_IMAGE_FORMAT).to!uint, assumeSrgb)];
+	ImageFormat format = ilTextureFormat[tuple(ilGetInteger(IL_IMAGE_FORMAT).to!uint, assumeSrgb)];
 	
 	if(forceCompression)
 	{
@@ -78,7 +78,7 @@ private Texture_Impl loadTextureIl(RawFileData data, uint lod, bool forceCompres
 	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL)*8 == format.bitsPerPixel);
 	assert(ilGetInteger(IL_IMAGE_TYPE) == format.type);
 	
-	return new Texture_Impl(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bitsPerPixel/8], data.name);
+	return new Texture_Impl(Image(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bitsPerPixel/8], data.name));
 }
 
 shared static this()
@@ -98,7 +98,7 @@ shared static ~this()
 
 //Sigh, for some reason DevIL doesn't provide this..
 private immutable ILenum[string] imageExtensionFormat;
-private immutable TextureFormat[typeof(tuple(IL_LUMINANCE, true))] ilTextureFormat;
+private immutable ImageFormat[typeof(tuple(IL_LUMINANCE, true))] ilTextureFormat;
 
 shared static this()
 {
@@ -136,11 +136,11 @@ shared static this()
 	];
 
 	ilTextureFormat = [
-		tuple(IL_LUMINANCE, false)	: DefaultTextureFormat.R,
-		tuple(IL_RGB, false)		: DefaultTextureFormat.RGB,
-		tuple(IL_RGBA, false)		: DefaultTextureFormat.RGBA,
-		tuple(IL_LUMINANCE, true)	: DefaultTextureFormat.R,
-		tuple(IL_RGB, true)			: DefaultTextureFormat.SRGB,
-		tuple(IL_RGBA, true)		: DefaultTextureFormat.SRGBA
+		tuple(IL_LUMINANCE, false)	: StandardImageFormat.R,
+		tuple(IL_RGB, false)		: StandardImageFormat.RGB,
+		tuple(IL_RGBA, false)		: StandardImageFormat.RGBA,
+		tuple(IL_LUMINANCE, true)	: StandardImageFormat.R,
+		tuple(IL_RGB, true)			: StandardImageFormat.SRGB,
+		tuple(IL_RGBA, true)		: StandardImageFormat.SRGBA
 	];
 }

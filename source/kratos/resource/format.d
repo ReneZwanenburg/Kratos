@@ -47,7 +47,7 @@ struct KratosMesh
 struct KratosTexture
 {
 	import kgl3n.vector : vec2ui;
-	import kratos.graphics.texture : TextureFormat, DefaultTextureFormat, getMipmapsBufferLength, getTexelBufferLength;
+	import kratos.resource.image : ImageFormat, StandardImageFormat, mipmappedPixelBufferLength, pixelBufferLength;
 	
 	enum Format : uint
 	{
@@ -80,8 +80,8 @@ struct KratosTexture
 			data.readFront!Flags
 		);
 		
-		auto format = getTextureFormat(retVal.format);
-		assert(data.length == getMipmapsBufferLength(format, retVal.resolution) || data.length == getTexelBufferLength(format, retVal.resolution));
+		auto format = getImageFormat(retVal.format);
+		assert(data.length == mipmappedPixelBufferLength(format, retVal.resolution) || data.length == pixelBufferLength(format, retVal.resolution));
 		retVal.texelBuffer = data;
 		
 		return retVal;
@@ -95,23 +95,23 @@ struct KratosTexture
 		put(range, texelBuffer);
 	}
 	
-	public static TextureFormat getTextureFormat(Format format)
+	public static ImageFormat getImageFormat(Format format)
 	{
 		import kratos.graphics.gl;
 	
 		static immutable formatTable = 
 		[
-			DefaultTextureFormat.R,
-			DefaultTextureFormat.RGB,
-			DefaultTextureFormat.SRGB,
-			DefaultTextureFormat.RGBA,
-			DefaultTextureFormat.SRGBA,
-			TextureFormat(GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_UNSIGNED_BYTE, 4),
-			TextureFormat(GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, GL_UNSIGNED_BYTE, 4),
-			TextureFormat(GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_UNSIGNED_BYTE, 8),
-			TextureFormat(GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_UNSIGNED_BYTE, 8),
-			TextureFormat(GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_UNSIGNED_BYTE, 8),
-			TextureFormat(GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_UNSIGNED_BYTE, 8)
+			StandardImageFormat.R,
+			StandardImageFormat.RGB,
+			StandardImageFormat.SRGB,
+			StandardImageFormat.RGBA,
+			StandardImageFormat.SRGBA,
+			ImageFormat(GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_UNSIGNED_BYTE, 4),
+			ImageFormat(GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, GL_UNSIGNED_BYTE, 4),
+			ImageFormat(GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_UNSIGNED_BYTE, 8),
+			ImageFormat(GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_UNSIGNED_BYTE, 8),
+			ImageFormat(GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_UNSIGNED_BYTE, 8),
+			ImageFormat(GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_UNSIGNED_BYTE, 8)
 		];
 		
 		return formatTable[format];

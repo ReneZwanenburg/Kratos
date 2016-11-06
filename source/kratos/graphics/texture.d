@@ -2,13 +2,13 @@
 
 import kratos.graphics.gl;
 import kgl3n.vector;
-import kgl3n.math;
 //import std.experimental.logger;
 import kratos.resource.manager;
 
 import vibe.data.serialization : optional, byName;
 
 public import kratos.graphics.textureunit;
+public import kratos.resource.image;
 
 
 alias TextureManager = Manager!Texture_Impl;
@@ -105,131 +105,6 @@ struct SamplerSettings
 	SamplerAnisotropy	anisotropy	= 1;
 }
 
-struct TextureFormat
-{
-	GLenum	bufferFormat;
-	GLenum	internalFormat;
-	GLenum	type;
-	uint	bitsPerPixel;
-	
-	@property
-	{
-		bool bufferFormatIsCompressed() const
-		{
-			return isCompressedFormat(bufferFormat);
-		}
-		
-		bool internalFormatIsCompressed() const
-		{
-			return isCompressedFormat(internalFormat);
-		}
-	}
-	
-	public TextureFormat asCompressed() const
-	{
-		static GLenum[GLenum] internalFormatToCompressedMapping;
-		if(internalFormatToCompressedMapping is null) internalFormatToCompressedMapping =
-		[
-			GL_RGB8:	GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
-			GL_RGBA8:	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
-		];
-	
-		TextureFormat retVal = this;
-		if(auto compressedFormatPtr = retVal.internalFormat in internalFormatToCompressedMapping)
-		{
-			retVal.internalFormat = *compressedFormatPtr;
-		}
-		return retVal;
-	}
-	
-	public TextureFormat asDownloadFormat() const
-	{
-		TextureFormat retVal = this;
-		
-		if(internalFormatIsCompressed)
-		{
-			retVal.bufferFormat = internalFormat;
-			
-			if(internalFormat == GL_COMPRESSED_RGB_S3TC_DXT1_EXT)
-			{
-				retVal.bitsPerPixel = 4;
-			}
-			else if(internalFormat == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT || internalFormat == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
-			{
-				retVal.bitsPerPixel = 8;
-			}
-			else assert(false);
-		}
-		
-		return retVal;
-	}
-	
-	private static bool isCompressedFormat(GLenum format)
-	{
-		import std.algorithm.comparison : among;
-		return format.among(
-				GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
-				GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
-				GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
-				GL_COMPRESSED_SRGB_S3TC_DXT1_EXT,
-				GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT,
-				GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT,
-				GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT) != 0;
-	}
-}
-
-enum DefaultTextureFormat : TextureFormat
-{
-	R		= TextureFormat(GL_RED,				GL_RED,				GL_UNSIGNED_BYTE,	8),
-	RG		= TextureFormat(GL_RG,				GL_RG8,				GL_UNSIGNED_BYTE,	16),
-	RGB		= TextureFormat(GL_RGB,				GL_RGB8,			GL_UNSIGNED_BYTE,	24),
-	SRGB	= TextureFormat(GL_RGB,				GL_SRGB8,			GL_UNSIGNED_BYTE,	24),
-	RGBA	= TextureFormat(GL_RGBA,			GL_RGBA8,			GL_UNSIGNED_BYTE,	32),
-	SRGBA	= TextureFormat(GL_RGBA,			GL_SRGB8_ALPHA8,	GL_UNSIGNED_BYTE,	32),
-	RGBA16	= TextureFormat(GL_RGBA,			GL_RGBA16,			GL_UNSIGNED_SHORT,	64),
-	Depth	= TextureFormat(GL_DEPTH_COMPONENT,	GL_DEPTH_COMPONENT,	GL_FLOAT,			32)
-}
-
-uint getMipmapsBufferLength(TextureFormat format, vec2ui resolution)
-{
-	import std.range : iota;
-	import std.algorithm.iteration : map, sum;
-	
-	return
-		getRequiredMipmapLevels(resolution)
-		.iota()
-		.map!(level => getMipmapLevelResolution(resolution, level))
-		.map!(levelResolution => getTexelBufferLength(format, levelResolution))
-		.sum;
-}
-
-uint getTexelBufferLength(TextureFormat format, vec2ui resolution)
-{
-	if(format.bufferFormatIsCompressed)
-	{
-		// S3TC uses 4x4 block compression
-		resolution.x = max(resolution.x, 4);
-		resolution.y = max(resolution.y, 4);
-		
-		assert(resolution.x % 4 == 0 && resolution.y % 4 == 0);
-	}
-	
-	// Calc line in bits, convert to bytes before multiplying with height to avoid overflow
-	return (resolution.x * format.bitsPerPixel / 8) * resolution.y;
-}
-
-vec2ui getMipmapLevelResolution(vec2ui baseResolution, uint level)
-{
-	assert(level < typeof(baseResolution.x).sizeof * 8);
-	
-	return componentMax(vec2ui(1, 1), vec2ui(baseResolution.x >> level, baseResolution.y >> level));
-}
-
-uint getRequiredMipmapLevels(vec2ui resolution)
-{
-	return max(resolution.x, resolution.y).higherPOT.getLog2 + 1;
-}
-
 Texture defaultTexture()
 {
 	static Texture texture;
@@ -242,30 +117,25 @@ Texture defaultTexture()
 			127, 0, 127, 255,
 			255, 0, 255, 255
 		];
-		texture = TextureManager.create(DefaultTextureFormat.RGBA, vec2ui(2, 2), data, "Default Texture");
+		texture = TextureManager.create(Image(StandardImageFormat.RGBA, vec2ui(2, 2), data, "Default Texture"));
 	}
 	return texture;
 }
 
 class Texture_Impl
 {
-	const
-	{	
-		package GLuint	handle;
-		vec2ui			resolution;
-		TextureFormat	format;
-		string			name;
-	}
+	package const GLuint handle;
 	
-	this(TextureFormat format, vec2ui resolution, const(void)[] buffer, string name = null)
-	{
-		import std.conv : text;
+	private Image _image;
 
+	inout(Image) image() inout { return _image; }
+
+	this(Image image)
+	{
 		handle = gl.genTexture();
-		this.resolution = resolution;
-		this.format = format;
-		this.name = name ? name : handle.text;
-		load(buffer);
+		_image = image;
+
+		reload();
 	}
 
 	~this()
@@ -273,27 +143,21 @@ class Texture_Impl
 		gl.DeleteTextures(1, &handle);
 	}
 	
-	// Determines if mipmaps are included based on buffer length. Generates mipmaps when not present.
-	// Mipmaps are ordered high to low level in the buffer, so starting with the lowest resolution.
-	void load(const(void)[] buffer)
+	// Generates mipmaps when not present
+	void reload()
 	{
-		const mipmapsLength = getMipmapsBufferLength(format, resolution);
-		const bufferContainsMipmaps = buffer.length == mipmapsLength;
-		
-		assert(buffer.ptr == null || bufferContainsMipmaps || buffer.length == getTexelBufferLength(format, resolution));
-
 		ScratchTextureUnit.makeActiveScratch(this);
 
-		if(bufferContainsMipmaps)
+		if(_image.containsMipmaps)
 		{
 			import std.range : iota, retro;
 			
-			auto remainingBuffer = buffer;
+			auto remainingBuffer = _image.data;
 			
-			foreach(level; getRequiredMipmapLevels(resolution).iota.retro)
+			foreach(level; mipmapLevelCount(_image.resolution).iota.retro)
 			{
-				auto levelResolution = getMipmapLevelResolution(resolution, level);
-				auto sliceLength = getTexelBufferLength(format, levelResolution);
+				auto levelResolution = mipmapLevelResolution(_image.resolution, level);
+				auto sliceLength = pixelBufferLength(_image.format, levelResolution);
 				
 				uploadMipmapLevel(levelResolution, level, remainingBuffer[0 .. sliceLength]);
 				remainingBuffer = remainingBuffer[sliceLength .. $];
@@ -303,13 +167,15 @@ class Texture_Impl
 		}
 		else
 		{
-			uploadMipmapLevel(resolution, 0, buffer);
+			uploadMipmapLevel(_image.resolution, 0, _image.data);
 			gl.GenerateMipmap(GL_TEXTURE_2D);
 		}
 	}
 	
-	private void uploadMipmapLevel(vec2ui resolution, int level, const(void)[] buffer)
+	private void uploadMipmapLevel(vec2ui resolution, int level, const(ubyte)[] buffer)
 	{
+		auto format = _image.format;
+
 		if(format.bufferFormatIsCompressed)
 		{
 			assert(format.internalFormat == format.bufferFormat);
@@ -347,20 +213,20 @@ class Texture_Impl
 	{
 		// TODO:
 		assert(includeMipmaps);
-		assert(format.internalFormatIsCompressed);
+		assert(_image.format.internalFormatIsCompressed);
 		
-		auto downloadFormat = format.asDownloadFormat;
+		auto downloadFormat = _image.format.asDownloadFormat;
 		
-		auto texelBuffer = new void[](getMipmapsBufferLength(downloadFormat, resolution));
+		auto texelBuffer = new ubyte[](mipmappedPixelBufferLength(downloadFormat, _image.resolution));
 		
 		import std.range : iota, retro;
 			
 		auto remainingBuffer = texelBuffer;
 		
-		foreach(level; getRequiredMipmapLevels(resolution).iota.retro)
+		foreach(level; mipmapLevelCount(_image.resolution).iota.retro)
 		{
-			auto levelResolution = getMipmapLevelResolution(resolution, level);
-			auto sliceLength = getTexelBufferLength(downloadFormat, levelResolution);
+			auto levelResolution = mipmapLevelResolution(_image.resolution, level);
+			auto sliceLength = pixelBufferLength(downloadFormat, levelResolution);
 			
 			import std.conv : to;
 			gl.GetCompressedTextureImage(handle, level, remainingBuffer.length.to!GLsizei, remainingBuffer.ptr);

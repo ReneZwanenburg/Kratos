@@ -208,9 +208,9 @@ public final class TextPanel : UiComponent
 				cast(uint)(screenResolution.x * size.x * 0.5f),
 				cast(uint)(screenResolution.y * size.y * 0.5f)
 			);
-			
-			_texture = TextureManager.create(DefaultTextureFormat.R, texSize, null, owner.name ~ " TextPanel");
+
 			_texelBuffer = new ubyte[texSize.x * texSize.y];
+			_texture = TextureManager.create(Image(StandardImageFormat.R, texSize, _texelBuffer, owner.name ~ " TextPanel"));
 			
 			auto halfSize = size / 2;
 			_mesh = renderableMesh
@@ -263,7 +263,7 @@ public final class TextPanel : UiComponent
 			
 			auto bitmap = _face.glyph.bitmap;
 			auto offset = vec2i(_face.glyph.bitmap_left, -_face.glyph.bitmap_top);
-			auto resolution = TextureManager.getConcreteResource(_texture).resolution;
+			auto resolution = TextureManager.getConcreteResource(_texture).image.resolution;
 			
 			foreach(y; 0..bitmap.rows)
 			{
@@ -283,7 +283,7 @@ public final class TextPanel : UiComponent
 			position += vec2i(cast(int)_face.glyph.advance.x, cast(int)_face.glyph.advance.y) / 64;
 		}
 		
-		TextureManager.getConcreteResource(_texture).load(_texelBuffer);
+		TextureManager.getConcreteResource(_texture).reload();
 	}
 }
 
