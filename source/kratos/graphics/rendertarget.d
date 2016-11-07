@@ -35,7 +35,7 @@ final class RenderTarget
 	{
 		static depthTestState = DepthTest(DepthFunc.LessOrEqual, false, true);
 	
-		assert(frameBuffer.active, "RenderTarget frameBuffer must be active before clearing, call apply on the RenderTarget to ensure it's FrameBuffer is active");
+		assert(frameBuffer.active, "RenderTarget frameBuffer must be active before clearing, call apply on the RenderTarget to ensure its FrameBuffer is active");
 		clearSettings.apply();
 		depthTestState.apply();
 		gl.Clear(clearBuffers);
