@@ -492,6 +492,8 @@ final class CollisionCylinder : PlaceableCollisionGeometry
 
 public final class PhysicsWorld : SceneComponent
 {
+	@optional:
+
 	enum SteppingMode
 	{
 		Fast,
