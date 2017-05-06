@@ -4,6 +4,7 @@ import kratos.resource.image;
 import kratos.resource.manager;
 import kratos.resource.loader.internal;
 import derelict.devil.il;
+import derelict.devil.ilu;
 import kgl3n.vector : vec2ui;
 import kratos.resource.format : KratosTexture;
 import std.typecons : tuple;
@@ -52,16 +53,19 @@ private Image loadImageKst(RawFileData file, uint lod, bool forceCompression)
 
 private Image loadImageIl(RawFileData file, uint lod, bool forceCompression)
 {
-	assert(lod == 0);
-
 	auto handle = ilGenImage();
 	scope(exit) ilDeleteImage(handle);
 	ilBindImage(handle);
 	import std.conv : to;
 	ilLoadL(imageExtensionFormat[file.extension], file.data.ptr, file.data.length.to!uint);
 	
-	auto dataPtr = ilGetData();
 	auto resolution = vec2ui(ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT));
+
+	if(lod != 0)
+	{
+		resolution = mipmapLevelResolution(resolution, lod);
+		iluScale(resolution.x, resolution.y, 0);
+	}
 	
 	import std.path : extension;
 	auto nameExtension = file.name.extension;
@@ -77,13 +81,17 @@ private Image loadImageIl(RawFileData file, uint lod, bool forceCompression)
 	assert(ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL)*8 == format.bitsPerPixel);
 	assert(ilGetInteger(IL_IMAGE_TYPE) == format.type);
 	
-	return Image(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bitsPerPixel/8], file.name);
+	auto dataPtr = ilGetData();
+
+	return Image(format, resolution, dataPtr[0..resolution.x*resolution.y*format.bitsPerPixel/8].dup, file.name);
 }
 
 shared static this()
 {
 	DerelictIL.load();
 	ilInit();
+	DerelictILU.load();
+	iluInit();
 
 	ilEnable(IL_ORIGIN_SET);
 	ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
@@ -92,6 +100,7 @@ shared static this()
 shared static ~this()
 {
 	ilShutDown();
+	DerelictILU.unload();
 	DerelictIL.unload();
 }
 
