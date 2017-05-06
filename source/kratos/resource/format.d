@@ -57,8 +57,11 @@ struct KratosTexture
 		RGBA,
 		SRGBA,
 		RGB_DXT1,
+		SRGB_DXT1,
 		RGBA_DXT3,
-		RGBA_DXT5
+		SRGBA_DXT3,
+		RGBA_DXT5,
+		SRGBA_DXT5
 	}
 	
 	enum Flags : uint
