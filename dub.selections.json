@@ -3,11 +3,11 @@
 	"versions": {
 		"derelict-assimp3": "1.0.5",
 		"derelict-ft": "1.0.2",
-		"derelict-gl3": "1.0.19",
+		"derelict-gl3": "1.0.22",
 		"derelict-glfw3": "1.1.1",
 		"derelict-il": "1.0.1",
 		"derelict-ode": "1.1.2",
 		"derelict-util": "2.0.6",
-		"vibe-d": "0.7.29"
+		"vibe-d": "0.7.31"
 	}
 }
